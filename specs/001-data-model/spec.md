@@ -5,6 +5,13 @@
 **Status**: Draft  
 **Input**: Modelo de datos del dominio para Booking AI Agent (single-tenant, herramienta personal de un host): entidades, atributos clave y relaciones que sostienen la gestión de precios, promociones, sugerencias, auditoría y chat. Arquitectura channel-aware con solo Booking.com activo.
 
+## Clarifications
+
+### Session 2026-06-24
+
+- Q: Cuando varias promociones se solapan en un mismo día, ¿cómo se resuelve el precio efectivo? → A: Gana la promoción de mayor descuento; las promociones NO se acumulan/suman.
+- Q: ¿Qué semántica tiene el rollback de un cambio de precio cuando hubo cambios posteriores sobre la misma fecha? → A: El rollback crea un nuevo cambio auditado (origen = rollback) que fija el valor anterior, sin borrar el historial; si existen cambios posteriores sobre la misma (unidad, día), el sistema señala el conflicto y requiere confirmación explícita antes de sobrescribirlos. El caso normal (revertir el último cambio) se aplica directamente.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Representar propiedades, canales, unidades y precios por día (Priority: P1)
@@ -51,7 +58,7 @@ El host define promociones (porcentaje o monto, con vigencia y condiciones) y re
 
 1. **Given** un precio base y una promoción vigente del 10%, **When** se consulta el precio efectivo de un día cubierto, **Then** refleja el descuento aplicado.
 2. **Given** una regla de precio mínimo, **When** se intenta fijar un precio por debajo del mínimo, **Then** el sistema lo señala como inválido.
-3. **Given** dos promociones que se solapan, **When** se calcula el precio efectivo, **Then** el resultado es determinista según una regla de resolución definida.
+3. **Given** dos promociones que se solapan en un día, **When** se calcula el precio efectivo, **Then** se aplica únicamente la de mayor descuento (no se acumulan).
 
 ---
 
@@ -91,8 +98,9 @@ El sistema guarda la configuración del LLM (proveedor, modelo para tareas gener
 
 - **Fechas sin precio definido**: una fecha sin tarifa explícita debe tener un comportamiento definido (sin precio = no vendible, o hereda de un valor base).
 - **Reserva que cruza el cambio de precio**: una reserva multinoche se valora según el precio vigente de cada noche.
+- **Promociones solapadas**: si varias promociones aplican al mismo día, gana la de mayor descuento; no se acumulan.
 - **Promoción que deja el precio bajo el mínimo**: debe señalarse o acotarse al límite, no aplicarse silenciosamente.
-- **Rollback de un cambio ya superado por otro**: revertir un cambio antiguo cuando hubo cambios posteriores debe tener semántica clara (revertir al valor inmediatamente anterior a ese cambio, o señalar conflicto).
+- **Rollback de un cambio ya superado por otro**: si hubo cambios posteriores sobre la misma (unidad, día), el rollback NO sobrescribe en silencio; señala el conflicto y requiere confirmación explícita. El caso normal (revertir el último cambio) se aplica directamente como un nuevo cambio auditado.
 - **Evento duplicado con datos ligeramente distintos**: la deduplicación debe basarse en criterios estables (nombre + fecha + lugar).
 - **Moneda**: todos los montos de una propiedad son en su moneda (COP); no se mezclan monedas en cálculos.
 - **Borrado de una propiedad/unidad con historial**: el historial de auditoría debe preservarse aunque se desactive la entidad.
@@ -108,10 +116,10 @@ El sistema guarda la configuración del LLM (proveedor, modelo para tareas gener
 - **FR-005**: El sistema MUST mantener, por tipo de unidad y día, un precio base por noche en la moneda de la propiedad.
 - **FR-006**: El sistema MUST permitir (a nivel de modelo, sin activarlo aún) un ajuste de precio por canal (offset), preservando el espacio para activarlo en el futuro.
 - **FR-007**: El sistema MUST calcular un precio efectivo por día a partir del precio base y las promociones vigentes.
-- **FR-008**: El sistema MUST soportar promociones/descuentos con tipo (porcentaje o monto), vigencia (rango de fechas) y condiciones, y reflejarlas en el precio efectivo.
+- **FR-008**: El sistema MUST soportar promociones/descuentos con tipo (porcentaje o monto), vigencia (rango de fechas) y condiciones, y reflejarlas en el precio efectivo. Cuando varias promociones aplican al mismo día, el sistema MUST usar únicamente la de mayor descuento efectivo; las promociones NO se acumulan.
 - **FR-009**: El sistema MUST soportar reglas de precio con límite mínimo y máximo por propiedad, y señalar cuando un precio queda fuera de los límites.
 - **FR-010**: El sistema MUST registrar cada cambio de precio con: valor anterior, valor nuevo, fecha/hora, día(s) afectado(s), unidad/propiedad y origen (chat, manual o sugerencia).
-- **FR-011**: Los usuarios MUST be able to revertir un cambio de precio registrado, devolviendo el precio a su valor anterior; la reversión también queda registrada.
+- **FR-011**: Los usuarios MUST be able to revertir un cambio de precio registrado, devolviendo el precio a su valor anterior. La reversión se aplica creando un nuevo cambio auditado (origen = rollback), sin borrar el historial. Si existen cambios posteriores sobre la misma (unidad, día), el sistema MUST señalar el conflicto y requerir confirmación explícita antes de sobrescribirlos; el caso normal (revertir el último cambio) se aplica directamente.
 - **FR-012**: El sistema MUST almacenar reservas provenientes del canal (fechas, canal de origen, estado) y derivar de ellas la ocupación.
 - **FR-013**: El sistema MUST almacenar eventos de la ciudad con fecha, tipo, relevancia/impacto estimado y ubicación, evitando duplicados.
 - **FR-014**: El sistema MUST almacenar sugerencias de precio por día o rango, con justificación (referencias a eventos/mercado/ocupación), score de confianza y estado (propuesta, aprobada, rechazada, aplicada).
