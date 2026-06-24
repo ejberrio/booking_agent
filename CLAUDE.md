@@ -1,6 +1,7 @@
 <!-- SPECKIT START -->
-For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan
+Feature activa: **001-data-model** (modelo de datos del dominio).
+Plan e artefactos de diseño: `specs/001-data-model/plan.md`, `research.md`,
+`data-model.md`, `contracts/data-access.md`, `quickstart.md`.
 <!-- SPECKIT END -->
 
 # Booking AI Agent
