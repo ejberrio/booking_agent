@@ -8,8 +8,8 @@ from sqlalchemy.pool import NullPool
 from app.core.config import settings
 from app.db.base import Base
 
-# Importa aqui los modelos para que Alembic los detecte (autogenerate).
-# from app.models import *  # noqa: F401,F403
+# Importa los modelos para que Alembic los detecte (autogenerate).
+from app import models  # noqa: E402,F401
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.database_url)

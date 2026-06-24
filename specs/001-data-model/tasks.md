@@ -11,6 +11,8 @@ description: "Task list — Modelo de datos del dominio"
 
 **Organización**: por historia de usuario (US1–US5) para implementar y validar de forma incremental. Trabajo en `apps/api`.
 
+> **Estado: IMPLEMENTADO (2026-06-24).** 18 tests en verde, ruff limpio. Nota: las migraciones por historia (T012/T018/T024/T031/T035) se **consolidaron en una sola migración inicial** (`migrations/versions/4d444884ea03_modelo_de_datos_inicial.py`) al implementar todo en una pasada; aplica limpio (13 tablas). Tests sobre SQLite async (sin Docker); producción usa Postgres.
+
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: puede ir en paralelo (archivo distinto, sin dependencias pendientes)
@@ -20,9 +22,9 @@ description: "Task list — Modelo de datos del dominio"
 
 ## Phase 1: Setup (infraestructura compartida)
 
-- [ ] T001 Crear paquetes `app/models/`, `app/domain/`, `app/services/` (con `__init__.py`) en `apps/api/app/`
-- [ ] T002 [P] Añadir fixtures de prueba con Postgres async (sesión por test con rollback de transacción) en `apps/api/tests/conftest.py`
-- [ ] T003 [P] Habilitar autogenerate de Alembic importando los modelos en `apps/api/migrations/env.py` (descomentar/añadir `from app.models import *`)
+- [x] T001 Crear paquetes `app/models/`, `app/domain/`, `app/services/` (con `__init__.py`) en `apps/api/app/`
+- [x] T002 [P] Añadir fixtures de prueba con Postgres async (sesión por test con rollback de transacción) en `apps/api/tests/conftest.py`
+- [x] T003 [P] Habilitar autogenerate de Alembic importando los modelos en `apps/api/migrations/env.py` (descomentar/añadir `from app.models import *`)
 
 ---
 
@@ -30,8 +32,8 @@ description: "Task list — Modelo de datos del dominio"
 
 **⚠️ Debe completarse antes de cualquier historia.**
 
-- [ ] T004 [P] Definir enums compartidos (PropertyStatus, ChannelKind, ChangeOrigin, SuggestionStatus, PromotionType, BookingStatus, EventKind, Relevance) en `apps/api/app/models/enums.py`
-- [ ] T005 [P] Añadir `TimestampMixin` (created_at/updated_at, timestamptz) en `apps/api/app/models/mixins.py`
+- [x] T004 [P] Definir enums compartidos (PropertyStatus, ChannelKind, ChangeOrigin, SuggestionStatus, PromotionType, BookingStatus, EventKind, Relevance) en `apps/api/app/models/enums.py`
+- [x] T005 [P] Añadir `TimestampMixin` (created_at/updated_at, timestamptz) en `apps/api/app/models/mixins.py`
 
 **Checkpoint**: base lista — pueden comenzar las historias.
 
@@ -45,16 +47,16 @@ description: "Task list — Modelo de datos del dominio"
 
 ### Tests for User Story 1
 
-- [ ] T006 [P] [US1] Test: precio efectivo sin promociones == precio base, en `apps/api/tests/test_pricing.py`
-- [ ] T007 [P] [US1] Test: disponibilidad compartida — un bloqueo/reserva reduce `units_available` de la unidad, en `apps/api/tests/test_models.py`
+- [x] T006 [P] [US1] Test: precio efectivo sin promociones == precio base, en `apps/api/tests/test_pricing.py`
+- [x] T007 [P] [US1] Test: disponibilidad compartida — un bloqueo/reserva reduce `units_available` de la unidad, en `apps/api/tests/test_models.py`
 
 ### Implementation for User Story 1
 
-- [ ] T008 [P] [US1] Modelos `Property`, `Channel`, `UnitType` en `apps/api/app/models/property.py` (registrar en `app/models/__init__.py`)
-- [ ] T009 [P] [US1] Modelos `CalendarDay` y `Rate` (precio base) en `apps/api/app/models/calendar.py` (constraint único por unidad+fecha)
-- [ ] T010 [US1] Función pura `effective_price` (base + clamp; sin promos aún) y firmas en `apps/api/app/domain/pricing.py`
-- [ ] T011 [US1] `PricingService.set_base_price` / `get_price` / `get_availability` en `apps/api/app/services/pricing_service.py` (depende de T008, T009, T010)
-- [ ] T012 [US1] Migración Alembic inicial para property, channel, unit_type, calendar_day, rate en `apps/api/migrations/versions/` (`uv run alembic revision --autogenerate`)
+- [x] T008 [P] [US1] Modelos `Property`, `Channel`, `UnitType` en `apps/api/app/models/property.py` (registrar en `app/models/__init__.py`)
+- [x] T009 [P] [US1] Modelos `CalendarDay` y `Rate` (precio base) en `apps/api/app/models/calendar.py` (constraint único por unidad+fecha)
+- [x] T010 [US1] Función pura `effective_price` (base + clamp; sin promos aún) y firmas en `apps/api/app/domain/pricing.py`
+- [x] T011 [US1] `PricingService.set_base_price` / `get_price` / `get_availability` en `apps/api/app/services/pricing_service.py` (depende de T008, T009, T010)
+- [x] T012 [US1] Migración Alembic inicial para property, channel, unit_type, calendar_day, rate en `apps/api/migrations/versions/` (`uv run alembic revision --autogenerate`)
 
 **Checkpoint**: US1 funcional — se puede fijar y consultar precio/disponibilidad (MVP).
 
@@ -68,15 +70,15 @@ description: "Task list — Modelo de datos del dominio"
 
 ### Tests for User Story 2
 
-- [ ] T013 [P] [US2] Test: cada cambio de precio crea un `PriceChangeLog` con old/new/origin, en `apps/api/tests/test_audit.py`
-- [ ] T014 [P] [US2] Test: rollback restaura el valor anterior como nuevo registro; conflicto requiere confirmación, en `apps/api/tests/test_audit.py`
+- [x] T013 [P] [US2] Test: cada cambio de precio crea un `PriceChangeLog` con old/new/origin, en `apps/api/tests/test_audit.py`
+- [x] T014 [P] [US2] Test: rollback restaura el valor anterior como nuevo registro; conflicto requiere confirmación, en `apps/api/tests/test_audit.py`
 
 ### Implementation for User Story 2
 
-- [ ] T015 [P] [US2] Modelo `PriceChangeLog` (append-only) en `apps/api/app/models/audit.py`
-- [ ] T016 [US2] Extender `PricingService.set_base_price` para escribir `PriceChangeLog` con `origin` en `apps/api/app/services/pricing_service.py` (depende de T015)
-- [ ] T017 [US2] `AuditService.rollback_change` con detección de conflicto (cambios posteriores en la misma unidad/fecha) en `apps/api/app/services/audit_service.py`
-- [ ] T018 [US2] Migración Alembic para price_change_log en `apps/api/migrations/versions/`
+- [x] T015 [P] [US2] Modelo `PriceChangeLog` (append-only) en `apps/api/app/models/audit.py`
+- [x] T016 [US2] Extender `PricingService.set_base_price` para escribir `PriceChangeLog` con `origin` en `apps/api/app/services/pricing_service.py` (depende de T015)
+- [x] T017 [US2] `AuditService.rollback_change` con detección de conflicto (cambios posteriores en la misma unidad/fecha) en `apps/api/app/services/audit_service.py`
+- [x] T018 [US2] Migración Alembic para price_change_log en `apps/api/migrations/versions/`
 
 **Checkpoint**: US1 + US2 funcionales — precios auditados y reversibles (principio III).
 
@@ -90,15 +92,15 @@ description: "Task list — Modelo de datos del dominio"
 
 ### Tests for User Story 3
 
-- [ ] T019 [P] [US3] Test: promociones solapadas → se aplica solo la de mayor descuento (no se acumulan), en `apps/api/tests/test_pricing.py`
-- [ ] T020 [P] [US3] Test: precio por debajo del mínimo / sobre el máximo se señala inválido, en `apps/api/tests/test_pricing.py`
+- [x] T019 [P] [US3] Test: promociones solapadas → se aplica solo la de mayor descuento (no se acumulan), en `apps/api/tests/test_pricing.py`
+- [x] T020 [P] [US3] Test: precio por debajo del mínimo / sobre el máximo se señala inválido, en `apps/api/tests/test_pricing.py`
 
 ### Implementation for User Story 3
 
-- [ ] T021 [P] [US3] Modelos `PricingRule` y `Promotion` en `apps/api/app/models/pricing.py`
-- [ ] T022 [US3] `best_promotion` + integrar promos y clamp a la regla en `effective_price` en `apps/api/app/domain/pricing.py` (depende de T021)
-- [ ] T023 [US3] Validación contra `PricingRule` (señalar fuera de rango) en `apps/api/app/services/pricing_service.py`
-- [ ] T024 [US3] Migración Alembic para pricing_rule, promotion en `apps/api/migrations/versions/`
+- [x] T021 [P] [US3] Modelos `PricingRule` y `Promotion` en `apps/api/app/models/pricing.py`
+- [x] T022 [US3] `best_promotion` + integrar promos y clamp a la regla en `effective_price` en `apps/api/app/domain/pricing.py` (depende de T021)
+- [x] T023 [US3] Validación contra `PricingRule` (señalar fuera de rango) en `apps/api/app/services/pricing_service.py`
+- [x] T024 [US3] Migración Alembic para pricing_rule, promotion en `apps/api/migrations/versions/`
 
 **Checkpoint**: precio efectivo completo (base + promos + límites).
 
@@ -112,16 +114,16 @@ description: "Task list — Modelo de datos del dominio"
 
 ### Tests for User Story 4
 
-- [ ] T025 [P] [US4] Test: `Event` con `dedup_key` es idempotente (sin duplicados), en `apps/api/tests/test_models.py`
-- [ ] T026 [P] [US4] Test: sugerencia proposed→approved→applied crea/enlaza `PriceChangeLog`, en `apps/api/tests/test_suggestions.py`
+- [x] T025 [P] [US4] Test: `Event` con `dedup_key` es idempotente (sin duplicados), en `apps/api/tests/test_models.py`
+- [x] T026 [P] [US4] Test: sugerencia proposed→approved→applied crea/enlaza `PriceChangeLog`, en `apps/api/tests/test_suggestions.py`
 
 ### Implementation for User Story 4
 
-- [ ] T027 [P] [US4] Modelo `Booking` + impacto en disponibilidad en `apps/api/app/models/booking.py`
-- [ ] T028 [P] [US4] Modelos `Event` (con `dedup_key` único) y `PriceSuggestion` (máquina de estados) en `apps/api/app/models/market.py`
-- [ ] T029 [US4] `SuggestionService.apply` (proposed→approved→applied; usa `PricingService` para el cambio auditado) en `apps/api/app/services/suggestion_service.py` (depende de T028, T016)
-- [ ] T030 [P] [US4] `EventService.upsert` (deduplicación idempotente) en `apps/api/app/services/event_service.py` (depende de T028)
-- [ ] T031 [US4] Migración Alembic para booking, event, price_suggestion en `apps/api/migrations/versions/`
+- [x] T027 [P] [US4] Modelo `Booking` + impacto en disponibilidad en `apps/api/app/models/booking.py`
+- [x] T028 [P] [US4] Modelos `Event` (con `dedup_key` único) y `PriceSuggestion` (máquina de estados) en `apps/api/app/models/market.py`
+- [x] T029 [US4] `SuggestionService.apply` (proposed→approved→applied; usa `PricingService` para el cambio auditado) en `apps/api/app/services/suggestion_service.py` (depende de T028, T016)
+- [x] T030 [P] [US4] `EventService.upsert` (deduplicación idempotente) en `apps/api/app/services/event_service.py` (depende de T028)
+- [x] T031 [US4] Migración Alembic para booking, event, price_suggestion en `apps/api/migrations/versions/`
 
 **Checkpoint**: insumos de inteligencia (ocupación/eventos/sugerencias) disponibles.
 
@@ -135,13 +137,13 @@ description: "Task list — Modelo de datos del dominio"
 
 ### Tests for User Story 5
 
-- [ ] T032 [P] [US5] Test: un `PriceChangeLog` con `message_id` queda enlazado al `Message`, en `apps/api/tests/test_agent.py`
+- [x] T032 [P] [US5] Test: un `PriceChangeLog` con `message_id` queda enlazado al `Message`, en `apps/api/tests/test_agent.py`
 
 ### Implementation for User Story 5
 
-- [ ] T033 [P] [US5] Modelos `LLMConfig`, `Conversation`, `Message` en `apps/api/app/models/agent.py`
-- [ ] T034 [US5] Asegurar relación `Message` ↔ `PriceChangeLog.message_id` en `apps/api/app/models/audit.py` (depende de T033)
-- [ ] T035 [US5] Migración Alembic para llm_config, conversation, message en `apps/api/migrations/versions/`
+- [x] T033 [P] [US5] Modelos `LLMConfig`, `Conversation`, `Message` en `apps/api/app/models/agent.py`
+- [x] T034 [US5] Asegurar relación `Message` ↔ `PriceChangeLog.message_id` en `apps/api/app/models/audit.py` (depende de T033)
+- [x] T035 [US5] Migración Alembic para llm_config, conversation, message en `apps/api/migrations/versions/`
 
 **Checkpoint**: trazabilidad chat→acción→auditoría completa.
 
@@ -149,9 +151,9 @@ description: "Task list — Modelo de datos del dominio"
 
 ## Phase 8: Polish & Cross-Cutting
 
-- [ ] T036 [P] Ejecutar la validación de `specs/001-data-model/quickstart.md` (flujo de 10 pasos) y dejar un script seed de ejemplo en `apps/api/scripts/seed_dev.py`
-- [ ] T037 [P] Alinear `data-model.md` con el esquema final si hubo ajustes
-- [ ] T038 `uv run ruff check .` y `uv run pytest -q` en verde (apps/api)
+- [x] T036 [P] Ejecutar la validación de `specs/001-data-model/quickstart.md` (flujo de 10 pasos) y dejar un script seed de ejemplo en `apps/api/scripts/seed_dev.py`
+- [x] T037 [P] Alinear `data-model.md` con el esquema final si hubo ajustes
+- [x] T038 `uv run ruff check .` y `uv run pytest -q` en verde (apps/api)
 
 ---
 
