@@ -26,6 +26,9 @@ Necesitamos una plataforma para gestionar precios/promociones de Booking.com con
 6. **Human-in-the-loop.**
    El agente propone; el host confirma. Toda escritura de precios queda auditada y es reversible.
 
+7. **Multicanal: Booking-first, arquitectura channel-aware.**
+   Beds24 expone Booking, Airbnb, etc. como "canales" sobre una misma propiedad/calendario. El modelo de datos incluye el concepto de **canal** (propiedad → N canales) desde el inicio, pero **solo activamos Booking.com**. La disponibilidad se comparte automáticamente entre canales (protege contra overbooking sin esfuerzo). Aplazamos: promociones específicas de Airbnb, offsets de precio por canal y reglas de paridad. Añadir Airbnb después es **extender, no reescribir**.
+
 ## Consecuencias
 - Dependemos del Channel Manager elegido para escribir en Booking; el adaptador limita el costo de cambiarlo.
 - Dos ecosistemas (JS + Python) en el monorepo: se orquestan con `Makefile` y `docker-compose`, sin gestor de monorepo JS por ahora.
