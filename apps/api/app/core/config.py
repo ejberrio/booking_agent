@@ -26,10 +26,14 @@ class Settings(BaseSettings):
     openai_api_key: str | None = None
     llm_max_usd_per_day: float = 5.0
 
-    # Channel Manager (se decide en Fase 2)
+    # Channel Manager (Beds24, API V1 con API Key de cuenta)
     channel_manager: str | None = None
     cm_api_key: str | None = None
     cm_api_secret: str | None = None
+    beds24_api_key: str | None = None
+    beds24_prop_id: str | None = None
+    beds24_room_id: str | None = None
+    beds24_base_url: str = "https://api.beds24.com/json"
 
     # Busqueda web (eventos / mercado)
     search_provider: str = "tavily"

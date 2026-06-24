@@ -11,6 +11,8 @@ description: "Task list — Conector de Channel Manager (Beds24)"
 
 **Organización**: por historia de usuario (US1–US5). Trabajo en `apps/api`. Reutiliza modelos/servicios de la feature 001.
 
+> **Estado: IMPLEMENTADO (2026-06-24).** 32 tests en verde (14 nuevos del conector), ruff limpio. Las migraciones por historia (T011/T018) se consolidaron en una migración incremental (`ecf265ab79e6_conector_beds24_sync.py`, down_revision `4d44…`) con las 3 tablas de operación. Tests con `httpx.MockTransport` + Channel Manager falso (sin API real).
+
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: archivo distinto, sin dependencias pendientes.
@@ -20,8 +22,8 @@ description: "Task list — Conector de Channel Manager (Beds24)"
 
 ## Phase 1: Setup
 
-- [ ] T001 Crear paquete `app/channels/` (con `__init__.py`) y añadir `BEDS24_API_KEY`, `BEDS24_PROP_ID`, `BEDS24_ROOM_ID`, `BEDS24_BASE_URL` a `apps/api/app/core/config.py`
-- [ ] T002 [P] Añadir fixtures de `httpx.MockTransport` (respuestas V1 de ejemplo + helper para construir AsyncClient mockeado) en `apps/api/tests/conftest.py`
+- [x] T001 Crear paquete `app/channels/` (con `__init__.py`) y añadir `BEDS24_API_KEY`, `BEDS24_PROP_ID`, `BEDS24_ROOM_ID`, `BEDS24_BASE_URL` a `apps/api/app/core/config.py`
+- [x] T002 [P] Añadir fixtures de `httpx.MockTransport` (respuestas V1 de ejemplo + helper para construir AsyncClient mockeado) en `apps/api/tests/conftest.py`
 
 ---
 
@@ -29,9 +31,9 @@ description: "Task list — Conector de Channel Manager (Beds24)"
 
 **⚠️ Bloqueante para todas las historias.**
 
-- [ ] T003 [P] DTOs neutrales (`RemoteProperty`, `RemoteRoom`, `RemoteRate`, `RemoteBooking`, `WriteResult`, `ConnectionInfo`) y `Protocol` `ChannelManager` en `apps/api/app/channels/base.py`
-- [ ] T004 [P] Excepciones tipadas (`ChannelError`, `AuthError`, `RateLimited`, `WriteUnverified`) en `apps/api/app/channels/errors.py`
-- [ ] T005 Base del adaptador Beds24: `AsyncClient` httpx, inyección de `apiKey` desde settings, helper `_request` con mapeo de errores y backoff, en `apps/api/app/channels/beds24.py` (depende de T003, T004)
+- [x] T003 [P] DTOs neutrales (`RemoteProperty`, `RemoteRoom`, `RemoteRate`, `RemoteBooking`, `WriteResult`, `ConnectionInfo`) y `Protocol` `ChannelManager` en `apps/api/app/channels/base.py`
+- [x] T004 [P] Excepciones tipadas (`ChannelError`, `AuthError`, `RateLimited`, `WriteUnverified`) en `apps/api/app/channels/errors.py`
+- [x] T005 Base del adaptador Beds24: `AsyncClient` httpx, inyección de `apiKey` desde settings, helper `_request` con mapeo de errores y backoff, en `apps/api/app/channels/beds24.py` (depende de T003, T004)
 
 **Checkpoint**: puerto y cliente base listos.
 
@@ -45,15 +47,15 @@ description: "Task list — Conector de Channel Manager (Beds24)"
 
 ### Tests for User Story 1
 
-- [ ] T006 [P] [US1] Test: `test_connection` OK lista propiedades y credenciales inválidas → `AuthError`; la apiKey no aparece en el error, en `apps/api/tests/test_beds24_adapter.py`
+- [x] T006 [P] [US1] Test: `test_connection` OK lista propiedades y credenciales inválidas → `AuthError`; la apiKey no aparece en el error, en `apps/api/tests/test_beds24_adapter.py`
 
 ### Implementation for User Story 1
 
-- [ ] T007 [US1] Implementar `Beds24Adapter.get_properties` y `test_connection` (parseo de `getProperties` → DTOs) en `apps/api/app/channels/beds24.py` (depende de T005)
-- [ ] T008 [P] [US1] Modelo `ChannelManagerConnection` en `apps/api/app/models/sync.py` (registrar en `app/models/__init__.py`)
-- [ ] T009 [US1] `sync_service.test_connection()`: ejecuta la prueba, persiste estado y `last_verified_at` en `apps/api/app/services/sync_service.py` (depende de T007, T008)
-- [ ] T010 [US1] Endpoint `POST /sync/test` y registrar el router en `apps/api/app/api/router.py`, en `apps/api/app/api/routes/sync.py`
-- [ ] T011 [US1] Migración Alembic para `channel_manager_connection` en `apps/api/migrations/versions/`
+- [x] T007 [US1] Implementar `Beds24Adapter.get_properties` y `test_connection` (parseo de `getProperties` → DTOs) en `apps/api/app/channels/beds24.py` (depende de T005)
+- [x] T008 [P] [US1] Modelo `ChannelManagerConnection` en `apps/api/app/models/sync.py` (registrar en `app/models/__init__.py`)
+- [x] T009 [US1] `sync_service.test_connection()`: ejecuta la prueba, persiste estado y `last_verified_at` en `apps/api/app/services/sync_service.py` (depende de T007, T008)
+- [x] T010 [US1] Endpoint `POST /sync/test` y registrar el router en `apps/api/app/api/router.py`, en `apps/api/app/api/routes/sync.py`
+- [x] T011 [US1] Migración Alembic para `channel_manager_connection` en `apps/api/migrations/versions/`
 
 **Checkpoint**: se puede probar la conexión y ver el estado (MVP).
 
@@ -67,16 +69,16 @@ description: "Task list — Conector de Channel Manager (Beds24)"
 
 ### Tests for User Story 2
 
-- [ ] T012 [P] [US2] Test: `get_rates` y `get_bookings` mapean a DTOs (mock), en `apps/api/tests/test_beds24_adapter.py`
-- [ ] T013 [P] [US2] Test: `import_remote` hace upsert sin crear `PriceChangeLog` y es idempotente (segunda corrida sin duplicar), en `apps/api/tests/test_sync_service.py`
+- [x] T012 [P] [US2] Test: `get_rates` y `get_bookings` mapean a DTOs (mock), en `apps/api/tests/test_beds24_adapter.py`
+- [x] T013 [P] [US2] Test: `import_remote` hace upsert sin crear `PriceChangeLog` y es idempotente (segunda corrida sin duplicar), en `apps/api/tests/test_sync_service.py`
 
 ### Implementation for User Story 2
 
-- [ ] T014 [US2] `Beds24Adapter.get_rates` y `get_bookings` (parseo `getRoomDates`/`getBookings`) en `apps/api/app/channels/beds24.py`
-- [ ] T015 [P] [US2] Modelos `SyncRun` y `SyncIssue` en `apps/api/app/models/sync.py`
-- [ ] T016 [US2] `sync_service.import_remote()`: mapear DTOs → upsert `Property/UnitType/CalendarDay/Rate/Booking` (con `external_ref`), baseline sin auditar, cursor incremental; registrar `SyncRun(import)` en `apps/api/app/services/sync_service.py` (depende de T014, T015)
-- [ ] T017 [US2] Endpoints `POST /sync/import` y `GET /sync/runs` en `apps/api/app/api/routes/sync.py`
-- [ ] T018 [US2] Migración Alembic para `sync_run`, `sync_issue` en `apps/api/migrations/versions/`
+- [x] T014 [US2] `Beds24Adapter.get_rates` y `get_bookings` (parseo `getRoomDates`/`getBookings`) en `apps/api/app/channels/beds24.py`
+- [x] T015 [P] [US2] Modelos `SyncRun` y `SyncIssue` en `apps/api/app/models/sync.py`
+- [x] T016 [US2] `sync_service.import_remote()`: mapear DTOs → upsert `Property/UnitType/CalendarDay/Rate/Booking` (con `external_ref`), baseline sin auditar, cursor incremental; registrar `SyncRun(import)` en `apps/api/app/services/sync_service.py` (depende de T014, T015)
+- [x] T017 [US2] Endpoints `POST /sync/import` y `GET /sync/runs` en `apps/api/app/api/routes/sync.py`
+- [x] T018 [US2] Migración Alembic para `sync_run`, `sync_issue` en `apps/api/migrations/versions/`
 
 **Checkpoint**: el estado real (precios/disponibilidad/reservas) se ve en local.
 
@@ -90,14 +92,14 @@ description: "Task list — Conector de Channel Manager (Beds24)"
 
 ### Tests for User Story 3
 
-- [ ] T019 [P] [US3] Test: `set_rate`/`set_rate_range` releen y marcan `verified=True`; escritura no reflejada → `verified=False` (mock), en `apps/api/tests/test_beds24_adapter.py`
-- [ ] T020 [P] [US3] Test: `publish_price` con `verified=False` abre `SyncIssue(write_unverified)`, en `apps/api/tests/test_sync_service.py`
+- [x] T019 [P] [US3] Test: `set_rate`/`set_rate_range` releen y marcan `verified=True`; escritura no reflejada → `verified=False` (mock), en `apps/api/tests/test_beds24_adapter.py`
+- [x] T020 [P] [US3] Test: `publish_price` con `verified=False` abre `SyncIssue(write_unverified)`, en `apps/api/tests/test_sync_service.py`
 
 ### Implementation for User Story 3
 
-- [ ] T021 [US3] `Beds24Adapter.set_rate` y `set_rate_range` (`setRoomDates` + relectura de verificación) en `apps/api/app/channels/beds24.py`
-- [ ] T022 [US3] `sync_service.publish_price()`: publica el precio local (ya auditado por `pricing_service`), abre `SyncIssue` si no se verifica; registrar `SyncRun(publish)` en `apps/api/app/services/sync_service.py`
-- [ ] T023 [US3] Endpoint `POST /sync/publish` en `apps/api/app/api/routes/sync.py`
+- [x] T021 [US3] `Beds24Adapter.set_rate` y `set_rate_range` (`setRoomDates` + relectura de verificación) en `apps/api/app/channels/beds24.py`
+- [x] T022 [US3] `sync_service.publish_price()`: publica el precio local (ya auditado por `pricing_service`), abre `SyncIssue` si no se verifica; registrar `SyncRun(publish)` en `apps/api/app/services/sync_service.py`
+- [x] T023 [US3] Endpoint `POST /sync/publish` en `apps/api/app/api/routes/sync.py`
 
 **Checkpoint**: los precios fijados llegan a Beds24 (y a Booking), verificados y auditados.
 
@@ -111,14 +113,14 @@ description: "Task list — Conector de Channel Manager (Beds24)"
 
 ### Tests for User Story 4
 
-- [ ] T024 [P] [US4] Test: discrepancia de precio abre `SyncIssue` sin modificar `Rate` local; reserva remota actualiza disponibilidad, en `apps/api/tests/test_sync_service.py`
-- [ ] T025 [P] [US4] Test: rate limit → backoff/`RateLimited`; error de comunicación → `SyncIssue(comm_error)`; sin secretos en el detalle, en `apps/api/tests/test_beds24_adapter.py`
+- [x] T024 [P] [US4] Test: discrepancia de precio abre `SyncIssue` sin modificar `Rate` local; reserva remota actualiza disponibilidad, en `apps/api/tests/test_sync_service.py`
+- [x] T025 [P] [US4] Test: rate limit → backoff/`RateLimited`; error de comunicación → `SyncIssue(comm_error)`; sin secretos en el detalle, en `apps/api/tests/test_beds24_adapter.py`
 
 ### Implementation for User Story 4
 
-- [ ] T026 [US4] `sync_service.reconcile()`: discrepancias de precio → `SyncIssue` (sin overwrite); reservas/disponibilidad remotas → local, en `apps/api/app/services/sync_service.py`
-- [ ] T027 [US4] Rate limiting con backoff y redacción de secretos en el manejo de errores en `apps/api/app/channels/beds24.py`
-- [ ] T028 [US4] Endpoint `GET /sync/issues` (listar incidencias abiertas) en `apps/api/app/api/routes/sync.py`
+- [x] T026 [US4] `sync_service.reconcile()`: discrepancias de precio → `SyncIssue` (sin overwrite); reservas/disponibilidad remotas → local, en `apps/api/app/services/sync_service.py`
+- [x] T027 [US4] Rate limiting con backoff y redacción de secretos en el manejo de errores en `apps/api/app/channels/beds24.py`
+- [x] T028 [US4] Endpoint `GET /sync/issues` (listar incidencias abiertas) en `apps/api/app/api/routes/sync.py`
 
 **Checkpoint**: robustez y confianza (cero sobrescrituras silenciosas; errores visibles).
 
@@ -132,11 +134,11 @@ description: "Task list — Conector de Channel Manager (Beds24)"
 
 ### Tests for User Story 5
 
-- [ ] T029 [P] [US5] Test: segunda corrida incremental no duplica y usa el cursor de la corrida previa, en `apps/api/tests/test_sync_service.py`
+- [x] T029 [P] [US5] Test: segunda corrida incremental no duplica y usa el cursor de la corrida previa, en `apps/api/tests/test_sync_service.py`
 
 ### Implementation for User Story 5
 
-- [ ] T030 [US5] Entrypoint para cron `scripts/sync_daily.py` (import + reconcile, registra `SyncRun`) en `apps/api/scripts/sync_daily.py`
+- [x] T030 [US5] Entrypoint para cron `scripts/sync_daily.py` (import + reconcile, registra `SyncRun`) en `apps/api/scripts/sync_daily.py`
 
 **Checkpoint**: datos frescos automáticamente; re-sync manual disponible.
 
@@ -144,9 +146,9 @@ description: "Task list — Conector de Channel Manager (Beds24)"
 
 ## Phase 8: Polish & Cross-Cutting
 
-- [ ] T031 [P] Añadir variables `BEDS24_*` (sin valores secretos) a `.env.example` y documentar en `apps/api/README.md`
-- [ ] T032 [P] Ejecutar validación de `specs/002-beds24-connector/quickstart.md` (con mocks) y alinear `data-model.md` si hubo ajustes
-- [ ] T033 `uv run ruff check .` y `uv run pytest -q` en verde (apps/api)
+- [x] T031 [P] Añadir variables `BEDS24_*` (sin valores secretos) a `.env.example` y documentar en `apps/api/README.md`
+- [x] T032 [P] Ejecutar validación de `specs/002-beds24-connector/quickstart.md` (con mocks) y alinear `data-model.md` si hubo ajustes
+- [x] T033 `uv run ruff check .` y `uv run pytest -q` en verde (apps/api)
 
 ---
 
