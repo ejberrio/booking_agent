@@ -62,3 +62,41 @@ class MessageRole(str, enum.Enum):
     assistant = "assistant"
     system = "system"
     tool = "tool"
+
+
+# --- Conector de Channel Manager (feature 002) ---
+
+
+class Provider(str, enum.Enum):
+    beds24 = "beds24"
+
+
+class ConnectionStatus(str, enum.Enum):
+    unconfigured = "unconfigured"
+    connected = "connected"
+    invalid = "invalid"
+
+
+class SyncDirection(str, enum.Enum):
+    inbound = "inbound"  # import: remoto -> local
+    outbound = "outbound"  # publish: local -> remoto
+
+
+class SyncStatus(str, enum.Enum):
+    running = "running"
+    success = "success"
+    partial = "partial"
+    error = "error"
+
+
+class SyncIssueKind(str, enum.Enum):
+    comm_error = "comm_error"
+    auth_error = "auth_error"
+    price_discrepancy = "price_discrepancy"
+    write_unverified = "write_unverified"
+    rate_limited = "rate_limited"
+
+
+class IssueStatus(str, enum.Enum):
+    open = "open"
+    resolved = "resolved"

@@ -1,7 +1,8 @@
 <!-- SPECKIT START -->
-Feature activa: **001-data-model** (modelo de datos del dominio).
-Plan e artefactos de diseño: `specs/001-data-model/plan.md`, `research.md`,
-`data-model.md`, `contracts/data-access.md`, `quickstart.md`.
+Feature activa: **002-beds24-connector** (conector de Channel Manager Beds24).
+Plan e artefactos: `specs/002-beds24-connector/plan.md`, `research.md`,
+`data-model.md`, `contracts/` (channel-manager-port, beds24-v1-mapping), `quickstart.md`.
+Feature previa completada: `specs/001-data-model/` (modelo de datos, mergeada).
 <!-- SPECKIT END -->
 
 # Booking AI Agent
