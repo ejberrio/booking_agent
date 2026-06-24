@@ -16,8 +16,12 @@ class Settings(BaseSettings):
     secret_key: str = "cambia-esto"
 
     # LLM (multi-proveedor via LiteLLM)
-    llm_provider: str = "anthropic"
-    llm_model: str = "claude-opus-4-8"
+    # Estrategia dos niveles: modelo barato para tareas de alto volumen
+    # (leer/resumir eventos y mercado) y modelo capaz para acciones del
+    # agente que escriben precios. Cambiable por config gracias a LiteLLM.
+    llm_provider: str = "openai"
+    llm_model: str = "gpt-4o-mini"  # tareas generales / desarrollo
+    llm_model_actions: str = "gpt-4o"  # loop del agente que aplica cambios
     anthropic_api_key: str | None = None
     openai_api_key: str | None = None
     llm_max_usd_per_day: float = 5.0
