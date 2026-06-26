@@ -18,14 +18,16 @@ def adapter_with(handler: Callable[[httpx.Request], httpx.Response], **kw) -> Be
                          retry_base_delay=0, **kw)
 
 
-PROPS_JSON = [
-    {
-        "propId": 337229,
-        "name": "Apartamento con piscina",
-        "currency": "COP",
-        "rooms": [{"roomId": 697411, "name": "Three-Bedroom Apartment", "qty": 2}],
-    }
-]
+PROPS_JSON = {
+    "getProperties": [
+        {
+            "propId": "337229",
+            "name": "Apartamento con piscina",
+            "currency": "COP",
+            "roomTypes": [{"roomId": "697411", "name": "Three-Bedroom Apartment", "qty": "2"}],
+        }
+    ]
+}
 
 
 async def test_get_properties_maps_dtos():
@@ -65,9 +67,7 @@ async def test_auth_error_hides_secret():
 
 async def test_get_rates_maps():
     def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(
-            200, json={"roomDates": [{"date": "2026-07-15", "price": 180000, "numAvail": 1}]}
-        )
+        return httpx.Response(200, json={"20260715": {"i": 1, "p1": "180000.00"}})
 
     adapter = adapter_with(handler)
     rates = await adapter.get_rates("697411", DAY, DAY)
@@ -80,24 +80,22 @@ async def test_get_bookings_maps():
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(
             200,
-            json={
-                "bookings": [
-                    {
-                        "bookId": 555,
-                        "roomId": 697411,
-                        "checkIn": "2026-07-15",
-                        "checkOut": "2026-07-18",
-                        "status": "confirmed",
-                    }
-                ]
-            },
+            json=[
+                {
+                    "bookId": "555",
+                    "roomId": "697411",
+                    "firstNight": "2026-07-15",
+                    "lastNight": "2026-07-17",
+                    "status": "1",
+                }
+            ],
         )
 
     adapter = adapter_with(handler)
     bks = await adapter.get_bookings("337229")
     assert bks[0].external_id == "555"
     assert bks[0].check_in == DAY
-    assert bks[0].check_out == date(2026, 7, 18)
+    assert bks[0].check_out == date(2026, 7, 18)  # lastNight + 1
     await adapter.aclose()
 
 
@@ -105,9 +103,7 @@ async def test_set_rate_verifies():
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path.endswith("/setRoomDates"):
             return httpx.Response(200, json={"success": True})
-        return httpx.Response(
-            200, json={"roomDates": [{"date": "2026-07-15", "price": 200000, "numAvail": 1}]}
-        )
+        return httpx.Response(200, json={"20260715": {"i": 1, "p1": "200000.00"}})
 
     adapter = adapter_with(handler)
     res = await adapter.set_rate("697411", DAY, D("200000"))
@@ -120,9 +116,7 @@ async def test_set_rate_unverified():
         if request.url.path.endswith("/setRoomDates"):
             return httpx.Response(200, json={"success": True})
         # relectura devuelve un precio distinto -> no verificado
-        return httpx.Response(
-            200, json={"roomDates": [{"date": "2026-07-15", "price": 180000, "numAvail": 1}]}
-        )
+        return httpx.Response(200, json={"20260715": {"i": 1, "p1": "180000.00"}})
 
     adapter = adapter_with(handler)
     res = await adapter.set_rate("697411", DAY, D("200000"))

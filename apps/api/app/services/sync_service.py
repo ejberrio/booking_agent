@@ -226,7 +226,24 @@ async def publish_price(
         await session.flush()
         return run
 
-    result = await adapter.set_rate_range(unit.external_ref, date_from, date_to, price)
+    try:
+        result = await adapter.set_rate_range(unit.external_ref, date_from, date_to, price)
+    except ChannelError as exc:
+        # La publicación falló (p. ej. credenciales/propKey): se registra incidencia,
+        # el cambio local se conserva (no se tumba la operación).
+        session.add(
+            SyncIssue(
+                sync_run_id=run.id,
+                kind=SyncIssueKind.comm_error,
+                entity_ref=f"unit:{unit_type_id} {date_from}..{date_to}",
+                detail=str(exc),
+            )
+        )
+        run.issue_count = 1
+        run.status = SyncStatus.error
+        run.finished_at = _now()
+        await session.flush()
+        return run
     if not result.verified:
         session.add(
             SyncIssue(

@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.channels.beds24 import Beds24Adapter
+from app.channels.beds24_v2 import Beds24V2Adapter
 from app.core.config import settings
 from app.db.session import get_session
 from app.services import sync_service
@@ -13,9 +14,18 @@ from app.services import sync_service
 router = APIRouter()
 
 
-def get_adapter() -> Beds24Adapter:
+def get_adapter():
+    # V2 (token) es obligatoria para escribir precios; V1 solo lee. Se elige por config.
+    if settings.beds24_api_version == "v2":
+        return Beds24V2Adapter(
+            refresh_token=settings.beds24_refresh_token,
+            prop_id=settings.beds24_prop_id,
+            room_id=settings.beds24_room_id,
+            base_url=settings.beds24_v2_base_url,
+        )
     return Beds24Adapter(
         api_key=settings.beds24_api_key,
+        prop_key=settings.beds24_prop_key,
         prop_id=settings.beds24_prop_id,
         room_id=settings.beds24_room_id,
         base_url=settings.beds24_base_url,
