@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     beds24_prop_id: str | None = None
     beds24_room_id: str | None = None
     beds24_base_url: str = "https://api.beds24.com/json"
+    # API V2 (token): obligatoria para ESCRIBIR precios (las escrituras de V1 están muertas).
+    # "v1" = solo lectura; "v2" = lectura + escritura con refreshToken.
+    beds24_api_version: str = "v1"
+    beds24_v2_base_url: str = "https://api.beds24.com/v2"
+    beds24_refresh_token: str | None = None  # se canjea por tokens de 24h en /authentication/token
 
     # Busqueda web (eventos / mercado)
     search_provider: str = "tavily"
