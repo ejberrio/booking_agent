@@ -5,6 +5,14 @@
 **Status**: Draft  
 **Input**: Motor del chat agéntico (backend) con tool-calling que permite al host consultar y gestionar precios en lenguaje natural, usando como herramientas el motor de precios (003) y el conector (002), con LLM configurable (OpenAI por defecto). El agente propone y el host confirma; toda acción auditada (origen=chat) y reversible. Single-tenant, COP, solo Booking.
 
+## Clarifications
+
+### Session 2026-06-26
+
+- Q: ¿Cómo se maneja la confirmación de una acción entre turnos? → A: Se **persiste la propuesta** (AgentAction: herramienta, argumentos, preview y huella del estado base). La confirmación aplica esa propuesta exacta; si el estado cambió, el agente re-propone.
+- Q: ¿Qué dispara una confirmación reforzada (cambio masivo/sensible)? → A: Cuando el cambio afecta **más de 14 días** o mueve el precio **más de ±25%**.
+- Q: ¿Qué protocolo de streaming usa el endpoint de chat? → A: **SSE (Server-Sent Events)**.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Consultar precios y disponibilidad en lenguaje natural (Priority: P1)
@@ -105,7 +113,7 @@ Las conversaciones y mensajes se guardan; cada acción (cambio de precio/promoci
 - **Confirmación ambigua**: si la respuesta no es un "sí" claro, el agente NO aplica y vuelve a preguntar.
 - **Propuesta caducada**: si el estado cambió entre la propuesta y la confirmación, el agente re-propone (no aplica sobre datos viejos).
 - **Petición fuera de límites**: si el precio pedido viola las reglas (min/max), el agente lo explica y no aplica.
-- **Cambio masivo/sensible**: cambios grandes (muchos días o variación alta) requieren confirmación reforzada.
+- **Cambio masivo/sensible**: cambios que afectan más de 14 días o con variación de precio mayor a ±25% requieren confirmación reforzada.
 - **Herramienta no permitida o fuera de alcance** (p. ej. eventos, otros canales): el agente lo indica en lugar de inventar.
 - **Sin LLM configurado / sin saldo**: el agente responde con un mensaje claro (no falla en silencio) y no intenta acciones.
 - **Error al publicar al canal**: el cambio local se conserva (auditado) y el agente informa la incidencia.
@@ -124,9 +132,9 @@ Las conversaciones y mensajes se guardan; cada acción (cambio de precio/promoci
 - **FR-007**: Toda acción de escritura aplicada MUST quedar auditada con origen=chat, enlazada al mensaje que la originó, y MUST ser reversible (reutiliza la auditoría de 001/003).
 - **FR-008**: El agente MUST usar la configuración de LLM: modelo general para conversación/consulta y modelo de acciones para decidir/ejecutar escrituras; el proveedor/modelo es configurable sin cambios de código.
 - **FR-009**: El agente MUST mantener, dentro de una conversación, contexto de propiedad activa y fechas en foco, y resolver referencias relativas; si hay ambigüedad relevante, pide aclaración.
-- **FR-010**: El agente MUST aplicar guardrails: confirmación reforzada en cambios masivos o de variación alta, y respeto a los límites de precio (no propone aplicar fuera de min/max).
+- **FR-010**: El agente MUST aplicar guardrails: **confirmación reforzada cuando el cambio afecta más de 14 días o mueve el precio más de ±25%**, y respeto a los límites de precio (no propone aplicar fuera de min/max).
 - **FR-011**: El sistema MUST persistir conversaciones y mensajes y enlazar cada acción al mensaje originador.
-- **FR-012**: El endpoint de chat MUST transmitir (streaming) la respuesta del agente y el estado de las herramientas en ejecución.
+- **FR-012**: El endpoint de chat MUST transmitir mediante **SSE (Server-Sent Events)** la respuesta del agente y el estado de las herramientas en ejecución.
 - **FR-013**: Si no hay LLM configurado o no hay saldo/credenciales, el agente MUST responder con un mensaje claro y NO intentar acciones.
 - **FR-014**: El alcance MUST limitarse a single-tenant, COP y canal Booking; las herramientas de eventos/mercado y otros canales quedan fuera (se añadirán detrás de la misma interfaz de herramientas).
 
