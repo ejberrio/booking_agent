@@ -11,6 +11,8 @@ description: "Task list — Inteligencia de mercado y sugerencias"
 
 **Organización**: por historia (US1–US6). Trabajo en `apps/api`. Reutiliza Event/PriceSuggestion + servicios de 001, motor de precios 003, conector 002, agente 004.
 
+> **Estado: IMPLEMENTADO (2026-06-26).** 60 tests en verde (11 nuevos: suggestion_engine + intelligence_service + tool del agente), ruff limpio. Migración `cd5dfcfbaceb_intelligence_run_market_reference.py` encadenada (5ª). Dobles para search/LLM/market/channel (sin APIs reales).
+
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: archivo distinto, sin dependencias pendientes.
@@ -20,7 +22,7 @@ description: "Task list — Inteligencia de mercado y sugerencias"
 
 ## Phase 1: Setup
 
-- [ ] T001 [P] Crear paquetes `app/search/` y `app/market/` (con `__init__.py`) en `apps/api/app/`
+- [x] T001 [P] Crear paquetes `app/search/` y `app/market/` (con `__init__.py`) en `apps/api/app/`
 
 ---
 
@@ -28,10 +30,10 @@ description: "Task list — Inteligencia de mercado y sugerencias"
 
 **⚠️ Bloqueante para todas las historias.**
 
-- [ ] T002 [P] `SearchProvider` (Protocol) + `SearchResult` (DTO) en `apps/api/app/search/base.py`
-- [ ] T003 [P] `MarketReference` (Protocol) en `apps/api/app/market/reference.py`
-- [ ] T004 [P] Modelos `IntelligenceRun` y `MarketReference` (tabla) en `apps/api/app/models/intelligence.py` (reusa `SyncStatus`; registrar en `app/models/__init__.py`)
-- [ ] T005 Migración Alembic para `intelligence_run` y `market_reference` en `apps/api/migrations/versions/`
+- [x] T002 [P] `SearchProvider` (Protocol) + `SearchResult` (DTO) en `apps/api/app/search/base.py`
+- [x] T003 [P] `MarketReference` (Protocol) en `apps/api/app/market/reference.py`
+- [x] T004 [P] Modelos `IntelligenceRun` y `MarketReference` (tabla) en `apps/api/app/models/intelligence.py` (reusa `SyncStatus`; registrar en `app/models/__init__.py`)
+- [x] T005 Migración Alembic para `intelligence_run` y `market_reference` en `apps/api/migrations/versions/`
 
 **Checkpoint**: interfaces y tablas listas.
 
@@ -45,13 +47,13 @@ description: "Task list — Inteligencia de mercado y sugerencias"
 
 ### Tests for User Story 1
 
-- [ ] T006 [P] [US1] Test: extracción LLM → `EventCandidate`; upsert deduplicado (2ª corrida no duplica); candidato sin fecha descartado, en `apps/api/tests/test_intelligence_service.py`
+- [x] T006 [P] [US1] Test: extracción LLM → `EventCandidate`; upsert deduplicado (2ª corrida no duplica); candidato sin fecha descartado, en `apps/api/tests/test_intelligence_service.py`
 
 ### Implementation for User Story 1
 
-- [ ] T007 [US1] `TavilyProvider` (httpx + caché simple) en `apps/api/app/search/tavily.py`
-- [ ] T008 [US1] `event_extractor.extract_events(llm, results)` → `EventCandidate` (descarta sin fecha) en `apps/api/app/market/extractor.py`
-- [ ] T009 [US1] `intelligence_service.scan_events` (buscar → extraer → upsert vía `event_service`) en `apps/api/app/services/intelligence_service.py`
+- [x] T007 [US1] `TavilyProvider` (httpx + caché simple) en `apps/api/app/search/tavily.py`
+- [x] T008 [US1] `event_extractor.extract_events(llm, results)` → `EventCandidate` (descarta sin fecha) en `apps/api/app/market/extractor.py`
+- [x] T009 [US1] `intelligence_service.scan_events` (buscar → extraer → upsert vía `event_service`) en `apps/api/app/services/intelligence_service.py`
 
 **Checkpoint**: eventos descubiertos y deduplicados (MVP).
 
@@ -65,12 +67,12 @@ description: "Task list — Inteligencia de mercado y sugerencias"
 
 ### Tests for User Story 2
 
-- [ ] T010 [P] [US2] Tests de la heurística pura (evento+ocupación sube y justifica; acota a [min,max]; sin señal no cambia; sin mercado genera igual), en `apps/api/tests/test_suggestion_engine.py`
+- [x] T010 [P] [US2] Tests de la heurística pura (evento+ocupación sube y justifica; acota a [min,max]; sin señal no cambia; sin mercado genera igual), en `apps/api/tests/test_suggestion_engine.py`
 
 ### Implementation for User Story 2
 
-- [ ] T011 [US2] Heurística PURA `suggest_price` + `SuggestionInput/Output` en `apps/api/app/domain/suggestion.py`
-- [ ] T012 [US2] `suggestion_engine.generate_suggestions` (por día: evento+ocupación+mercado → `PriceSuggestion(proposed)`; no re-propone equivalente) en `apps/api/app/services/suggestion_engine.py`
+- [x] T011 [US2] Heurística PURA `suggest_price` + `SuggestionInput/Output` en `apps/api/app/domain/suggestion.py`
+- [x] T012 [US2] `suggestion_engine.generate_suggestions` (por día: evento+ocupación+mercado → `PriceSuggestion(proposed)`; no re-propone equivalente) en `apps/api/app/services/suggestion_engine.py`
 
 **Checkpoint**: sugerencias generadas y explicables.
 
@@ -84,12 +86,12 @@ description: "Task list — Inteligencia de mercado y sugerencias"
 
 ### Tests for User Story 3
 
-- [ ] T013 [P] [US3] Test: `apply_suggestion` audita origen=sugerencia + publica; reject no cambia; sin aplicar nada cambia, en `apps/api/tests/test_intelligence_service.py`
+- [x] T013 [P] [US3] Test: `apply_suggestion` audita origen=sugerencia + publica; reject no cambia; sin aplicar nada cambia, en `apps/api/tests/test_intelligence_service.py`
 
 ### Implementation for User Story 3
 
-- [ ] T014 [US3] `intelligence_service.apply_suggestion` (vía `pricing_app_service`, origen=sugerencia; status=applied + enlace) y `approve`/`reject` (reusa `suggestion_service`) en `apps/api/app/services/intelligence_service.py`
-- [ ] T015 [US3] Endpoints `GET /suggestions`, `POST /suggestions/{id}/approve|reject|apply` + registrar router en `apps/api/app/api/router.py`, en `apps/api/app/api/routes/suggestions.py`
+- [x] T014 [US3] `intelligence_service.apply_suggestion` (vía `pricing_app_service`, origen=sugerencia; status=applied + enlace) y `approve`/`reject` (reusa `suggestion_service`) en `apps/api/app/services/intelligence_service.py`
+- [x] T015 [US3] Endpoints `GET /suggestions`, `POST /suggestions/{id}/approve|reject|apply` + registrar router en `apps/api/app/api/router.py`, en `apps/api/app/api/routes/suggestions.py`
 
 **Checkpoint**: ciclo completo (sugerencia → precio publicado, auditado).
 
@@ -103,11 +105,11 @@ description: "Task list — Inteligencia de mercado y sugerencias"
 
 ### Tests for User Story 4
 
-- [ ] T016 [P] [US4] Test: `BaselineMarket.get` devuelve referencia; la heurística la usa; `None` → genera igual, en `apps/api/tests/test_suggestion_engine.py`
+- [x] T016 [P] [US4] Test: `BaselineMarket.get` devuelve referencia; la heurística la usa; `None` → genera igual, en `apps/api/tests/test_suggestion_engine.py`
 
 ### Implementation for User Story 4
 
-- [ ] T017 [US4] `BaselineMarket` (lee la tabla `market_reference`) en `apps/api/app/market/reference.py`
+- [x] T017 [US4] `BaselineMarket` (lee la tabla `market_reference`) en `apps/api/app/market/reference.py`
 
 **Checkpoint**: sugerencias informadas por mercado (cuando hay dato).
 
@@ -121,12 +123,12 @@ description: "Task list — Inteligencia de mercado y sugerencias"
 
 ### Tests for User Story 5
 
-- [ ] T018 [P] [US5] Test: `scan` registra `IntelligenceRun` con conteos; 2ª corrida idempotente, en `apps/api/tests/test_intelligence_service.py`
+- [x] T018 [P] [US5] Test: `scan` registra `IntelligenceRun` con conteos; 2ª corrida idempotente, en `apps/api/tests/test_intelligence_service.py`
 
 ### Implementation for User Story 5
 
-- [ ] T019 [US5] `intelligence_service.scan` (orquesta scan_events + mercado + generate_suggestions; registra `IntelligenceRun`) en `apps/api/app/services/intelligence_service.py`
-- [ ] T020 [US5] Entrypoint cron `scripts/scan_daily.py` en `apps/api/scripts/scan_daily.py`
+- [x] T019 [US5] `intelligence_service.scan` (orquesta scan_events + mercado + generate_suggestions; registra `IntelligenceRun`) en `apps/api/app/services/intelligence_service.py`
+- [x] T020 [US5] Entrypoint cron `scripts/scan_daily.py` en `apps/api/scripts/scan_daily.py`
 
 **Checkpoint**: inteligencia fresca automáticamente.
 
@@ -140,11 +142,11 @@ description: "Task list — Inteligencia de mercado y sugerencias"
 
 ### Tests for User Story 6
 
-- [ ] T021 [P] [US6] Test: herramienta `get_suggestions` devuelve sugerencias reales (lectura), en `apps/api/tests/test_agent_orchestrator.py`
+- [x] T021 [P] [US6] Test: herramienta `get_suggestions` devuelve sugerencias reales (lectura), en `apps/api/tests/test_agent_orchestrator.py`
 
 ### Implementation for User Story 6
 
-- [ ] T022 [US6] Añadir herramienta de lectura `get_suggestions` al registro del agente en `apps/api/app/agent/tools.py`
+- [x] T022 [US6] Añadir herramienta de lectura `get_suggestions` al registro del agente en `apps/api/app/agent/tools.py`
 
 **Checkpoint**: inteligencia accesible por chat.
 
@@ -152,8 +154,8 @@ description: "Task list — Inteligencia de mercado y sugerencias"
 
 ## Phase 9: Polish & Cross-Cutting
 
-- [ ] T023 [P] Añadir `SEARCH_BASE_URL` a config si falta y documentar endpoints `/suggestions` en `apps/api/README.md`
-- [ ] T024 `uv run ruff check .` y `uv run pytest -q` en verde (apps/api)
+- [x] T023 [P] Añadir `SEARCH_BASE_URL` a config si falta y documentar endpoints `/suggestions` en `apps/api/README.md`
+- [x] T024 `uv run ruff check .` y `uv run pytest -q` en verde (apps/api)
 
 ---
 

@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     # Busqueda web (eventos / mercado)
     search_provider: str = "tavily"
     search_api_key: str | None = None
+    search_base_url: str = "https://api.tavily.com"
 
     @property
     def cors_origins_list(self) -> list[str]:

@@ -8,7 +8,8 @@ from app.channels.base import WriteResult
 from app.llm.client import LLMResponse, ToolCall
 from app.models.agent import AgentAction, Conversation, LLMConfig, Message
 from app.models.audit import PriceChangeLog
-from app.models.enums import AgentActionStatus, ChangeOrigin, ChannelKind
+from app.models.enums import AgentActionStatus, ChangeOrigin, ChannelKind, SuggestionStatus
+from app.models.market import PriceSuggestion
 from app.models.pricing import Promotion
 from app.models.property import Channel, Property, UnitType
 from app.services import pricing_service
@@ -179,6 +180,25 @@ async def test_model_routing_general_vs_actions(session):
     llm2 = FakeLLM([call("confirm_pending", {})])
     await run_turn(session, FakeCM(), llm2, conversation_id=conv.id, user_text="sí")
     assert llm2.models == ["a-model"]  # con pendiente -> acciones
+
+
+async def test_get_suggestions_tool(session):
+    conv, prop, unit = await setup(session)
+    session.add(
+        PriceSuggestion(
+            property_id=prop.id, unit_type_id=unit.id,
+            date_from=date(2026, 8, 5), date_to=date(2026, 8, 5),
+            suggested_price=D("234000"), rationale={"text": "Feria de las Flores"},
+            confidence=D("0.9"), status=SuggestionStatus.proposed,
+        )
+    )
+    await session.flush()
+    llm = FakeLLM([
+        call("get_suggestions", {"date_from": "2026-08-01", "date_to": "2026-08-31"}),
+        final("Te sugiero subir el 5 de agosto a 234000 COP por la Feria de las Flores."),
+    ])
+    reply = await run_turn(session, FakeCM(), llm, conversation_id=conv.id, user_text="¿qué me sugieres para agosto?")
+    assert "234000" in reply.text
 
 
 async def test_memory_includes_history(session):

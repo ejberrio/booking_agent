@@ -21,6 +21,7 @@ uv run uvicorn app.main:app --reload --port 8000
 - **Conector (Beds24)**: `POST /sync/test`, `POST /sync/import`, `POST /sync/publish`, `GET /sync/runs`, `GET /sync/issues`
 - **Motor de precios**: `GET /pricing/calendar`, `POST /pricing/day`, `POST /pricing/range/preview`, `POST /pricing/range/apply`, `POST /pricing/rollback`, `GET /pricing/history`, `POST/DELETE /pricing/promotions`
 - **Agente (chat)**: `POST /chat` (turno; `{message, conversation_id?}`), `POST /chat/stream` (SSE). El agente propone cambios y solo aplica tras confirmación; toda acción queda auditada (origen=chat) y es reversible.
+- **Sugerencias (inteligencia de mercado)**: `GET /suggestions`, `POST /suggestions/{id}/approve|reject|apply`. Las sugerencias (eventos+ocupación+mercado) se proponen; al aplicar se audita (origen=sugerencia) y se publica. Escaneo diario: `scripts/scan_daily.py`.
 
 Toda escritura de precio valida límites, audita y publica el **precio efectivo** a Beds24; las operaciones de rango requieren preview + confirmación.
 
