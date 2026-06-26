@@ -38,6 +38,7 @@ class Beds24Adapter:
         self,
         *,
         api_key: str | None,
+        prop_key: str | None = None,
         prop_id: str | None = None,
         room_id: str | None = None,
         base_url: str = "https://api.beds24.com/json",
@@ -46,6 +47,7 @@ class Beds24Adapter:
         retry_base_delay: float = 0.5,
     ) -> None:
         self.api_key = api_key or ""
+        self.prop_key = prop_key
         self.prop_id = prop_id
         self.room_id = room_id
         self._base_url = base_url.rstrip("/")
@@ -71,7 +73,10 @@ class Beds24Adapter:
 
     async def _request(self, endpoint: str, params: dict[str, Any]) -> Any:
         url = f"{self._base_url}/{endpoint}"
-        body = {"authentication": {"apiKey": self.api_key}, **params}
+        auth: dict[str, str] = {"apiKey": self.api_key}
+        if self.prop_key:
+            auth["propKey"] = self.prop_key
+        body = {"authentication": auth, **params}
         last_exc: ChannelError | None = None
         for attempt in range(self.max_retries):
             try:
@@ -109,12 +114,14 @@ class Beds24Adapter:
     # --- Puerto ChannelManager ---
 
     async def get_properties(self) -> list[RemoteProperty]:
-        data = await self._request("getProperties", {"includeRooms": True})
+        # Beds24 V1 devuelve {"getProperties": [{..., "roomTypes": [...]}]}.
+        data = await self._request("getProperties", {})
+        items = data.get("getProperties", []) if isinstance(data, dict) else data
         out: list[RemoteProperty] = []
-        for p in data:
+        for p in items:
             rooms = [
-                RemoteRoom(str(r["roomId"]), r.get("name", ""), int(r.get("qty", 1)))
-                for r in p.get("rooms", [])
+                RemoteRoom(str(r["roomId"]), r.get("name", ""), int(float(r.get("qty", 1) or 1)))
+                for r in p.get("roomTypes", [])
             ]
             out.append(
                 RemoteProperty(

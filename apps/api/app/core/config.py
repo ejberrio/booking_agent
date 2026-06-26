@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     cm_api_key: str | None = None
     cm_api_secret: str | None = None
     beds24_api_key: str | None = None
+    beds24_prop_key: str | None = None  # requerido por getRoomDates/getBookings/setRoomDates (>=16)
     beds24_prop_id: str | None = None
     beds24_room_id: str | None = None
     beds24_base_url: str = "https://api.beds24.com/json"

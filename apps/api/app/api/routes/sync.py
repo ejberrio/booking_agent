@@ -16,6 +16,7 @@ router = APIRouter()
 def get_adapter() -> Beds24Adapter:
     return Beds24Adapter(
         api_key=settings.beds24_api_key,
+        prop_key=settings.beds24_prop_key,
         prop_id=settings.beds24_prop_id,
         room_id=settings.beds24_room_id,
         base_url=settings.beds24_base_url,

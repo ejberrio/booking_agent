@@ -7,6 +7,7 @@ guionizado, sin llamar a la API real.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from datetime import date
 
@@ -52,8 +53,12 @@ async def extract_events(llm, results: list[SearchResult]) -> list[EventCandidat
         tools=[],
         model=settings.llm_model,
     )
+    # El LLM puede envolver el JSON en ```json ... ``` o añadir prosa; extraer el array.
+    content = resp.content or "[]"
+    match = re.search(r"\[.*\]", content, re.DOTALL)
+    raw = match.group(0) if match else content
     try:
-        items = json.loads(resp.content or "[]")
+        items = json.loads(raw)
     except json.JSONDecodeError:
         return []
 

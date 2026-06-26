@@ -18,14 +18,16 @@ def adapter_with(handler: Callable[[httpx.Request], httpx.Response], **kw) -> Be
                          retry_base_delay=0, **kw)
 
 
-PROPS_JSON = [
-    {
-        "propId": 337229,
-        "name": "Apartamento con piscina",
-        "currency": "COP",
-        "rooms": [{"roomId": 697411, "name": "Three-Bedroom Apartment", "qty": 2}],
-    }
-]
+PROPS_JSON = {
+    "getProperties": [
+        {
+            "propId": "337229",
+            "name": "Apartamento con piscina",
+            "currency": "COP",
+            "roomTypes": [{"roomId": "697411", "name": "Three-Bedroom Apartment", "qty": "2"}],
+        }
+    ]
+}
 
 
 async def test_get_properties_maps_dtos():
