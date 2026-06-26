@@ -127,6 +127,7 @@ async def set_day_price(
     day: date,
     price: Decimal,
     origin: ChangeOrigin = ChangeOrigin.manual,
+    message_id: int | None = None,
 ) -> ApplyResult:
     unit = await session.get(UnitType, unit_type_id)
     rule = await pricing_service.get_active_rule(session, unit.property_id)
@@ -140,6 +141,7 @@ async def set_day_price(
         new_price=price,
         origin=origin,
         property_id=unit.property_id,
+        message_id=message_id,
         validate_rule=False,
     )
     published, issues = await publish_effective(session, channel, unit_type_id, [day])
@@ -183,6 +185,7 @@ async def apply_range(
     price: Decimal,
     fingerprint: str,
     origin: ChangeOrigin = ChangeOrigin.manual,
+    message_id: int | None = None,
 ) -> ApplyResult:
     preview = await preview_range(
         session, unit_type_id=unit_type_id, selection=selection, price=price
@@ -204,6 +207,7 @@ async def apply_range(
             new_price=price,
             origin=origin,
             property_id=unit.property_id,
+            message_id=message_id,
             validate_rule=False,
         )
         applied.append(item.date)

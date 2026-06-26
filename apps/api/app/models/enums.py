@@ -109,3 +109,13 @@ class PromotionAction(str, enum.Enum):
     created = "created"
     updated = "updated"
     deleted = "deleted"
+
+
+# --- Agente conversacional (feature 004) ---
+
+
+class AgentActionStatus(str, enum.Enum):
+    proposed = "proposed"
+    applied = "applied"
+    cancelled = "cancelled"
+    stale = "stale"

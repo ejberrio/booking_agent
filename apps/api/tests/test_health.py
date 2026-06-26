@@ -17,7 +17,5 @@ def test_health():
     assert res.json() == {"status": "healthy"}
 
 
-def test_chat_demo_mode():
-    res = client.post("/chat", json={"message": "hola"})
-    assert res.status_code == 200
-    assert "reply" in res.json()
+# Nota: /chat ahora es el agente real (requiere DB y orquestador); su comportamiento
+# se prueba en tests/test_agent_orchestrator.py con FakeLLM + ChannelManager falso.
