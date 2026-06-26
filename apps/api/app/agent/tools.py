@@ -74,6 +74,12 @@ READ_TOOLS = [
         },
         False,
     ),
+    ToolSpec(
+        "get_suggestions",
+        "Lista las sugerencias de precio vigentes (propuestas), con rango de fechas opcional.",
+        {"type": "object", "properties": {"date_from": _STR, "date_to": _STR}},
+        False,
+    ),
 ]
 
 WRITE_TOOLS = [
@@ -154,6 +160,31 @@ def openai_tools(include_control: bool) -> list[dict]:
 
 
 async def exec_read(session: AsyncSession, name: str, args: dict) -> Any:
+    if name == "get_suggestions":
+        from app.models.enums import SuggestionStatus
+        from app.services import intelligence_service
+
+        df_s = args.get("date_from")
+        dt_s = args.get("date_to")
+        out = []
+        for s in await intelligence_service.list_suggestions(
+            session, status=SuggestionStatus.proposed
+        ):
+            if df_s and s.date_to.isoformat() < df_s:
+                continue
+            if dt_s and s.date_from.isoformat() > dt_s:
+                continue
+            out.append(
+                {
+                    "id": s.id,
+                    "date_from": s.date_from.isoformat(),
+                    "date_to": s.date_to.isoformat(),
+                    "price": str(s.suggested_price),
+                    "rationale": s.rationale,
+                }
+            )
+        return out
+
     df = date.fromisoformat(args["date_from"])
     dt = date.fromisoformat(args["date_to"])
     uid = int(args["unit_type_id"])

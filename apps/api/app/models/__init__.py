@@ -1,6 +1,7 @@
 """Modelos ORM del dominio. Importar todo aquí para que Alembic detecte la metadata."""
 
 from app.models.agent import AgentAction, Conversation, LLMConfig, Message
+from app.models.intelligence import IntelligenceRun, MarketReference
 from app.models.audit import PriceChangeLog, PromotionChangeLog
 from app.models.booking import Booking
 from app.models.calendar import CalendarDay, Rate
@@ -29,4 +30,6 @@ __all__ = [
     "SyncIssue",
     "PromotionChangeLog",
     "AgentAction",
+    "MarketReference",
+    "IntelligenceRun",
 ]
