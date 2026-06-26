@@ -1,9 +1,8 @@
 <!-- SPECKIT START -->
-Feature activa: **005-market-intelligence** (eventos Tavily + sugerencias de precio).
-Plan e artefactos: `specs/005-market-intelligence/plan.md`, `research.md`,
-`data-model.md`, `contracts/intelligence-contract.md`, `quickstart.md`.
-Features completadas (en `main`): 001-data-model, 002-beds24-connector,
-003-pricing-engine, 004-conversational-agent.
+Feature activa: **006-web-frontend** (UI Next.js en apps/web que consume la API).
+Plan e artefactos: `specs/006-web-frontend/plan.md`, `research.md`, `data-model.md`,
+`contracts/frontend-contract.md`, `quickstart.md`. Verificación = `npm run build`.
+Backend completo en `main` (Fases 1-5): 001…005. Endpoints: /sync, /pricing, /chat(+SSE), /suggestions.
 <!-- SPECKIT END -->
 
 # Booking AI Agent
