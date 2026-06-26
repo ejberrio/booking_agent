@@ -5,6 +5,14 @@
 **Status**: Draft  
 **Input**: Interfaz web intuitiva que consume la API ya construida para que el host gestione precios y promociones de forma visual (calendario de precios, dashboard), revise sugerencias y converse con el agente; human-in-the-loop visible (preview + confirmación). Single-tenant, COP, Medellín, solo Booking.
 
+## Clarifications
+
+### Session 2026-06-26
+
+- Q: ¿Qué autenticación usa el host? → A: Una **contraseña única del host**, validada en el **servidor de la web (Next.js)** vía variable de entorno (sin cambios al backend FastAPI); single-tenant, sin gestión multiusuario.
+- Q: ¿Alcance visual del primer entregable? → A: **Todas las pantallas** (calendario, chat, sugerencias, dashboard, onboarding/config, notificaciones) en esta feature.
+- Q: ¿"Ingresos" en el dashboard de v1? → A: **Se aplazan** (no hay monto pagado real); el dashboard muestra ocupación, calendario/heatmap, eventos y sugerencias. Los ingresos se añaden cuando exista el monto real de las reservas.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Ver y gestionar precios en un calendario interactivo (Priority: P1)
@@ -58,7 +66,7 @@ El host ve una bandeja de sugerencias ("qué te propongo") con justificación, c
 
 ### User Story 4 - Dashboard de panorama (Priority: P2)
 
-El host ve un dashboard con KPIs de ocupación e ingresos, un heatmap del calendario de precios, próximos eventos relevantes y las sugerencias pendientes, con estados de carga y vacío claros.
+El host ve un dashboard con KPIs de ocupación, un heatmap del calendario de precios, próximos eventos relevantes y las sugerencias pendientes, con estados de carga y vacío claros. (Los ingresos se aplazan hasta tener el monto real de las reservas.)
 
 **Why this priority**: Da contexto y dirección; no bloquea las acciones principales.
 
@@ -123,14 +131,14 @@ El host recibe avisos (toasts / centro) cuando hay sugerencias nuevas o errores 
 - **FR-005**: Si el estado cambió entre la previsualización y la confirmación, la UI MUST re-previsualizar en vez de aplicar.
 - **FR-006**: La UI MUST ofrecer un chat con respuesta en streaming, estado de herramientas en ejecución, y para las propuestas del agente botones claros de Confirmar/Cancelar.
 - **FR-007**: La UI MUST mostrar una bandeja de sugerencias con justificación, confianza y día/rango, y permitir aprobar/rechazar/aplicar.
-- **FR-008**: La UI MUST ofrecer un dashboard con KPIs de ocupación e ingresos, heatmap, eventos próximos y sugerencias pendientes, con estados de carga y vacío.
+- **FR-008**: La UI MUST ofrecer un dashboard con KPIs de ocupación, heatmap, eventos próximos y sugerencias pendientes, con estados de carga y vacío. Los ingresos se aplazan (no hay monto pagado real en v1).
 - **FR-009**: La UI MUST ofrecer un onboarding guiado para conectar el Channel Manager, importar y seleccionar la propiedad activa, mostrando el estado de sincronización.
 - **FR-010**: La UI MUST ofrecer Configuración del LLM (proveedor, modelo general/acciones, presupuesto) y estado de integraciones, sin exponer secretos.
 - **FR-011**: La UI MUST notificar (avisos) sugerencias nuevas y errores de sincronización.
 - **FR-012**: La UI MUST ser responsive (usable en móvil) para el calendario y el chat.
 - **FR-013**: La UI MUST manejar errores de backend/red con estados claros y opción de reintentar; nunca aplica una escritura sin confirmación.
 - **FR-014**: La UI MUST consumir la API existente y NO reimplementar lógica de negocio (precios, sugerencias, auditoría viven en el backend).
-- **FR-015**: La UI MUST limitar el acceso con una autenticación simple del host (single-tenant), sin gestión multiusuario.
+- **FR-015**: La UI MUST limitar el acceso con una **contraseña única del host** validada en el servidor de la web (vía env var; sin cambios al backend FastAPI), single-tenant, sin gestión multiusuario.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -146,7 +154,7 @@ La UI no posee datos propios de dominio; consume los del backend (propiedades/un
 
 - **SC-001**: El host puede cambiar el precio de un fin de semana completo en menos de 1 minuto desde el calendario (seleccionar → previsualizar → confirmar).
 - **SC-002**: Ninguna escritura de precio se aplica sin una previsualización y una confirmación visibles (0% de cambios a ciegas).
-- **SC-003**: El host entiende el panorama (ocupación, ingresos, sugerencias) de un vistazo desde el dashboard.
+- **SC-003**: El host entiende el panorama (ocupación, heatmap de precios, eventos, sugerencias) de un vistazo desde el dashboard.
 - **SC-004**: La respuesta del chat empieza a mostrarse en streaming en pocos segundos y las propuestas siempre ofrecen Confirmar/Cancelar.
 - **SC-005**: El calendario y el chat son usables en una pantalla de móvil (sin scroll horizontal roto ni controles inaccesibles).
 - **SC-006**: Ante un error de backend, la UI muestra un estado claro y permite reintentar (no pantallas en blanco ni cuelgues).
