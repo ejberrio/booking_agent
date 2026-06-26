@@ -11,6 +11,8 @@ description: "Task list — Frontend web (UX/dashboard)"
 
 **Organización**: por historia (US1–US6). Trabajo en `apps/web`. Consume la API existente; no duplica lógica.
 
+> **Estado: IMPLEMENTADO (2026-06-26).** `npm run build` en verde (typecheck + lint; 12 rutas + middleware). Auth por contraseña (cookie httpOnly), calendario interactivo con preview/confirmar, chat SSE, sugerencias, dashboard, onboarding/config, toasts y responsive. Nota: id de unidad activa en localStorage (el backend no expone listado de unidades aún); edición de LLM config desde UI requiere endpoint futuro.
+
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: archivo distinto, sin dependencias pendientes.
@@ -20,9 +22,9 @@ description: "Task list — Frontend web (UX/dashboard)"
 
 ## Phase 1: Setup
 
-- [ ] T001 Instalar dependencias (`@tanstack/react-query`, `sonner`, `date-fns`, `next-themes`) en `apps/web/package.json`
-- [ ] T002 [P] Añadir componentes base de shadcn/ui (card, dialog, input, badge, skeleton, label, select) en `apps/web/components/ui/`
-- [ ] T003 [P] Utilidades de formato (COP con `Intl.NumberFormat`, fechas con date-fns) en `apps/web/lib/format.ts`
+- [x] T001 Instalar dependencias (`@tanstack/react-query`, `sonner`, `date-fns`, `next-themes`) en `apps/web/package.json`
+- [x] T002 [P] Añadir componentes base de shadcn/ui (card, dialog, input, badge, skeleton, label, select) en `apps/web/components/ui/`
+- [x] T003 [P] Utilidades de formato (COP con `Intl.NumberFormat`, fechas con date-fns) en `apps/web/lib/format.ts`
 
 ---
 
@@ -30,12 +32,12 @@ description: "Task list — Frontend web (UX/dashboard)"
 
 **⚠️ Bloqueante para todas las historias.**
 
-- [ ] T004 [P] Tipos de la API en `apps/web/lib/types.ts`
-- [ ] T005 Cliente de API tipado (pricing, suggestions, chat, sync) en `apps/web/lib/api.ts` (extiende el actual)
-- [ ] T006 [P] Lector de SSE para `/chat/stream` en `apps/web/lib/sse.ts`
-- [ ] T007 [P] Providers (`QueryClientProvider` + `Toaster` de sonner + `ThemeProvider`) en `apps/web/components/providers.tsx`
-- [ ] T008 Auth por contraseña: `apps/web/middleware.ts` + `apps/web/app/api/login/route.ts` + `apps/web/app/api/logout/route.ts` + `apps/web/app/login/page.tsx` (valida `APP_PASSWORD`, cookie httpOnly)
-- [ ] T009 Shell de la app: `apps/web/app/(app)/layout.tsx` + `apps/web/components/layout/sidebar.tsx` + `apps/web/components/layout/theme-toggle.tsx`
+- [x] T004 [P] Tipos de la API en `apps/web/lib/types.ts`
+- [x] T005 Cliente de API tipado (pricing, suggestions, chat, sync) en `apps/web/lib/api.ts` (extiende el actual)
+- [x] T006 [P] Lector de SSE para `/chat/stream` en `apps/web/lib/sse.ts`
+- [x] T007 [P] Providers (`QueryClientProvider` + `Toaster` de sonner + `ThemeProvider`) en `apps/web/components/providers.tsx`
+- [x] T008 Auth por contraseña: `apps/web/middleware.ts` + `apps/web/app/api/login/route.ts` + `apps/web/app/api/logout/route.ts` + `apps/web/app/login/page.tsx` (valida `APP_PASSWORD`, cookie httpOnly)
+- [x] T009 Shell de la app: `apps/web/app/(app)/layout.tsx` + `apps/web/components/layout/sidebar.tsx` + `apps/web/components/layout/theme-toggle.tsx`
 
 **Checkpoint**: login, navegación y datos listos.
 
@@ -49,9 +51,9 @@ description: "Task list — Frontend web (UX/dashboard)"
 
 ### Implementation for User Story 1
 
-- [ ] T010 [US1] `PriceCalendar` (grid mensual + heatmap + badges promo/evento + selección de día/rango por arrastre) en `apps/web/components/calendar/price-calendar.tsx`
-- [ ] T011 [US1] `RangeEditor` (precio → `/pricing/range/preview` → diálogo de diff con inválidos señalados → `/pricing/range/apply`; si `stale`, re-previsualiza) en `apps/web/components/calendar/range-editor.tsx`
-- [ ] T012 [US1] Página `/calendar` (carga `get_calendar`, integra calendario + editor, estados de carga/vacío/error) en `apps/web/app/(app)/calendar/page.tsx`
+- [x] T010 [US1] `PriceCalendar` (grid mensual + heatmap + badges promo/evento + selección de día/rango por arrastre) en `apps/web/components/calendar/price-calendar.tsx`
+- [x] T011 [US1] `RangeEditor` (precio → `/pricing/range/preview` → diálogo de diff con inválidos señalados → `/pricing/range/apply`; si `stale`, re-previsualiza) en `apps/web/components/calendar/range-editor.tsx`
+- [x] T012 [US1] Página `/calendar` (carga `get_calendar`, integra calendario + editor, estados de carga/vacío/error) en `apps/web/app/(app)/calendar/page.tsx`
 
 **Checkpoint**: gestión de precios visual con preview+confirmación (MVP).
 
@@ -65,8 +67,8 @@ description: "Task list — Frontend web (UX/dashboard)"
 
 ### Implementation for User Story 2
 
-- [ ] T013 [US2] `ChatPanel` (envía a `/chat/stream`, muestra streaming + estado de tools + propuesta con Confirmar/Cancelar) en `apps/web/components/chat/chat-panel.tsx`
-- [ ] T014 [US2] Página `/chat` en `apps/web/app/(app)/chat/page.tsx`
+- [x] T013 [US2] `ChatPanel` (envía a `/chat/stream`, muestra streaming + estado de tools + propuesta con Confirmar/Cancelar) en `apps/web/components/chat/chat-panel.tsx`
+- [x] T014 [US2] Página `/chat` en `apps/web/app/(app)/chat/page.tsx`
 
 **Checkpoint**: conversación agéntica con confirmación visible.
 
@@ -80,8 +82,8 @@ description: "Task list — Frontend web (UX/dashboard)"
 
 ### Implementation for User Story 3
 
-- [ ] T015 [US3] `SuggestionCard` + lista (justificación, confianza, día/rango, acciones) en `apps/web/components/suggestions/suggestion-card.tsx`
-- [ ] T016 [US3] Página `/suggestions` (carga `GET /suggestions`, acciones approve/reject/apply) en `apps/web/app/(app)/suggestions/page.tsx`
+- [x] T015 [US3] `SuggestionCard` + lista (justificación, confianza, día/rango, acciones) en `apps/web/components/suggestions/suggestion-card.tsx`
+- [x] T016 [US3] Página `/suggestions` (carga `GET /suggestions`, acciones approve/reject/apply) en `apps/web/app/(app)/suggestions/page.tsx`
 
 **Checkpoint**: "qué te propongo" accionable.
 
@@ -95,8 +97,8 @@ description: "Task list — Frontend web (UX/dashboard)"
 
 ### Implementation for User Story 4
 
-- [ ] T017 [P] [US4] Widgets del dashboard (KPI ocupación, mini-heatmap, eventos, sugerencias pendientes) en `apps/web/components/dashboard/`
-- [ ] T018 [US4] Página `/` (dashboard) que compone los widgets, con carga/vacío en `apps/web/app/(app)/page.tsx`
+- [x] T017 [P] [US4] Widgets del dashboard (KPI ocupación, mini-heatmap, eventos, sugerencias pendientes) en `apps/web/components/dashboard/`
+- [x] T018 [US4] Página `/` (dashboard) que compone los widgets, con carga/vacío en `apps/web/app/(app)/page.tsx`
 
 **Checkpoint**: panorama de un vistazo.
 
@@ -110,8 +112,8 @@ description: "Task list — Frontend web (UX/dashboard)"
 
 ### Implementation for User Story 5
 
-- [ ] T019 [US5] Página `/onboarding` (prueba de conexión `/sync/test`, importar `/sync/import`, seleccionar propiedad, estado de sync) en `apps/web/app/(app)/onboarding/page.tsx`
-- [ ] T020 [US5] Página `/settings` (config de LLM, estado de integraciones, sin mostrar secretos) en `apps/web/app/(app)/settings/page.tsx`
+- [x] T019 [US5] Página `/onboarding` (prueba de conexión `/sync/test`, importar `/sync/import`, seleccionar propiedad, estado de sync) en `apps/web/app/(app)/onboarding/page.tsx`
+- [x] T020 [US5] Página `/settings` (config de LLM, estado de integraciones, sin mostrar secretos) en `apps/web/app/(app)/settings/page.tsx`
 
 **Checkpoint**: arranque y ajustes.
 
@@ -125,8 +127,8 @@ description: "Task list — Frontend web (UX/dashboard)"
 
 ### Implementation for User Story 6
 
-- [ ] T021 [US6] Toasts (sonner) para sugerencias nuevas y errores de sync, integrados en los hooks de datos, en `apps/web/lib/api.ts` / `apps/web/components/providers.tsx`
-- [ ] T022 [US6] Pasada responsive (sidebar colapsable en móvil; calendario y chat usables en pantalla estrecha) en `apps/web/components/layout/sidebar.tsx` y vistas
+- [x] T021 [US6] Toasts (sonner) para sugerencias nuevas y errores de sync, integrados en los hooks de datos, en `apps/web/lib/api.ts` / `apps/web/components/providers.tsx`
+- [x] T022 [US6] Pasada responsive (sidebar colapsable en móvil; calendario y chat usables en pantalla estrecha) en `apps/web/components/layout/sidebar.tsx` y vistas
 
 **Checkpoint**: conveniencia y movilidad.
 
@@ -134,8 +136,8 @@ description: "Task list — Frontend web (UX/dashboard)"
 
 ## Phase 9: Polish & Cross-Cutting
 
-- [ ] T023 [P] Estados de carga (skeleton) / vacío / error consistentes y actualizar `apps/web/README.md`
-- [ ] T024 `npm run build` (typecheck + lint) en verde en `apps/web`
+- [x] T023 [P] Estados de carga (skeleton) / vacío / error consistentes y actualizar `apps/web/README.md`
+- [x] T024 `npm run build` (typecheck + lint) en verde en `apps/web`
 
 ---
 
