@@ -1,8 +1,8 @@
 <!-- SPECKIT START -->
-Feature activa: **002-beds24-connector** (conector de Channel Manager Beds24).
-Plan e artefactos: `specs/002-beds24-connector/plan.md`, `research.md`,
-`data-model.md`, `contracts/` (channel-manager-port, beds24-v1-mapping), `quickstart.md`.
-Feature previa completada: `specs/001-data-model/` (modelo de datos, mergeada).
+Feature activa: **003-pricing-engine** (motor de precios: capa de aplicación/API).
+Plan e artefactos: `specs/003-pricing-engine/plan.md`, `research.md`, `data-model.md`,
+`contracts/pricing-api.md`, `quickstart.md`.
+Features completadas (en `main`): 001-data-model y 002-beds24-connector.
 <!-- SPECKIT END -->
 
 # Booking AI Agent

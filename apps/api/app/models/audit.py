@@ -5,8 +5,8 @@ from sqlalchemy import Date, DateTime, Enum, ForeignKey, Numeric
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
-from app.models.enums import ChangeOrigin
-from app.models.mixins import TimestampMixin, _now
+from app.models.enums import ChangeOrigin, PromotionAction
+from app.models.mixins import JSONBType, TimestampMixin, _now
 
 
 class PriceChangeLog(Base, TimestampMixin):
@@ -26,4 +26,17 @@ class PriceChangeLog(Base, TimestampMixin):
     reverts_change_id: Mapped[int | None] = mapped_column(
         ForeignKey("price_change_log.id"), nullable=True
     )
+    changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, index=True)
+
+
+class PromotionChangeLog(Base, TimestampMixin):
+    """Auditoría de cambios de promociones (crear/editar/eliminar). Append-only."""
+
+    __tablename__ = "promotion_change_log"
+
+    promotion_id: Mapped[int | None] = mapped_column(nullable=True)  # null si eliminada
+    action: Mapped[PromotionAction] = mapped_column(Enum(PromotionAction))
+    before: Mapped[dict | None] = mapped_column(JSONBType, nullable=True)
+    after: Mapped[dict | None] = mapped_column(JSONBType, nullable=True)
+    origin: Mapped[ChangeOrigin] = mapped_column(Enum(ChangeOrigin), default=ChangeOrigin.manual)
     changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, index=True)
