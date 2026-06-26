@@ -5,6 +5,14 @@
 **Status**: Draft  
 **Input**: Descubrir eventos en Medellín (búsqueda web), monitorear precios de mercado por ubicación y generar sugerencias de precio por día (eventos + ocupación + mercado) con justificación y confianza; el host revisa y aplica reutilizando el motor de precios (003). Single-tenant, COP, solo Booking.
 
+## Clarifications
+
+### Session 2026-06-26
+
+- Q: ¿De dónde sale la referencia de precio de mercado? → A: Modelada detrás de una interfaz provider-agnostic; en v1 una **referencia simple** (baseline configurable por zona / estimación ligera). Las sugerencias funcionan con o sin mercado.
+- Q: ¿Qué heurística de ajuste de precio? → A: Por **relevancia de evento** (alta +30%, media +15%, baja +5%) + **ocupación alta** (+10% adicional); si hay referencia de mercado, acercar el precio a ella; **siempre acotado a los límites min/max**. Parámetros configurables.
+- Q: ¿Cómo se extraen nombre/fecha/tipo/relevancia de los resultados de búsqueda? → A: **Parsing con LLM** (el modelo configurado, gpt-4o-mini) sobre el texto de Tavily; bajo volumen y cacheado.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Descubrir e ingestar eventos de Medellín (Priority: P1)
@@ -113,10 +121,10 @@ El agente conversacional puede consultar las sugerencias vigentes como una herra
 
 ### Functional Requirements
 
-- **FR-001**: El sistema MUST descubrir eventos de Medellín mediante una búsqueda web detrás de una interfaz provider-agnostic, extrayendo fecha, tipo, relevancia y ubicación.
+- **FR-001**: El sistema MUST descubrir eventos de Medellín mediante una búsqueda web detrás de una interfaz provider-agnostic, y MUST extraer nombre, fecha, tipo, relevancia y ubicación **parseando los resultados con el LLM configurado** (bajo volumen, cacheado).
 - **FR-002**: El sistema MUST almacenar los eventos con deduplicación idempotente (no duplica el mismo evento) y descartar/marcar los que no tengan fecha utilizable.
-- **FR-003**: El sistema MUST obtener una referencia de precio de mercado por ubicación y fecha detrás de una interfaz provider-agnostic; si no está disponible, las sugerencias se generan igualmente.
-- **FR-004**: El sistema MUST generar sugerencias de precio por día/rango combinando eventos (relevancia), ocupación local y referencia de mercado, mediante una heurística **explicable**.
+- **FR-003**: El sistema MUST exponer la referencia de precio de mercado por ubicación/fecha detrás de una interfaz provider-agnostic; en v1 usa una **referencia simple** (baseline configurable por zona / estimación ligera) y, si no está disponible, las sugerencias se generan igualmente.
+- **FR-004**: El sistema MUST generar sugerencias de precio mediante una heurística **explicable y configurable**: ajuste por relevancia de evento (alta +30%, media +15%, baja +5%) más ocupación alta (+10% adicional); si hay referencia de mercado, acerca el precio a ella; el resultado se **acota a los límites min/max** de la propiedad.
 - **FR-005**: Cada sugerencia MUST incluir el día/rango, el precio sugerido, una justificación legible y un score de confianza.
 - **FR-006**: El sistema MUST NO proponer cambios cuando no hay señales que los justifiquen.
 - **FR-007**: El host MUST poder listar, aprobar y rechazar sugerencias.
