@@ -40,6 +40,11 @@ async def _active_rule(session: AsyncSession, property_id: int) -> PricingRule |
     return res.scalars().first()
 
 
+async def get_active_rule(session: AsyncSession, property_id: int) -> PricingRule | None:
+    """Regla de precio activa de la propiedad (público para la capa de aplicación)."""
+    return await _active_rule(session, property_id)
+
+
 async def _promotions_for(session: AsyncSession, property_id: int) -> list[PromotionLike]:
     res = await session.execute(
         select(Promotion).where(

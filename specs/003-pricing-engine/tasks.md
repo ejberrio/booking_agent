@@ -11,6 +11,8 @@ description: "Task list — Motor de precios"
 
 **Organización**: por historia de usuario (US1–US5). Trabajo en `apps/api`. Reutiliza dominio/servicios de 001 y el conector de 002.
 
+> **Estado: IMPLEMENTADO (2026-06-26).** 40 tests en verde (8 nuevos: pricing_app + promotion_service), ruff limpio. Migración `338acb94c91d_auditoria_de_promociones.py` (tabla `promotion_change_log`), encadenada al head. Tests con ChannelManager falso (sin API real).
+
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: archivo distinto, sin dependencias pendientes.
@@ -20,7 +22,7 @@ description: "Task list — Motor de precios"
 
 ## Phase 1: Setup
 
-- [ ] T001 [P] Crear paquete `app/schemas/` (con `__init__.py`) en `apps/api/app/`
+- [x] T001 [P] Crear paquete `app/schemas/` (con `__init__.py`) en `apps/api/app/`
 
 ---
 
@@ -28,8 +30,8 @@ description: "Task list — Motor de precios"
 
 **⚠️ Bloqueante para todas las historias.**
 
-- [ ] T002 Objetos de valor en `apps/api/app/schemas/pricing.py`: `RangeSelection` (con expansión a fechas: rango + weekdays + days), `CalendarDayView`, `ChangePreviewDay`, `ChangePreview` (con `fingerprint`), `ApplyResult`
-- [ ] T003 Helper `publish_effective` en `apps/api/app/services/pricing_app_service.py`: calcula el efectivo por día (dominio 001), agrupa días contiguos con igual efectivo y publica vía el puerto `ChannelManager`, registrando incidencias (reusa `sync_service`/`channels`)
+- [x] T002 Objetos de valor en `apps/api/app/schemas/pricing.py`: `RangeSelection` (con expansión a fechas: rango + weekdays + days), `CalendarDayView`, `ChangePreviewDay`, `ChangePreview` (con `fingerprint`), `ApplyResult`
+- [x] T003 Helper `publish_effective` en `apps/api/app/services/pricing_app_service.py`: calcula el efectivo por día (dominio 001), agrupa días contiguos con igual efectivo y publica vía el puerto `ChannelManager`, registrando incidencias (reusa `sync_service`/`channels`)
 
 **Checkpoint**: base lista (objetos de valor + publicación del efectivo).
 
@@ -43,12 +45,12 @@ description: "Task list — Motor de precios"
 
 ### Tests for User Story 1
 
-- [ ] T004 [P] [US1] Test `get_calendar` (base + efectivo + disponibilidad + promos) en `apps/api/tests/test_pricing_app.py`
+- [x] T004 [P] [US1] Test `get_calendar` (base + efectivo + disponibilidad + promos) en `apps/api/tests/test_pricing_app.py`
 
 ### Implementation for User Story 1
 
-- [ ] T005 [US1] `get_calendar()` (usa `effective_price`/promos del dominio 001) en `apps/api/app/services/pricing_app_service.py`
-- [ ] T006 [US1] Endpoint `GET /pricing/calendar` + `get_adapter()` + registrar router en `apps/api/app/api/router.py`, en `apps/api/app/api/routes/pricing.py`
+- [x] T005 [US1] `get_calendar()` (usa `effective_price`/promos del dominio 001) en `apps/api/app/services/pricing_app_service.py`
+- [x] T006 [US1] Endpoint `GET /pricing/calendar` + `get_adapter()` + registrar router en `apps/api/app/api/router.py`, en `apps/api/app/api/routes/pricing.py`
 
 **Checkpoint**: consulta de precios funcional (MVP).
 
@@ -62,12 +64,12 @@ description: "Task list — Motor de precios"
 
 ### Tests for User Story 2
 
-- [ ] T007 [P] [US2] Test `set_day_price`: fuera de límites rechazado; válido audita + publica efectivo en `apps/api/tests/test_pricing_app.py`
+- [x] T007 [P] [US2] Test `set_day_price`: fuera de límites rechazado; válido audita + publica efectivo en `apps/api/tests/test_pricing_app.py`
 
 ### Implementation for User Story 2
 
-- [ ] T008 [US2] `set_day_price()` (valida regla → `pricing_service.set_base_price` → `publish_effective`) en `apps/api/app/services/pricing_app_service.py`
-- [ ] T009 [US2] Endpoint `POST /pricing/day` en `apps/api/app/api/routes/pricing.py`
+- [x] T008 [US2] `set_day_price()` (valida regla → `pricing_service.set_base_price` → `publish_effective`) en `apps/api/app/services/pricing_app_service.py`
+- [x] T009 [US2] Endpoint `POST /pricing/day` en `apps/api/app/api/routes/pricing.py`
 
 **Checkpoint**: cambios de precio por día auditados y publicados.
 
@@ -81,13 +83,13 @@ description: "Task list — Motor de precios"
 
 ### Tests for User Story 3
 
-- [ ] T010 [P] [US3] Tests de rango (preview con filtro de día-semana + inválidos marcados; apply aplica válidos/excluye inválidos; preview obsoleto → `stale`) en `apps/api/tests/test_pricing_app.py`
+- [x] T010 [P] [US3] Tests de rango (preview con filtro de día-semana + inválidos marcados; apply aplica válidos/excluye inválidos; preview obsoleto → `stale`) en `apps/api/tests/test_pricing_app.py`
 
 ### Implementation for User Story 3
 
-- [ ] T011 [US3] `preview_range()` (expande `RangeSelection`, calcula old/new/valid por día, `fingerprint`) en `apps/api/app/services/pricing_app_service.py`
-- [ ] T012 [US3] `apply_range()` (detecta `fingerprint` obsoleto → `stale`; aplica solo válidos: `set_base_price` + `publish_effective`) en `apps/api/app/services/pricing_app_service.py`
-- [ ] T013 [US3] Endpoints `POST /pricing/range/preview` y `POST /pricing/range/apply` en `apps/api/app/api/routes/pricing.py`
+- [x] T011 [US3] `preview_range()` (expande `RangeSelection`, calcula old/new/valid por día, `fingerprint`) en `apps/api/app/services/pricing_app_service.py`
+- [x] T012 [US3] `apply_range()` (detecta `fingerprint` obsoleto → `stale`; aplica solo válidos: `set_base_price` + `publish_effective`) en `apps/api/app/services/pricing_app_service.py`
+- [x] T013 [US3] Endpoints `POST /pricing/range/preview` y `POST /pricing/range/apply` en `apps/api/app/api/routes/pricing.py`
 
 **Checkpoint**: gestión por rangos con preview/confirmación.
 
@@ -101,14 +103,14 @@ description: "Task list — Motor de precios"
 
 ### Tests for User Story 4
 
-- [ ] T014 [P] [US4] Tests: crear promo audita (`PromotionChangeLog`) + re-publica efectivo; promos solapadas → mayor descuento en `apps/api/tests/test_promotion_service.py`
+- [x] T014 [P] [US4] Tests: crear promo audita (`PromotionChangeLog`) + re-publica efectivo; promos solapadas → mayor descuento en `apps/api/tests/test_promotion_service.py`
 
 ### Implementation for User Story 4
 
-- [ ] T015 [P] [US4] Modelo `PromotionChangeLog` en `apps/api/app/models/audit.py` + enum `PromotionAction` en `apps/api/app/models/enums.py` (registrar en `app/models/__init__.py`)
-- [ ] T016 [US4] `promotion_service` (create/update/delete: audita en `PromotionChangeLog` + recalcula + `publish_effective` de días afectados) en `apps/api/app/services/promotion_service.py`
-- [ ] T017 [US4] Endpoints CRUD `POST/PUT/DELETE /pricing/promotions` en `apps/api/app/api/routes/pricing.py`
-- [ ] T018 [US4] Migración Alembic para `promotion_change_log` en `apps/api/migrations/versions/`
+- [x] T015 [P] [US4] Modelo `PromotionChangeLog` en `apps/api/app/models/audit.py` + enum `PromotionAction` en `apps/api/app/models/enums.py` (registrar en `app/models/__init__.py`)
+- [x] T016 [US4] `promotion_service` (create/update/delete: audita en `PromotionChangeLog` + recalcula + `publish_effective` de días afectados) en `apps/api/app/services/promotion_service.py`
+- [x] T017 [US4] Endpoints CRUD `POST/PUT/DELETE /pricing/promotions` en `apps/api/app/api/routes/pricing.py`
+- [x] T018 [US4] Migración Alembic para `promotion_change_log` en `apps/api/migrations/versions/`
 
 **Checkpoint**: promociones gestionadas, auditadas y reflejadas en Booking.
 
@@ -122,12 +124,12 @@ description: "Task list — Motor de precios"
 
 ### Tests for User Story 5
 
-- [ ] T019 [P] [US5] Test `rollback_and_publish`: revierte y publica; conflicto (cambios posteriores) exige `confirm` en `apps/api/tests/test_pricing_app.py`
+- [x] T019 [P] [US5] Test `rollback_and_publish`: revierte y publica; conflicto (cambios posteriores) exige `confirm` en `apps/api/tests/test_pricing_app.py`
 
 ### Implementation for User Story 5
 
-- [ ] T020 [US5] `rollback_and_publish()` (usa `audit_service.rollback_change` → `publish_effective`) y `history()` en `apps/api/app/services/pricing_app_service.py`
-- [ ] T021 [US5] Endpoints `POST /pricing/rollback` y `GET /pricing/history` en `apps/api/app/api/routes/pricing.py`
+- [x] T020 [US5] `rollback_and_publish()` (usa `audit_service.rollback_change` → `publish_effective`) y `history()` en `apps/api/app/services/pricing_app_service.py`
+- [x] T021 [US5] Endpoints `POST /pricing/rollback` y `GET /pricing/history` en `apps/api/app/api/routes/pricing.py`
 
 **Checkpoint**: control total (historial + revertir) con publicación.
 
@@ -135,8 +137,8 @@ description: "Task list — Motor de precios"
 
 ## Phase 8: Polish & Cross-Cutting
 
-- [ ] T022 [P] Documentar los endpoints `/pricing/*` en `apps/api/README.md`
-- [ ] T023 `uv run ruff check .` y `uv run pytest -q` en verde (apps/api)
+- [x] T022 [P] Documentar los endpoints `/pricing/*` en `apps/api/README.md`
+- [x] T023 `uv run ruff check .` y `uv run pytest -q` en verde (apps/api)
 
 ---
 

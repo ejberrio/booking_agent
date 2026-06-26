@@ -100,3 +100,12 @@ class SyncIssueKind(str, enum.Enum):
 class IssueStatus(str, enum.Enum):
     open = "open"
     resolved = "resolved"
+
+
+# --- Motor de precios (feature 003) ---
+
+
+class PromotionAction(str, enum.Enum):
+    created = "created"
+    updated = "updated"
+    deleted = "deleted"
