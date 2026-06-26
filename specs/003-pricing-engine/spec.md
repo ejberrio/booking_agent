@@ -5,6 +5,14 @@
 **Status**: Draft  
 **Input**: Capa de aplicación/API que permite al host consultar y gestionar precios y promociones (por día, rango y bloque, con preview y confirmación), apoyándose en el modelo de datos (001) y publicando los cambios a Beds24 vía el conector (002). Todo auditado y reversible. Single-tenant, COP, solo canal Booking.
 
+## Clarifications
+
+### Session 2026-06-26
+
+- Q: En una operación de rango, si algunos días quedan fuera de los límites min/max, ¿qué pasa? → A: Se aplican solo los días válidos; los inválidos se señalan en el preview y se excluyen de la aplicación (no se bloquea toda la operación).
+- Q: ¿Cómo se reflejan las promociones en Booking (vía Beds24)? → A: Se publica el **precio efectivo** (base menos la mejor promoción vigente). Las promociones son "nuestras" (no se mapean a las nativas de Beds24); por tanto, crear/editar/eliminar una promoción recalcula y re-publica el efectivo de los días afectados.
+- Q: ¿Se auditan los cambios de promociones, además de los de precio base? → A: Sí; crear/editar/eliminar una promoción queda registrado en la auditoría (trazabilidad completa del precio efectivo).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Consultar precios y calendario (Priority: P1)
@@ -52,7 +60,7 @@ El host fija un precio para un rango (semana, mes, rango arbitrario), pudiendo f
 1. **Given** un rango y un precio, **When** el host solicita el cambio, **Then** recibe un diff con los días afectados y el valor anterior/nuevo de cada uno, SIN aplicar nada todavía.
 2. **Given** un filtro por días de la semana, **When** se previsualiza, **Then** solo aparecen los días que cumplen el filtro.
 3. **Given** un diff previsualizado, **When** el host confirma, **Then** se aplican exactamente esos cambios, cada uno auditado y publicado.
-4. **Given** algún día del rango fuera de límites, **When** se previsualiza, **Then** esos días se señalan como inválidos y no se incluyen en la aplicación (o se bloquea la confirmación según la regla).
+4. **Given** algún día del rango fuera de límites, **When** se previsualiza y se confirma, **Then** esos días se señalan como inválidos y se excluyen, pero los días válidos sí se aplican.
 
 ---
 
@@ -90,7 +98,7 @@ El host consulta el historial de cambios de un día/rango (antes/después, cuán
 
 ### Edge Cases
 
-- **Precio fuera de límites en una operación de rango**: los días inválidos se señalan; la confirmación no los aplica.
+- **Precio fuera de límites en una operación de rango**: los días inválidos se señalan y se excluyen; los días válidos sí se aplican.
 - **Publicación al canal no verificada**: el cambio local se conserva (auditado) y se reporta una incidencia; no se pierde el cambio.
 - **Rango que cruza una promoción**: el preview muestra el precio base que se está fijando; el efectivo se recalcula con las promociones vigentes.
 - **Confirmar un preview obsoleto**: si el estado cambió entre el preview y la confirmación, se detecta y se vuelve a previsualizar (no se aplica a ciegas).
@@ -106,16 +114,17 @@ El host consulta el historial de cambios de un día/rango (antes/después, cuán
 - **FR-002**: El sistema MUST permitir fijar el precio de un día específico.
 - **FR-003**: El sistema MUST permitir fijar el precio de un rango (semana, mes, rango arbitrario), con filtro opcional por días de la semana y por grupos de días.
 - **FR-004**: El sistema MUST generar una previsualización (diff) de un cambio de rango/bulk —días afectados con valor anterior y nuevo— SIN aplicar nada, y requerir confirmación explícita antes de escribir.
-- **FR-005**: El sistema MUST validar cada precio contra las reglas de la propiedad (mínimo/máximo) y rechazar/señalar los que queden fuera de límites, sin auditar ni publicar esos.
-- **FR-006**: El sistema MUST permitir crear, editar y eliminar promociones (porcentaje o monto, vigencia, condiciones) y reflejarlas en el precio efectivo.
+- **FR-005**: El sistema MUST validar cada precio contra las reglas de la propiedad (mínimo/máximo) y señalar los que queden fuera de límites, sin auditar ni publicar esos. En operaciones de rango, los días inválidos se EXCLUYEN y los válidos SÍ se aplican (no se bloquea toda la operación).
+- **FR-006**: El sistema MUST permitir crear, editar y eliminar promociones (porcentaje o monto, vigencia, condiciones) y reflejarlas en el precio efectivo. Cada cambio de promoción MUST quedar auditado.
 - **FR-007**: El sistema MUST aplicar, cuando varias promociones cubren un día, únicamente la de mayor descuento (no se acumulan).
 - **FR-008**: El sistema MUST auditar cada cambio de precio (valor anterior, nuevo, fecha/hora, origen) — reutilizando la auditoría existente — y MUST mantenerlo reversible.
 - **FR-009**: El sistema MUST permitir revertir un cambio; la reversión crea un nuevo cambio auditado y, si existen cambios posteriores sobre la misma fecha, MUST señalar conflicto y requerir confirmación.
-- **FR-010**: El sistema MUST publicar al Channel Manager (Beds24) cada cambio de precio confirmado (incluidas reversiones), reutilizando el conector; si la publicación no se verifica, MUST conservar el cambio local y reportar una incidencia.
+- **FR-010**: El sistema MUST publicar al Channel Manager (Beds24) el **precio efectivo** (base menos la mejor promoción vigente) de cada cambio confirmado (incluidas reversiones), reutilizando el conector; si la publicación no se verifica, MUST conservar el cambio local y reportar una incidencia.
 - **FR-011**: El sistema MUST mostrar el historial de cambios de un día/rango (antes/después, cuándo, origen).
 - **FR-012**: El sistema MUST tratar toda escritura de precio como una acción que requiere confirmación del host (human-in-the-loop), especialmente operaciones de rango/bulk.
 - **FR-013**: El sistema MUST detectar un preview obsoleto (estado cambiado entre previsualizar y confirmar) y volver a previsualizar en lugar de aplicar a ciegas.
 - **FR-014**: El alcance MUST limitarse al canal Booking activo y a la moneda de la propiedad (COP); single-tenant.
+- **FR-015**: Crear, editar o eliminar una promoción MUST recalcular el precio efectivo de los días afectados y re-publicarlo al Channel Manager (las promociones no se mapean a las nativas de Beds24).
 
 ### Key Entities *(include if feature involves data)*
 
@@ -130,7 +139,7 @@ Reutiliza las entidades de la feature 001 (Rate, Promotion, PricingRule, PriceCh
 ### Measurable Outcomes
 
 - **SC-001**: El host puede ver, para cualquier (día/rango), precio base, efectivo, disponibilidad y promociones, con un único resultado por día.
-- **SC-002**: Toda escritura de precio confirmada queda auditada (antes/después/origen) y publicada a Beds24, o reporta incidencia si no se verifica — en el 100% de los casos.
+- **SC-002**: Toda escritura de precio confirmada queda auditada (antes/después/origen) y publica el **precio efectivo** a Beds24, o reporta incidencia si no se verifica — en el 100% de los casos.
 - **SC-003**: Ninguna operación de rango/bulk se aplica sin una previsualización y una confirmación explícita (cero escrituras "a ciegas").
 - **SC-004**: Un precio fuera de los límites de la propiedad nunca se aplica ni se publica (100%).
 - **SC-005**: En promociones solapadas, el efectivo corresponde siempre a la de mayor descuento (nunca a la suma).
