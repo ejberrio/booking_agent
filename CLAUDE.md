@@ -1,8 +1,8 @@
 <!-- SPECKIT START -->
-Feature activa: **003-pricing-engine** (motor de precios: capa de aplicación/API).
-Plan e artefactos: `specs/003-pricing-engine/plan.md`, `research.md`, `data-model.md`,
-`contracts/pricing-api.md`, `quickstart.md`.
-Features completadas (en `main`): 001-data-model y 002-beds24-connector.
+Feature activa: **004-conversational-agent** (agente de chat con tool-calling).
+Plan e artefactos: `specs/004-conversational-agent/plan.md`, `research.md`,
+`data-model.md`, `contracts/agent-contract.md`, `quickstart.md`.
+Features completadas (en `main`): 001-data-model, 002-beds24-connector, 003-pricing-engine.
 <!-- SPECKIT END -->
 
 # Booking AI Agent

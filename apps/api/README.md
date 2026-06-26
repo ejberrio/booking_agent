@@ -20,6 +20,7 @@ uv run uvicorn app.main:app --reload --port 8000
 ## Endpoints principales
 - **Conector (Beds24)**: `POST /sync/test`, `POST /sync/import`, `POST /sync/publish`, `GET /sync/runs`, `GET /sync/issues`
 - **Motor de precios**: `GET /pricing/calendar`, `POST /pricing/day`, `POST /pricing/range/preview`, `POST /pricing/range/apply`, `POST /pricing/rollback`, `GET /pricing/history`, `POST/DELETE /pricing/promotions`
+- **Agente (chat)**: `POST /chat` (turno; `{message, conversation_id?}`), `POST /chat/stream` (SSE). El agente propone cambios y solo aplica tras confirmación; toda acción queda auditada (origen=chat) y es reversible.
 
 Toda escritura de precio valida límites, audita y publica el **precio efectivo** a Beds24; las operaciones de rango requieren preview + confirmación.
 

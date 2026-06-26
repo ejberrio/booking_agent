@@ -6,7 +6,7 @@ from sqlalchemy import Boolean, Enum, ForeignKey, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
-from app.models.enums import MessageRole
+from app.models.enums import AgentActionStatus, MessageRole
 from app.models.mixins import JSONBType, TimestampMixin
 
 
@@ -39,3 +39,21 @@ class Message(Base, TimestampMixin):
     content: Mapped[str] = mapped_column(Text)
 
     conversation: Mapped[Conversation] = relationship(back_populates="messages")
+
+
+class AgentAction(Base, TimestampMixin):
+    """Acción de escritura propuesta por el agente, a la espera de confirmación."""
+
+    __tablename__ = "agent_action"
+
+    conversation_id: Mapped[int] = mapped_column(ForeignKey("conversation.id"), index=True)
+    message_id: Mapped[int | None] = mapped_column(ForeignKey("message.id"), nullable=True)
+    tool: Mapped[str] = mapped_column(String(80))
+    arguments: Mapped[dict] = mapped_column(JSONBType)
+    preview: Mapped[dict | None] = mapped_column(JSONBType, nullable=True)
+    fingerprint: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    reinforced: Mapped[bool] = mapped_column(Boolean, default=False)
+    status: Mapped[AgentActionStatus] = mapped_column(
+        Enum(AgentActionStatus), default=AgentActionStatus.proposed
+    )
+    applied_ref: Mapped[str | None] = mapped_column(String(200), nullable=True)
