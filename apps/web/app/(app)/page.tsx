@@ -24,8 +24,9 @@ export default function DashboardPage() {
   });
 
   const days = calendar.data ?? [];
+  // Solo días con datos (precio): evita contar días pasados/sin importar como ocupados.
   const withData = days.filter((d) => d.base_price !== null);
-  const occupied = days.filter((d) => d.available === 0).length;
+  const occupied = withData.filter((d) => d.available === 0).length;
   const occupancy = withData.length ? Math.round((occupied / withData.length) * 100) : 0;
   const promos = days.filter((d) => d.promotions.length > 0).length;
 
