@@ -1,8 +1,10 @@
 <!-- SPECKIT START -->
-Feature activa: **006-web-frontend** (UI Next.js en apps/web que consume la API).
-Plan e artefactos: `specs/006-web-frontend/plan.md`, `research.md`, `data-model.md`,
-`contracts/frontend-contract.md`, `quickstart.md`. Verificación = `npm run build`.
-Backend completo en `main` (Fases 1-5): 001…005. Endpoints: /sync, /pricing, /chat(+SSE), /suggestions.
+Feature activa: **007-production-deploy** (Railway web+api + Neon Postgres; Fase 7).
+Plan e artefactos: `specs/007-production-deploy/plan.md`, `research.md`, `data-model.md`,
+`contracts/{environment,health,web-api-proxy}.md`, `quickstart.md`.
+Decisiones clave: web pública + API en red privada (proxy Next, sin CORS); Neon SSL normalizado
+para asyncpg/alembic; migraciones al arrancar; /health verifica DB; cron diario de scan; CD al push a main.
+Backend Fases 1-6 en `main` (001…006) + integración real Beds24 (lecturas V1 + escritura V2).
 <!-- SPECKIT END -->
 
 # Booking AI Agent
