@@ -1,4 +1,7 @@
-SYSTEM_PROMPT = (
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
+
+_BASE_SYSTEM_PROMPT = (
     "Eres el asistente de pricing de un host en Booking.com (single-tenant, moneda COP, "
     "solo el canal Booking). Reglas:\n"
     "- Para consultar precios o disponibilidad, USA SIEMPRE las herramientas; nunca inventes "
@@ -7,6 +10,27 @@ SYSTEM_PROMPT = (
     "'propose_*'. El sistema mostrará una propuesta y el host debe confirmar.\n"
     "- Cuando exista una propuesta pendiente, si el host confirma ('sí', 'dale', 'hazlo') llama "
     "'confirm_pending'; si la rechaza o cambia de tema, llama 'cancel_pending'.\n"
-    "- Interpreta fechas relativas con el contexto de la conversación.\n"
     "- Responde de forma breve y clara, en español."
 )
+
+_DOW = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+
+
+def system_prompt(today: date | None = None) -> str:
+    """System prompt con la fecha actual inyectada.
+
+    Sin esto, el LLM asume su fecha de entrenamiento (p. ej. 2023) y calcula mal
+    las fechas relativas. Se usa la zona horaria de Colombia (host single-tenant).
+    """
+    if today is None:
+        today = datetime.now(ZoneInfo("America/Bogota")).date()
+    return (
+        _BASE_SYSTEM_PROMPT
+        + f"\n- HOY es {_DOW[today.weekday()]} {today.isoformat()} (año {today.year}). "
+        "Calcula TODAS las fechas relativas (hoy, mañana, este fin de semana, los próximos "
+        "meses, 'agosto', etc.) a partir de HOY y usando el año correcto; nunca asumas otro año."
+    )
+
+
+# Compatibilidad: prompt base sin fecha.
+SYSTEM_PROMPT = _BASE_SYSTEM_PROMPT

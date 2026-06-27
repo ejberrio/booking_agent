@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agent.prompts import SYSTEM_PROMPT
+from app.agent.prompts import system_prompt
 from app.agent.tools import (
     ALL_TOOLS,
     apply_proposal,
@@ -74,7 +74,7 @@ async def _build_messages(session: AsyncSession, conversation_id: int) -> list[d
     res = await session.execute(
         select(Message).where(Message.conversation_id == conversation_id).order_by(Message.id)
     )
-    msgs = [{"role": "system", "content": SYSTEM_PROMPT}]
+    msgs = [{"role": "system", "content": system_prompt()}]
     for m in res.scalars():
         msgs.append({"role": _ROLE.get(m.role, "user"), "content": m.content})
     return msgs
