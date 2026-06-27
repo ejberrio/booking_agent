@@ -36,14 +36,15 @@ def _date_range(date_from: date, date_to: date) -> list[date]:
     return [date_from + timedelta(days=i) for i in range((date_to - date_from).days + 1)]
 
 
-async def _availability(session: AsyncSession, unit_type_id: int, day: date) -> int:
+async def _availability(session: AsyncSession, unit_type_id: int, day: date) -> int | None:
     res = await session.execute(
         select(CalendarDay.units_available).where(
             CalendarDay.unit_type_id == unit_type_id, CalendarDay.date == day
         )
     )
     val = res.scalar_one_or_none()
-    return int(val) if val is not None else 0
+    # None = no hay datos sincronizados para ese día (distinto de 0 = sin disponibilidad).
+    return int(val) if val is not None else None
 
 
 async def _active_promo_names(session: AsyncSession, property_id: int, day: date) -> list[str]:

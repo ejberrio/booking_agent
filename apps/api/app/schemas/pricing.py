@@ -34,7 +34,7 @@ class CalendarDayView:
     date: date
     base_price: Decimal | None
     effective_price: Decimal | None
-    available: int
+    available: int | None  # None = sin datos sincronizados (no confundir con 0 = sin disponibilidad)
     promotions: list[str] = field(default_factory=list)
 
 

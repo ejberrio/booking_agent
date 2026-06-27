@@ -15,6 +15,11 @@ _BASE_SYSTEM_PROMPT = (
     "rango al que consultaste; NUNCA propongas precio 0.\n"
     "- Cuando exista una propuesta pendiente, si el host confirma ('sí', 'dale', 'hazlo') llama "
     "'confirm_pending'; si la rechaza o cambia de tema, llama 'cancel_pending'.\n"
+    "- Interpretación de get_calendar: si 'base' y 'available' son null, NO hay datos "
+    "sincronizados para esa fecha (está fuera del rango cargado); NO significa que esté "
+    "reservada. Dilo así ('no tengo datos de esa fecha; está fuera del rango sincronizado') y, "
+    "si aplica, ofrece fijar el precio. available=0 sí es sin disponibilidad (reservado/"
+    "bloqueado); available>0 es disponible.\n"
     "- Responde de forma breve y clara, en español."
 )
 
