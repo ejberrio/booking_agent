@@ -80,6 +80,17 @@ READ_TOOLS = [
         {"type": "object", "properties": {"date_from": _STR, "date_to": _STR}},
         False,
     ),
+    ToolSpec(
+        "get_bookings",
+        "Lista las reservas confirmadas que se solapan con un rango de fechas "
+        "(con llegada/salida y número de noches). Úsala para preguntas sobre reservas.",
+        {
+            "type": "object",
+            "properties": {"date_from": _STR, "date_to": _STR},
+            "required": ["date_from", "date_to"],
+        },
+        False,
+    ),
 ]
 
 WRITE_TOOLS = [
@@ -184,6 +195,33 @@ async def exec_read(session: AsyncSession, name: str, args: dict) -> Any:
                 }
             )
         return out
+
+    if name == "get_bookings":
+        from sqlalchemy import select
+
+        from app.models.booking import Booking
+        from app.models.enums import BookingStatus
+
+        df_b = date.fromisoformat(args["date_from"])
+        dt_b = date.fromisoformat(args["date_to"])
+        res = await session.execute(
+            select(Booking)
+            .where(
+                Booking.status == BookingStatus.confirmed,
+                Booking.check_in <= dt_b,
+                Booking.check_out > df_b,
+            )
+            .order_by(Booking.check_in)
+        )
+        return [
+            {
+                "external_ref": b.external_ref,
+                "check_in": b.check_in.isoformat(),
+                "check_out": b.check_out.isoformat(),
+                "nights": (b.check_out - b.check_in).days,
+            }
+            for b in res.scalars()
+        ]
 
     df = date.fromisoformat(args["date_from"])
     dt = date.fromisoformat(args["date_to"])
