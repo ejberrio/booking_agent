@@ -2,17 +2,20 @@ import asyncio
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy.ext.asyncio import async_engine_from_config
+from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.pool import NullPool
 
-from app.core.config import settings
+from app.core.config import normalize_db_url, settings
 from app.db.base import Base
 
 # Importa los modelos para que Alembic los detecte (autogenerate).
 from app import models  # noqa: E402,F401
 
+# Normaliza la URL para asyncpg/SSL (Neon) igual que la app.
+_DB_URL, _DB_CONNECT_ARGS = normalize_db_url(settings.database_url)
+
 config = context.config
-config.set_main_option("sqlalchemy.url", settings.database_url)
+config.set_main_option("sqlalchemy.url", _DB_URL)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -22,7 +25,7 @@ target_metadata = Base.metadata
 
 def run_migrations_offline() -> None:
     context.configure(
-        url=settings.database_url,
+        url=_DB_URL,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -38,10 +41,10 @@ def do_run_migrations(connection) -> None:
 
 
 async def run_migrations_online() -> None:
-    connectable = async_engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
+    connectable = create_async_engine(
+        _DB_URL,
         poolclass=NullPool,
+        connect_args=_DB_CONNECT_ARGS,
     )
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)

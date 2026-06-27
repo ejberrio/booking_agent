@@ -32,6 +32,10 @@ make web                      # Web en http://localhost:3000
 
 Sin claves de LLM, el chat responde en "modo demo". Configura `ANTHROPIC_API_KEY` en `.env` para activar el agente.
 
+## Despliegue (producción)
+
+Web pública (Next.js) + API privada (FastAPI) en **Railway**, Postgres en **Neon** (gratis). La web hace de proxy server-side hacia la API por la red interna (la API no se expone a internet). Guía paso a paso: [`docs/deploy.md`](docs/deploy.md). Decisión de arquitectura: [ADR 0002](docs/adr/0002-deploy-railway-neon.md).
+
 ## Spec-Driven Development (GitHub Spec Kit)
 
 Este repo usa [Spec Kit](https://github.com/github/spec-kit). Flujo por feature, con skills de Claude Code:

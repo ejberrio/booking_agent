@@ -8,7 +8,10 @@ import type {
   Suggestion,
 } from "@/lib/types";
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+// Las llamadas van al proxy server-side de la propia web (mismo origen).
+// El navegador nunca habla con la API directamente; el proxy reenvía a la API privada.
+// `lib/sse.ts` también usa esta constante (chat SSE → /api/proxy/chat/stream).
+export const API_URL = "/api/proxy";
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {

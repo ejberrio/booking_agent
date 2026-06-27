@@ -1,4 +1,46 @@
+import ssl as _ssl
+from typing import Any
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def normalize_db_url(url: str) -> tuple[str, dict[str, Any]]:
+    """Normaliza una cadena de conexión Postgres para asyncpg.
+
+    - Fuerza el driver `postgresql+asyncpg`.
+    - Elimina parámetros estilo libpq que asyncpg NO entiende (`sslmode`,
+      `channel_binding`) y los traduce a `connect_args` con la semántica correcta:
+        * `require`/`prefer` → cifrar SIN verificar el certificado (como libpq).
+        * `verify-ca`/`verify-full` → cifrar Y verificar contra el CA del sistema.
+        * `disable`/`allow`/ausente → sin SSL.
+
+    Permite pegar la URL de Neon tal cual (con `?sslmode=require`).
+    Devuelve (url_normalizada, connect_args).
+    """
+    parts = urlsplit(url)
+    scheme = parts.scheme
+    if scheme in ("postgres", "postgresql") or (
+        scheme.startswith("postgresql+") and "asyncpg" not in scheme
+    ):
+        scheme = "postgresql+asyncpg"
+
+    query = dict(parse_qsl(parts.query))
+    sslmode = (query.pop("sslmode", None) or "").lower()
+    query.pop("channel_binding", None)
+
+    normalized = urlunsplit(
+        (scheme, parts.netloc, parts.path, urlencode(query), parts.fragment)
+    )
+    connect_args: dict[str, Any] = {}
+    if sslmode in ("require", "prefer"):
+        ctx = _ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = _ssl.CERT_NONE
+        connect_args["ssl"] = ctx
+    elif sslmode in ("verify-ca", "verify-full"):
+        connect_args["ssl"] = _ssl.create_default_context()
+    return normalized, connect_args
 
 
 class Settings(BaseSettings):
@@ -49,6 +91,14 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def normalized_database_url(self) -> str:
+        return normalize_db_url(self.database_url)[0]
+
+    @property
+    def db_connect_args(self) -> dict[str, Any]:
+        return normalize_db_url(self.database_url)[1]
 
 
 settings = Settings()
