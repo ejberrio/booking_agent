@@ -1,3 +1,4 @@
+import ssl as _ssl
 from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
@@ -9,7 +10,10 @@ def normalize_db_url(url: str) -> tuple[str, dict[str, Any]]:
 
     - Fuerza el driver `postgresql+asyncpg`.
     - Elimina parámetros estilo libpq que asyncpg NO entiende (`sslmode`,
-      `channel_binding`); si `sslmode` pedía cifrado, se traduce a `connect_args`.
+      `channel_binding`) y los traduce a `connect_args` con la semántica correcta:
+        * `require`/`prefer` → cifrar SIN verificar el certificado (como libpq).
+        * `verify-ca`/`verify-full` → cifrar Y verificar contra el CA del sistema.
+        * `disable`/`allow`/ausente → sin SSL.
 
     Permite pegar la URL de Neon tal cual (con `?sslmode=require`).
     Devuelve (url_normalizada, connect_args).
@@ -22,15 +26,20 @@ def normalize_db_url(url: str) -> tuple[str, dict[str, Any]]:
         scheme = "postgresql+asyncpg"
 
     query = dict(parse_qsl(parts.query))
-    sslmode = query.pop("sslmode", None)
+    sslmode = (query.pop("sslmode", None) or "").lower()
     query.pop("channel_binding", None)
 
     normalized = urlunsplit(
         (scheme, parts.netloc, parts.path, urlencode(query), parts.fragment)
     )
     connect_args: dict[str, Any] = {}
-    if sslmode and sslmode.lower() not in ("disable", "allow"):
-        connect_args["ssl"] = True
+    if sslmode in ("require", "prefer"):
+        ctx = _ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = _ssl.CERT_NONE
+        connect_args["ssl"] = ctx
+    elif sslmode in ("verify-ca", "verify-full"):
+        connect_args["ssl"] = _ssl.create_default_context()
     return normalized, connect_args
 
 
