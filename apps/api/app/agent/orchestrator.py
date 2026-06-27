@@ -24,6 +24,7 @@ from app.core.config import settings
 from app.llm.client import LLM
 from app.models.agent import AgentAction, LLMConfig, Message
 from app.models.enums import AgentActionStatus, MessageRole
+from app.models.property import Property, UnitType
 
 MAX_STEPS = 6
 
@@ -70,11 +71,34 @@ _ROLE = {
 }
 
 
+async def _units_context(session: AsyncSession) -> str:
+    """Lista las unidades del host para que el agente no pregunte por IDs técnicos."""
+    rows = (
+        await session.execute(
+            select(UnitType.id, UnitType.name, Property.id, Property.name)
+            .join(Property, UnitType.property_id == Property.id)
+            .order_by(UnitType.id)
+        )
+    ).all()
+    if not rows:
+        return ""
+    if len(rows) == 1:
+        uid, uname, pid, pname = rows[0]
+        return (
+            f"\n- El host tiene UNA sola unidad: unit_type_id={uid} «{uname}», "
+            f"property_id={pid} («{pname}»). Usa esos identificadores en todas las "
+            "herramientas SIN preguntar al host por IDs."
+        )
+    listing = "; ".join(f"unit_type_id={r[0]} «{r[1]}» (property_id={r[2]})" for r in rows)
+    return f"\n- Unidades del host: {listing}. Usa el unit_type_id correcto sin preguntar por IDs."
+
+
 async def _build_messages(session: AsyncSession, conversation_id: int) -> list[dict]:
     res = await session.execute(
         select(Message).where(Message.conversation_id == conversation_id).order_by(Message.id)
     )
-    msgs = [{"role": "system", "content": system_prompt()}]
+    system = system_prompt() + await _units_context(session)
+    msgs = [{"role": "system", "content": system}]
     for m in res.scalars():
         msgs.append({"role": _ROLE.get(m.role, "user"), "content": m.content})
     return msgs
