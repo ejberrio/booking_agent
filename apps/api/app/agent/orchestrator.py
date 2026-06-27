@@ -180,7 +180,28 @@ async def run_turn(
             return AgentReply(text, events=events)
 
         # Herramienta de escritura → proponer (no aplica).
-        proposal = await build_proposal(session, tc.name, tc.arguments)
+        try:
+            proposal = await build_proposal(session, tc.name, tc.arguments)
+        except ValueError as exc:
+            # Realimenta el error al LLM para que se corrija dentro del mismo turno
+            # (p. ej. consultar el precio actual antes de proponer un porcentaje).
+            messages.append(
+                {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [
+                        {
+                            "id": tc.id,
+                            "type": "function",
+                            "function": {"name": tc.name, "arguments": json.dumps(tc.arguments)},
+                        }
+                    ],
+                }
+            )
+            messages.append(
+                {"role": "tool", "tool_call_id": tc.id, "content": json.dumps({"error": str(exc)})}
+            )
+            continue
         if pending:
             pending.status = AgentActionStatus.cancelled
         action = AgentAction(
