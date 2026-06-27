@@ -267,6 +267,12 @@ async def build_proposal(session: AsyncSession, name: str, args: dict) -> Propos
     if name in ("propose_set_range", "propose_set_day"):
         uid = int(args["unit_type_id"])
         price = Decimal(str(args["price"]))
+        if price <= 0:
+            raise ValueError(
+                "precio inválido (debe ser > 0). Para un cambio relativo (p. ej. 'sube 15%'), "
+                "primero consulta el precio actual con get_calendar y propón el valor ABSOLUTO "
+                "calculado (precio_actual × (1 + porcentaje/100))."
+            )
         if name == "propose_set_day":
             sel = RangeSelection(date.fromisoformat(args["day"]), date.fromisoformat(args["day"]))
         else:
