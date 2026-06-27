@@ -16,7 +16,7 @@ FROM node:22-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
-    HOSTNAME=0.0.0.0
+    HOSTNAME="::"
 # Artefactos del modo standalone (imagen liviana).
 COPY --from=build /app/public ./public
 COPY --from=build /app/.next/standalone ./
