@@ -2,7 +2,7 @@ export interface CalendarDay {
   date: string;
   base_price: string | null;
   effective_price: string | null;
-  available: number;
+  available: number | null;
   promotions: string[];
 }
 
