@@ -10,7 +10,7 @@ from app.api.routes.sync import get_adapter
 from app.db.session import get_session
 from app.models.enums import PromotionType
 from app.schemas.pricing import RangeSelection
-from app.services import pricing_app_service, promotion_service
+from app.services import availability_service, pricing_app_service, promotion_service
 from app.services.audit_service import RollbackConflict
 
 router = APIRouter()
@@ -39,6 +39,16 @@ class RangePreviewRequest(BaseModel):
 
 
 class RangeApplyRequest(RangePreviewRequest):
+    fingerprint: str
+
+
+class AvailabilityPreviewRequest(BaseModel):
+    unit_type_id: int
+    action: str  # "block" | "open"
+    selection: SelectionBody
+
+
+class AvailabilityApplyRequest(AvailabilityPreviewRequest):
     fingerprint: str
 
 
@@ -96,6 +106,45 @@ async def range_apply(req: RangeApplyRequest, session: AsyncSession = Depends(ge
             unit_type_id=req.unit_type_id,
             selection=req.selection.to_selection(),
             price=req.price,
+            fingerprint=req.fingerprint,
+        )
+        await session.commit()
+        return asdict(result)
+    finally:
+        await adapter.aclose()
+
+
+def _validate_action(action: str) -> str:
+    if action not in ("block", "open"):
+        raise HTTPException(status_code=422, detail="action debe ser 'block' u 'open'")
+    return action
+
+
+@router.post("/availability/preview")
+async def availability_preview(
+    req: AvailabilityPreviewRequest, session: AsyncSession = Depends(get_session)
+):
+    preview = await availability_service.preview(
+        session,
+        unit_type_id=req.unit_type_id,
+        selection=req.selection.to_selection(),
+        action=_validate_action(req.action),
+    )
+    return asdict(preview)
+
+
+@router.post("/availability/apply")
+async def availability_apply(
+    req: AvailabilityApplyRequest, session: AsyncSession = Depends(get_session)
+):
+    adapter = get_adapter()
+    try:
+        result = await availability_service.apply(
+            session,
+            adapter,
+            unit_type_id=req.unit_type_id,
+            selection=req.selection.to_selection(),
+            action=_validate_action(req.action),
             fingerprint=req.fingerprint,
         )
         await session.commit()

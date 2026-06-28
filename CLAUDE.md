@@ -1,10 +1,12 @@
 <!-- SPECKIT START -->
-Feature activa: **007-production-deploy** (Railway web+api + Neon Postgres; Fase 7).
-Plan e artefactos: `specs/007-production-deploy/plan.md`, `research.md`, `data-model.md`,
-`contracts/{environment,health,web-api-proxy}.md`, `quickstart.md`.
-Decisiones clave: web pública + API en red privada (proxy Next, sin CORS); Neon SSL normalizado
-para asyncpg/alembic; migraciones al arrancar; /health verifica DB; cron diario de scan; CD al push a main.
-Backend Fases 1-6 en `main` (001…006) + integración real Beds24 (lecturas V1 + escritura V2).
+Feature activa: **008-availability-management** (bloquear/abrir disponibilidad por chat y calendario).
+Plan e artefactos: `specs/008-availability-management/plan.md`, `research.md`, `data-model.md`,
+`contracts/{availability-api,agent-tools,channel-availability}.md`, `quickstart.md`.
+Decisiones clave: reutiliza el flujo propone→confirma→publica→audita de precios; CalendarDay.is_blocked
+distingue bloqueo del host de reserva; nunca toca noches reservadas; set_availability_range en el puerto
+(Beds24 V2 numAvail); nueva tabla AvailabilityChangeLog; calendario con estados (incluido en esta feature);
+reversión = operación inversa (abrir deshace bloquear).
+App YA EN PRODUCCIÓN (Railway web+api + Neon, CD en push a main). Fases 1-7 en `main`.
 <!-- SPECKIT END -->
 
 # Booking AI Agent

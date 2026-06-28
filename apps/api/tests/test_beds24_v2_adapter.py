@@ -183,3 +183,25 @@ async def test_secret_not_leaked_in_errors():
         await adapter.get_properties()
     assert "refresh-xyz" not in str(ei.value)
     await adapter.aclose()
+
+
+async def test_set_availability_verifies():
+    def handler(request: httpx.Request) -> httpx.Response:
+        if (r := _token_ok(request)) is not None:
+            return r
+        if request.method == "POST":
+            return httpx.Response(200, json=[{"success": True, "modified": {"roomId": 697411}}])
+        return httpx.Response(
+            200,
+            json={
+                "success": True,
+                "data": [
+                    {"roomId": 697411, "calendar": [{"from": "2026-07-15", "to": "2026-07-15", "numAvail": 0, "price1": 350000}]}
+                ],
+            },
+        )
+
+    adapter = adapter_with(handler)
+    res = await adapter.set_availability_range("697411", DAY, DAY, 0)
+    assert res.ok is True and res.verified is True
+    await adapter.aclose()

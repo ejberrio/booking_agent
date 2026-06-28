@@ -48,6 +48,12 @@ railway logs -d --service scan <deploymentId>        # corrida del cron
 ```
 (Requiere `railway login` interactivo una vez en el equipo.)
 
+## Disponibilidad (bloquear/abrir)
+
+- **Por chat**: "cierra del 1 al 3 de julio" / "bloquea los fines de semana de agosto" / "vuelve a abrir el 2 de julio" → el agente propone → confirmas → se publica a Beds24 (numAvail). Nunca cierra noches con reserva confirmada.
+- **Por calendario**: selecciona un rango → **Bloquear** / **Abrir** → preview → confirmar. Estados visuales: reservada (rojo), bloqueada (gris), promoción (ámbar), sin datos (—).
+- Auditoría en `availability_change_log`; reversión = operación inversa (abrir deshace bloquear).
+
 ## Tareas comunes
 
 - **Traer/actualizar datos reales** (precios + reservas desde Beds24): `POST /api/proxy/sync/import` con body `{"days":150}`.

@@ -263,6 +263,73 @@ async def publish_price(
     return run
 
 
+async def publish_availability(
+    session: AsyncSession,
+    adapter: ChannelManager,
+    *,
+    unit_type_id: int,
+    date_from: date,
+    date_to: date,
+    num_avail: int,
+) -> SyncRun:
+    """Publica al remoto la disponibilidad (numAvail) de un rango ya aplicado localmente."""
+    run = SyncRun(direction=SyncDirection.outbound, status=SyncStatus.running)
+    session.add(run)
+    await session.flush()
+
+    unit = await session.get(UnitType, unit_type_id)
+    if unit is None or not unit.external_ref:
+        session.add(
+            SyncIssue(
+                sync_run_id=run.id,
+                kind=SyncIssueKind.comm_error,
+                entity_ref=f"unit:{unit_type_id}",
+                detail="La unidad no tiene external_ref (no mapeada al Channel Manager)",
+            )
+        )
+        run.issue_count = 1
+        run.status = SyncStatus.error
+        run.finished_at = _now()
+        await session.flush()
+        return run
+
+    try:
+        result = await adapter.set_availability_range(
+            unit.external_ref, date_from, date_to, num_avail
+        )
+    except ChannelError as exc:
+        session.add(
+            SyncIssue(
+                sync_run_id=run.id,
+                kind=SyncIssueKind.comm_error,
+                entity_ref=f"unit:{unit_type_id} {date_from}..{date_to}",
+                detail=str(exc),
+            )
+        )
+        run.issue_count = 1
+        run.status = SyncStatus.error
+        run.finished_at = _now()
+        await session.flush()
+        return run
+    if not result.verified:
+        session.add(
+            SyncIssue(
+                sync_run_id=run.id,
+                kind=SyncIssueKind.write_unverified,
+                entity_ref=f"unit:{unit_type_id} {date_from}..{date_to}",
+                detail=result.detail or "escritura no verificada",
+            )
+        )
+        run.issue_count = 1
+        run.status = SyncStatus.partial
+    else:
+        run.updated_count = (date_to - date_from).days + 1
+        run.status = SyncStatus.success
+    run.finished_at = _now()
+    await session.flush()
+    return run
+
+
 async def list_open_issues(session: AsyncSession) -> list[SyncIssue]:
     res = await session.execute(
         select(SyncIssue).where(SyncIssue.status == IssueStatus.open).order_by(SyncIssue.id)

@@ -35,6 +35,7 @@ class CalendarDayView:
     base_price: Decimal | None
     effective_price: Decimal | None
     available: int | None  # None = sin datos sincronizados (no confundir con 0 = sin disponibilidad)
+    is_blocked: bool = False  # True = cerrada manualmente por el host (distinta de reservada)
     promotions: list[str] = field(default_factory=list)
 
 
@@ -69,4 +70,40 @@ class ApplyResult:
 def fingerprint_for(items: list[ChangePreviewDay]) -> str:
     """Huella estable del estado base afectado, para detectar previews obsoletos."""
     raw = ";".join(f"{i.date.isoformat()}={i.old_price}" for i in items)
+    return hashlib.sha256(raw.encode()).hexdigest()[:16]
+
+
+# --------- Disponibilidad (bloquear/abrir) ---------
+
+
+@dataclass
+class AvailabilityDayView:
+    date: date
+    old_available: int | None
+    new_available: int
+    valid: bool  # True = se afecta; False = se omite (reservada / ya en el estado destino)
+    skip_reason: str | None = None
+
+
+@dataclass
+class AvailabilityPreview:
+    items: list[AvailabilityDayView]
+    fingerprint: str
+    affected_count: int
+    skipped_count: int
+    reinforced: bool
+
+
+@dataclass
+class AvailabilityApplyResult:
+    applied: list[date] = field(default_factory=list)
+    skipped: list[tuple[date, str]] = field(default_factory=list)
+    audited: int = 0
+    published: int = 0
+    publish_issues: int = 0
+    stale: bool = False
+
+
+def availability_fingerprint(items: list[AvailabilityDayView]) -> str:
+    raw = ";".join(f"{i.date.isoformat()}={i.old_available}:{int(i.valid)}" for i in items)
     return hashlib.sha256(raw.encode()).hexdigest()[:16]

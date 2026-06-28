@@ -3,6 +3,7 @@
 from app.models.agent import AgentAction, Conversation, LLMConfig, Message
 from app.models.intelligence import IntelligenceRun, MarketReference
 from app.models.audit import PriceChangeLog, PromotionChangeLog
+from app.models.availability import AvailabilityChangeLog
 from app.models.booking import Booking
 from app.models.calendar import CalendarDay, Rate
 from app.models.market import Event, PriceSuggestion
@@ -22,6 +23,7 @@ __all__ = [
     "Event",
     "PriceSuggestion",
     "PriceChangeLog",
+    "AvailabilityChangeLog",
     "LLMConfig",
     "Conversation",
     "Message",
