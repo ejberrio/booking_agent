@@ -6,7 +6,7 @@ from app.core.config import settings
 
 app = FastAPI(
     title="Booking AI Agent API",
-    version="0.1.0",
+    version="0.1.1",
     description="Agente de IA para gestion de precios y promociones en Booking.com.",
 )
 
@@ -23,4 +23,9 @@ app.include_router(api_router)
 
 @app.get("/")
 def root() -> dict[str, str]:
-    return {"name": "booking-agent-api", "status": "ok", "environment": settings.environment}
+    return {
+        "name": "booking-agent-api",
+        "status": "ok",
+        "version": app.version,
+        "environment": settings.environment,
+    }
