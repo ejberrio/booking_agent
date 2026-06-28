@@ -66,6 +66,13 @@ export function PriceCalendar({ year, month, days, selection, onSelect }: Props)
           const eff = d?.effective_price ? Number(d.effective_price) : null;
           const ratio = eff !== null && max > min ? (eff - min) / (max - min) : 0;
           const selected = inRange(date);
+          const blocked = d?.is_blocked === true;
+          const reserved = !!d && d.available === 0 && !blocked;
+          const bg = blocked
+            ? "rgba(100,116,139,0.30)" // bloqueada: gris
+            : eff !== null
+              ? `rgba(37,99,235,${0.12 + ratio * 0.5})`
+              : undefined;
           return (
             <button
               key={date}
@@ -74,7 +81,7 @@ export function PriceCalendar({ year, month, days, selection, onSelect }: Props)
                 setDragEnd(date);
               }}
               onPointerEnter={() => dragStart && setDragEnd(date)}
-              style={eff !== null ? { backgroundColor: `rgba(37,99,235,${0.12 + ratio * 0.5})` } : undefined}
+              style={bg ? { backgroundColor: bg } : undefined}
               className={cn(
                 "flex aspect-square flex-col items-center justify-center rounded-md border p-1 text-[10px]",
                 selected ? "border-primary ring-1 ring-primary" : "border-border",
@@ -85,12 +92,31 @@ export function PriceCalendar({ year, month, days, selection, onSelect }: Props)
                 {eff !== null ? `$${Math.round(eff / 1000)}k` : "—"}
               </span>
               <span className="flex gap-0.5">
-                {d?.promotions.length ? <span className="h-1 w-1 rounded-full bg-amber-500" /> : null}
-                {d && d.available === 0 ? <span className="h-1 w-1 rounded-full bg-red-500" /> : null}
+                {d?.promotions.length ? (
+                  <span title="Promoción" className="h-1 w-1 rounded-full bg-amber-500" />
+                ) : null}
+                {blocked ? (
+                  <span title="Bloqueada" className="h-1 w-1 rounded-full bg-slate-400" />
+                ) : null}
+                {reserved ? (
+                  <span title="Reservada" className="h-1 w-1 rounded-full bg-red-500" />
+                ) : null}
               </span>
             </button>
           );
         })}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-3 text-[10px] text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-red-500" /> Reservada
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-slate-400" /> Bloqueada
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Promoción
+        </span>
+        <span>— = sin datos</span>
       </div>
     </div>
   );

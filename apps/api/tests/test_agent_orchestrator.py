@@ -43,6 +43,10 @@ class FakeCM:
         self.published.append((room, df, dt, price))
         return WriteResult(True, True)
 
+    async def set_availability_range(self, room, df, dt, num_avail):
+        self.published.append((room, df, dt, num_avail))
+        return WriteResult(True, True)
+
 
 def call(name, args):
     return LLMResponse(tool_calls=[ToolCall("c1", name, args)])
@@ -211,3 +215,36 @@ async def test_memory_includes_history(session):
     contents = [m.get("content") for m in llm2.calls[0]["messages"]]
     assert "hola soy el host" in contents
     assert await _count(session, Message) >= 4  # 2 user + 2 assistant
+
+
+async def test_block_availability_proposes_and_confirms(session):
+    from app.models.calendar import CalendarDay
+
+    conv, prop, unit = await setup(session)
+    cm = FakeCM()
+    llm1 = FakeLLM([call("propose_block_availability", {"unit_type_id": unit.id, "date_from": "2026-07-10", "date_to": "2026-07-11"})])
+    r1 = await run_turn(session, cm, llm1, conversation_id=conv.id, user_text="cierra el 10 y 11 de julio")
+    assert r1.pending_action_id is not None and r1.applied is False
+
+    llm2 = FakeLLM([call("confirm_pending", {})])
+    r2 = await run_turn(session, cm, llm2, conversation_id=conv.id, user_text="sí")
+    assert r2.applied is True
+    cd = (await session.execute(select(CalendarDay).where(CalendarDay.unit_type_id == unit.id, CalendarDay.date == date(2026, 7, 10)))).scalar_one()
+    assert cd.is_blocked is True and cd.units_available == 0
+    assert cm.published  # publicó la disponibilidad
+
+
+async def test_open_availability_restores(session):
+    from app.models.calendar import CalendarDay
+
+    conv, prop, unit = await setup(session)
+    cm = FakeCM()
+    # bloquear primero
+    await run_turn(session, cm, FakeLLM([call("propose_block_availability", {"unit_type_id": unit.id, "date_from": "2026-07-10", "date_to": "2026-07-10"})]), conversation_id=conv.id, user_text="cierra el 10")
+    await run_turn(session, cm, FakeLLM([call("confirm_pending", {})]), conversation_id=conv.id, user_text="sí")
+    # reabrir
+    await run_turn(session, cm, FakeLLM([call("propose_open_availability", {"unit_type_id": unit.id, "date_from": "2026-07-10", "date_to": "2026-07-10"})]), conversation_id=conv.id, user_text="vuelve a abrir el 10")
+    r = await run_turn(session, cm, FakeLLM([call("confirm_pending", {})]), conversation_id=conv.id, user_text="sí")
+    assert r.applied is True
+    cd = (await session.execute(select(CalendarDay).where(CalendarDay.unit_type_id == unit.id, CalendarDay.date == date(2026, 7, 10)))).scalar_one()
+    assert cd.is_blocked is False and cd.units_available == unit.units_count

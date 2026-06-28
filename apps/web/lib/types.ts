@@ -3,7 +3,35 @@ export interface CalendarDay {
   base_price: string | null;
   effective_price: string | null;
   available: number | null;
+  is_blocked: boolean;
   promotions: string[];
+}
+
+export type AvailabilityAction = "block" | "open";
+
+export interface AvailabilityDay {
+  date: string;
+  old_available: number | null;
+  new_available: number;
+  valid: boolean;
+  skip_reason: string | null;
+}
+
+export interface AvailabilityPreview {
+  items: AvailabilityDay[];
+  fingerprint: string;
+  affected_count: number;
+  skipped_count: number;
+  reinforced: boolean;
+}
+
+export interface AvailabilityApplyResult {
+  applied: string[];
+  skipped: [string, string][];
+  audited: number;
+  published: number;
+  publish_issues: number;
+  stale: boolean;
 }
 
 export interface PreviewDay {

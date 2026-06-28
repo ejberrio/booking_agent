@@ -1,5 +1,8 @@
 import type {
   ApplyResult,
+  AvailabilityAction,
+  AvailabilityApplyResult,
+  AvailabilityPreview,
   CalendarDay,
   ChangePreview,
   ChatReply,
@@ -41,6 +44,27 @@ export const api = {
     fingerprint: string;
   }) =>
     req<ApplyResult>(`/pricing/range/apply`, { method: "POST", body: JSON.stringify(body) }),
+
+  // Disponibilidad (bloquear/abrir)
+  availabilityPreview: (body: {
+    unit_type_id: number;
+    action: AvailabilityAction;
+    selection: RangeSelection;
+  }) =>
+    req<AvailabilityPreview>(`/pricing/availability/preview`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  availabilityApply: (body: {
+    unit_type_id: number;
+    action: AvailabilityAction;
+    selection: RangeSelection;
+    fingerprint: string;
+  }) =>
+    req<AvailabilityApplyResult>(`/pricing/availability/apply`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 
   // Suggestions
   listSuggestions: (status?: string) =>

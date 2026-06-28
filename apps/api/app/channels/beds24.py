@@ -223,3 +223,9 @@ class Beds24Adapter:
         verified = len(rates) == len(days) and all(r.price == price for r in rates)
         detail = None if verified else "el precio no se confirmó al releer"
         return WriteResult(ok=True, verified=verified, detail=detail)
+
+    async def set_availability_range(
+        self, room_external_id: str, date_from: date, date_to: date, num_avail: int
+    ) -> WriteResult:
+        # Las escrituras de la API V1 no funcionan; producción usa V2.
+        raise ChannelError("La API V1 no soporta escritura de disponibilidad; usa la V2.")

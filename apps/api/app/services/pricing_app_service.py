@@ -36,15 +36,17 @@ def _date_range(date_from: date, date_to: date) -> list[date]:
     return [date_from + timedelta(days=i) for i in range((date_to - date_from).days + 1)]
 
 
-async def _availability(session: AsyncSession, unit_type_id: int, day: date) -> int | None:
+async def _availability(session: AsyncSession, unit_type_id: int, day: date) -> tuple[int | None, bool]:
+    """Devuelve (units_available, is_blocked). None = sin datos (distinto de 0 = sin disponibilidad)."""
     res = await session.execute(
-        select(CalendarDay.units_available).where(
+        select(CalendarDay.units_available, CalendarDay.is_blocked).where(
             CalendarDay.unit_type_id == unit_type_id, CalendarDay.date == day
         )
     )
-    val = res.scalar_one_or_none()
-    # None = no hay datos sincronizados para ese día (distinto de 0 = sin disponibilidad).
-    return int(val) if val is not None else None
+    row = res.first()
+    if row is None:
+        return None, False
+    return int(row[0]), bool(row[1])
 
 
 async def _active_promo_names(session: AsyncSession, property_id: int, day: date) -> list[str]:
@@ -86,12 +88,14 @@ async def get_calendar(
             if base is not None
             else None
         )
+        avail, blocked = await _availability(session, unit_type_id, day)
         views.append(
             CalendarDayView(
                 date=day,
                 base_price=base,
                 effective_price=eff,
-                available=await _availability(session, unit_type_id, day),
+                available=avail,
+                is_blocked=blocked,
                 promotions=await _active_promo_names(session, unit.property_id, day),
             )
         )

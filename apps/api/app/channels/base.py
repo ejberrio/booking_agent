@@ -81,3 +81,7 @@ class ChannelManager(Protocol):
     async def set_rate_range(
         self, room_external_id: str, date_from: date, date_to: date, price: Decimal
     ) -> WriteResult: ...
+
+    async def set_availability_range(
+        self, room_external_id: str, date_from: date, date_to: date, num_avail: int
+    ) -> WriteResult: ...

@@ -271,3 +271,31 @@ class Beds24V2Adapter:
         verified = ok and len(rates) == len(days) and all(r.price == price for r in rates)
         detail = None if verified else "el precio no se confirmó al releer"
         return WriteResult(ok=ok, verified=verified, detail=detail)
+
+    async def set_availability_range(
+        self, room_external_id: str, date_from: date, date_to: date, num_avail: int
+    ) -> WriteResult:
+        body = [
+            {
+                "roomId": int(room_external_id),
+                "calendar": [
+                    {
+                        "from": date_from.isoformat(),
+                        "to": date_to.isoformat(),
+                        "numAvail": int(num_avail),
+                    }
+                ],
+            }
+        ]
+        result = await self._request("POST", "inventory/rooms/calendar", json_body=body)
+        ok = False
+        if isinstance(result, list) and result:
+            ok = bool(result[0].get("success"))
+        elif isinstance(result, dict):
+            ok = bool(result.get("success"))
+        # Verificación: releer y comparar la disponibilidad.
+        rates = await self.get_rates(room_external_id, date_from, date_to)
+        days = _days(date_from, date_to)
+        verified = ok and len(rates) == len(days) and all(r.available == num_avail for r in rates)
+        detail = None if verified else "la disponibilidad no se confirmó al releer"
+        return WriteResult(ok=ok, verified=verified, detail=detail)

@@ -18,7 +18,7 @@ from app.models.agent import AgentAction
 from app.models.enums import ChangeOrigin, PromotionType
 from app.models.pricing import Promotion
 from app.schemas.pricing import RangeSelection
-from app.services import pricing_app_service, promotion_service
+from app.services import availability_service, pricing_app_service, promotion_service
 
 REINFORCE_DAYS = 14
 REINFORCE_VARIATION = Decimal("0.25")
@@ -147,6 +147,38 @@ WRITE_TOOLS = [
         "propose_rollback",
         "Propone revertir un cambio de precio por id de cambio.",
         {"type": "object", "properties": {"change_id": _INT}, "required": ["change_id"]},
+        True,
+    ),
+    ToolSpec(
+        "propose_block_availability",
+        "Propone CERRAR (bloquear) la disponibilidad de un rango, con filtro opcional por días "
+        "de semana (0=lun..6=dom). No aplica hasta confirmar; omite noches con reserva.",
+        {
+            "type": "object",
+            "properties": {
+                "unit_type_id": _INT,
+                "date_from": _STR,
+                "date_to": _STR,
+                "weekdays": {"type": "array", "items": _INT},
+            },
+            "required": ["unit_type_id", "date_from", "date_to"],
+        },
+        True,
+    ),
+    ToolSpec(
+        "propose_open_availability",
+        "Propone REABRIR (abrir) la disponibilidad de un rango previamente bloqueado. No aplica "
+        "hasta confirmar; no altera noches reservadas.",
+        {
+            "type": "object",
+            "properties": {
+                "unit_type_id": _INT,
+                "date_from": _STR,
+                "date_to": _STR,
+                "weekdays": {"type": "array", "items": _INT},
+            },
+            "required": ["unit_type_id", "date_from", "date_to"],
+        },
         True,
     ),
 ]
@@ -312,6 +344,27 @@ async def build_proposal(session: AsyncSession, name: str, args: dict) -> Propos
     if name == "propose_rollback":
         return Proposal(name, args, {}, None, f"Propongo revertir el cambio {args['change_id']}. ¿Confirmas?", False)
 
+    if name in ("propose_block_availability", "propose_open_availability"):
+        uid = int(args["unit_type_id"])
+        act = "block" if name == "propose_block_availability" else "open"
+        prev = await availability_service.preview(
+            session, unit_type_id=uid, selection=_selection(args), action=act
+        )
+        verbo = "bloquear" if act == "block" else "abrir"
+        nota = " ⚠️ Es un cambio grande." if prev.reinforced else ""
+        omit = f" ({prev.skipped_count} omitida(s))" if prev.skipped_count else ""
+        summary = f"Propongo {verbo} {prev.affected_count} noche(s){omit}.{nota} ¿Confirmas?"
+        preview_dict = {
+            "action": act,
+            "affected": prev.affected_count,
+            "skipped": prev.skipped_count,
+            "days": [
+                {"date": i.date.isoformat(), "valid": i.valid, "reason": i.skip_reason}
+                for i in prev.items
+            ],
+        }
+        return Proposal(name, args, preview_dict, prev.fingerprint, summary, prev.reinforced)
+
     raise ValueError(f"herramienta de escritura desconocida: {name}")
 
 
@@ -371,6 +424,29 @@ async def apply_proposal(
             session, channel, int(args["change_id"]), confirm=True
         )
         return ApplyOutcome("applied", "Cambio revertido y publicado.", None)
+
+    if tool in ("propose_block_availability", "propose_open_availability"):
+        uid = int(args["unit_type_id"])
+        act = "block" if tool == "propose_block_availability" else "open"
+        res = await availability_service.apply(
+            session,
+            channel,
+            unit_type_id=uid,
+            selection=_selection(args),
+            action=act,
+            fingerprint=action.fingerprint or "",
+            origin=ChangeOrigin.chat,
+            message_id=message_id,
+        )
+        if res.stale:
+            return ApplyOutcome("stale", "El estado cambió desde la propuesta; vuelvo a proponer.")
+        verbo = "bloqueé" if act == "block" else "reabrí"
+        omit = f" ({len(res.skipped)} omitida(s))" if res.skipped else ""
+        return ApplyOutcome(
+            "applied",
+            f"Listo: {verbo} {len(res.applied)} noche(s){omit} y publiqué la disponibilidad.",
+            f"availability:{len(res.applied)}",
+        )
 
     raise ValueError(f"no sé aplicar: {tool}")
 
