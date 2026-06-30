@@ -1,12 +1,12 @@
 <!-- SPECKIT START -->
-Feature activa: **008-availability-management** (bloquear/abrir disponibilidad por chat y calendario).
-Plan e artefactos: `specs/008-availability-management/plan.md`, `research.md`, `data-model.md`,
-`contracts/{availability-api,agent-tools,channel-availability}.md`, `quickstart.md`.
-Decisiones clave: reutiliza el flujo propone→confirma→publica→audita de precios; CalendarDay.is_blocked
-distingue bloqueo del host de reserva; nunca toca noches reservadas; set_availability_range en el puerto
-(Beds24 V2 numAvail); nueva tabla AvailabilityChangeLog; calendario con estados (incluido en esta feature);
-reversión = operación inversa (abrir deshace bloquear).
-App YA EN PRODUCCIÓN (Railway web+api + Neon, CD en push a main). Fases 1-7 en `main`.
+Feature activa: **009-booking-offers** (v1 LIGERA: claridad del agente + sección "Ofertas" con deep-links).
+Plan e artefactos: `specs/009-booking-offers/plan.md`, `research.md`, `data-model.md`,
+`contracts/{offers-page,agent-guidance}.md`, `quickstart.md`.
+HALLAZGO clave (research, verificado en vivo): la API de Beds24 V2 **NO gestiona los deals de Booking**
+(ni crear ni listar; se gestionan en el dashboard de Beds24 / extranet). → v1 NO sincroniza; entrega
+claridad del agente (deals visibles se gestionan fuera + enlace; distinguir de la promoción de precio
+interna) + página informativa "Ofertas" con deep-links. Sin entidades ni endpoints nuevos.
+App YA EN PRODUCCIÓN (Railway web+api + Neon, CD). Features 001-008 en `main`.
 <!-- SPECKIT END -->
 
 # Booking AI Agent
