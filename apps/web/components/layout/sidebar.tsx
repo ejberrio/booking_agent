@@ -1,6 +1,14 @@
 "use client";
 
-import { CalendarDays, LayoutDashboard, Lightbulb, MessageSquare, Plug, Settings } from "lucide-react";
+import {
+  BadgePercent,
+  CalendarDays,
+  LayoutDashboard,
+  Lightbulb,
+  MessageSquare,
+  Plug,
+  Settings,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -12,6 +20,7 @@ const NAV = [
   { href: "/calendar", label: "Calendario", icon: CalendarDays },
   { href: "/chat", label: "Chat", icon: MessageSquare },
   { href: "/suggestions", label: "Sugerencias", icon: Lightbulb },
+  { href: "/offers", label: "Ofertas", icon: BadgePercent },
   { href: "/onboarding", label: "Conexión", icon: Plug },
   { href: "/settings", label: "Configuración", icon: Settings },
 ];

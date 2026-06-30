@@ -248,3 +248,14 @@ async def test_open_availability_restores(session):
     assert r.applied is True
     cd = (await session.execute(select(CalendarDay).where(CalendarDay.unit_type_id == unit.id, CalendarDay.date == date(2026, 7, 10)))).scalar_one()
     assert cd.is_blocked is False and cd.units_available == unit.units_count
+
+
+def test_prompt_distingue_ofertas_booking_de_promos_internas():
+    """Guard: el prompt debe instruir a NO crear promo interna ante un deal visible de Booking."""
+    from app.agent.prompts import system_prompt
+
+    p = system_prompt()
+    assert "Ofertas de Booking" in p
+    assert "propose_create_promotion" in p  # sigue siendo la vía para promos internas
+    # menciona que los deals visibles se gestionan fuera (dashboard/extranet)
+    assert "extranet" in p.lower() or "dashboard" in p.lower()
