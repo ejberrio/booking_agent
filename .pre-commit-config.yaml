@@ -1,0 +1,18 @@
+# Hooks de pre-commit. Instalar una vez: `uvx pre-commit install` (o `pre-commit install`).
+# Reflejan lo que valida la CI (ruff en la API), antes de cada commit.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.7.4
+    hooks:
+      - id: ruff
+        name: ruff (lint apps/api)
+        files: ^apps/api/.*\.py$
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: detect-private-key
