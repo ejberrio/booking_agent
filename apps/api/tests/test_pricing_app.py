@@ -164,3 +164,10 @@ async def test_rollback_conflict_requires_confirm(session):
 
     rb = await pricing_app_service.rollback_and_publish(session, cm, target.id, confirm=True)
     assert rb.applied_days == [day]
+
+
+async def test_range_selection_empty_weekdays_means_all_days(session):
+    from app.schemas.pricing import RangeSelection
+
+    sel = RangeSelection(date(2026, 9, 1), date(2026, 9, 10), weekdays=[])
+    assert len(sel.expand()) == 10  # lista vacía = todos los días (no 0)

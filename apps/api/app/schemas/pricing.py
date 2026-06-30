@@ -23,7 +23,8 @@ class RangeSelection:
         out: list[date] = []
         d = self.date_from
         while d <= self.date_to:
-            if self.weekdays is None or d.weekday() in self.weekdays:
+            # None o lista vacía = sin filtro (todos los días). El LLM a veces manda [].
+            if not self.weekdays or d.weekday() in self.weekdays:
                 out.append(d)
             d += timedelta(days=1)
         return out
