@@ -151,15 +151,15 @@ el dump fuera de Neon.
 ## Promociones de precio vía API (feature 011)
 
 Promociones = una oferta con nombre y **precio con descuento** sobre un rango de
-fechas, publicada al Channel Manager como *fixed price* sobre una **oferta designada**.
+fechas, publicada al Channel Manager como *fixed price*.
 
-### Precondición (setup único en el panel de Beds24)
+### Oferta destino (sin setup obligatorio)
 
-1. En Beds24 → *Booking Page → Offers*: crea/designa una oferta con `Enable = Always`
-   (pública) y un nombre (p. ej. "Promociones"). Anota su número (1–16).
-2. Config: `BEDS24_PROMO_OFFER_ID=<n>` en los servicios `api` (y `scan` si aplica).
-
-Sin esa oferta designada, la app guía a configurarla y no crea promociones.
+Verificado en vivo (2026-07-01): **Beds24 asigna los fixed prices a la oferta pública
+principal (`offerId=1`) sin importar el valor enviado** — el slot no es seleccionable
+por API. Las promociones caen en la oferta pública 1 (la que ve el huésped), así que
+**no hay que designar/crear nada en el panel**. `BEDS24_PROMO_OFFER_ID` es un override
+opcional (default 1) por si el canal empezara a respetarlo.
 
 ### Uso
 

@@ -12,7 +12,7 @@
 - Q: ¿Cómo debe comportarse "retirar/quitar" una promoción, dado que la API no expone un borrado directo? → A: **Anular efecto + ocultar** — la app pone el precio de la promo igual/mayor al base para que deje de descontar y la oculta de las activas; efecto inmediato y reversible (posible registro neutralizado en el canal hasta limpieza manual eventual).
 - Q: ¿Qué campos define una promoción además del precio y el rango de fechas (v1)? → A: **Precio + fechas + estancia mínima** propia opcional de la promo (el resto de reglas se heredan del contenedor de oferta).
 - Q: Cuando el host pide un descuento en porcentaje, ¿qué guardamos? → A: **Guardar el % pedido y el precio absoluto** fijado; si cambia el base se avisa que el precio quedó fijo al crear.
-- Q: ¿Sobre qué oferta se crea la promoción? → A: **Una oferta designada** en configuración ("oferta de promociones"); todas las promos v1 van a ese contenedor.
+- Q: ¿Sobre qué oferta se crea la promoción? → A: **Una oferta designada** en configuración ("oferta de promociones"); todas las promos v1 van a ese contenedor. **[Revisado en implement, 2026-07-01]** La verificación en vivo mostró que el canal (Beds24) fuerza `offerId=1` sin importar el valor enviado (no seleccionable por API). Se cambia a **destino fijo = oferta pública 1**, sin setup en el panel; `BEDS24_PROMO_OFFER_ID` queda como override opcional. Ver FR-014.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -67,7 +67,7 @@ El host quiere ajustar una promoción existente (cambiar fechas o precio) o reti
 
 ### Edge Cases
 
-- **Sin oferta designada**: si no está designada/creada la oferta de promociones (el contenedor se configura una sola vez en el panel del Channel Manager), el sistema lo explica y guía a configurarla allí, en lugar de fallar sin contexto.
+- **Oferta destino**: las promociones se publican sobre la oferta pública principal (offerId=1); el Channel Manager la asigna automáticamente (verificado: no es seleccionable por API), así que no requiere setup del host.
 - **Descuento inválido**: un % ≥ 100, un precio ≤ 0 o un precio por encima del base se rechazan con un mensaje claro (una "promoción" no puede encarecer ni regalar).
 - **Rango de fechas inválido**: fin antes de inicio, fechas en el pasado, o rango vacío → mensaje claro, no se crea nada.
 - **Solape con otra promoción** en las mismas fechas y oferta: el sistema advierte del solape y pide confirmación explícita antes de continuar.
@@ -93,7 +93,7 @@ El host quiere ajustar una promoción existente (cambiar fechas o precio) o reti
 - **FR-011**: El sistema MUST advertir de solapes con otras promociones en la misma oferta y fechas, y de noches ya reservadas dentro del rango, pidiendo confirmación antes de continuar.
 - **FR-012**: El sistema MUST distinguir con claridad, para el host, entre "promoción de precio" (esta feature, gestionable por app) y "promoción/deal nativo de Booking.com" (Genius/Deals de la extranet, fuera de alcance v1), evitando dar por hecho que una se refleja como la otra.
 - **FR-013**: El sistema MUST tratar el "contenedor de oferta" (sus reglas: activación, posición, estancia mínima, cancelación, nombre) como **solo lectura**: la app gestiona el precio/fechas de la promoción sobre una oferta existente, pero NO crea ni modifica ese contenedor (se configura una vez en el panel del Channel Manager).
-- **FR-014**: El sistema MUST usar una **oferta designada por configuración** ("oferta de promociones") como contenedor de todas las promociones v1. Si esa oferta no está designada o no existe en el canal, el sistema MUST explicarlo y guiar al host a crearla/designarla, en lugar de fallar sin contexto.
+- **FR-014**: El sistema MUST publicar las promociones sobre la **oferta pública principal** del canal. *(Hallazgo de verificación 2026-07-01: el Channel Manager —Beds24— asigna los fixed prices a `offerId=1` sin importar el valor enviado; el slot no es seleccionable por API. Por eso el destino es fijo = oferta 1; la config `BEDS24_PROMO_OFFER_ID` queda como override opcional (default 1) y NO se requiere setup en el panel. Sustituye a la decisión de clarify "oferta designada", que la realidad del canal no soporta.)*
 
 ### Key Entities *(include if feature involves data)*
 

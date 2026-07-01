@@ -21,11 +21,26 @@ esa conclusión resultó **incompleta**: la API V2 **sí** escribe promociones.
   el slot se crea una vez en el panel.
 - La API V1 sigue **muerta para escrituras**.
 
+### Verificación en vivo (2026-07-01, sobre la cuenta real)
+
+Se creó/leyó/neutralizó un fixed price de prueba con nuestro propio adapter:
+
+- **Crear/leer/neutralizar funciona**: `set_fixed_price` → `get_fixed_prices` →
+  `disable_fixed_price` (roomPriceEnable=false) confirmados.
+- **El descuento aplica de verdad**: con un fixed price a 99.999/noche, el quote de
+  `GET /inventory/rooms/offers` (24–27 nov, 3 noches) pasó de **1.110.000** (base
+  370.000×3) a **299.997**; tras neutralizar, volvió a **1.110.000**.
+- **`offerId` NO es seleccionable**: se envió `offerId` 1, 2 y 3 y Beds24 **siempre**
+  guardó/devolvió `offerId=1`. En esta cuenta los fixed prices caen en la oferta
+  pública principal (1). → El concepto de "oferta designada" se degrada a **destino
+  fijo = oferta 1** (config `BEDS24_PROMO_OFFER_ID` queda como override opcional).
+
 ## Decisión
 
 1. Gestionar promociones de precio (precio con descuento sobre un rango, con estancia
-   mínima opcional) desde la app, publicándolas como **fixed price** sobre una
-   **oferta designada** por config (`beds24_promo_offer_id`).
+   mínima opcional) desde la app, publicándolas como **fixed price**. El destino es la
+   **oferta pública 1** (Beds24 fuerza `offerId=1`; `beds24_promo_offer_id` es override
+   opcional, default 1). No requiere designar/crear un slot en el panel.
 2. **Retirada sin DELETE**: neutralizar (`roomPriceEnable=false`) + marcar inactiva
    y ocultar. Reversible; puede dejar un registro neutralizado hasta limpieza manual.
 3. **Descuento**: aceptar % o precio; se calcula y envía **precio absoluto** (no hay

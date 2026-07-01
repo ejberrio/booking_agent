@@ -21,7 +21,7 @@ _BASE_SYSTEM_PROMPT = (
     "- PROMOCIONES DE PRECIO: si el host pide 'crea una promoción/oferta con descuento del X% "
     "(o a Y COP) del ... al ...', usa 'propose_offer_promotion' (descuento en discount_pct o "
     "precio absoluto en price; estancia mínima opcional en min_nights). Esta promoción SÍ se "
-    "publica al Channel Manager (Beds24) como una oferta con nombre sobre la oferta designada. "
+    "publica al Channel Manager (Beds24) como una oferta con nombre sobre la oferta pública. "
     "Para listar promociones usa 'get_offer_promotions'; para quitarlas usa "
     "'propose_retire_offer_promotion'. Para editar una, usa 'propose_offer_promotion' con su "
     "promotion_id.\n"

@@ -43,13 +43,14 @@ class PromotionError(ValueError):
 
 
 def _designated_offer_id() -> int:
-    offer = settings.beds24_promo_offer_id
-    if not offer:
-        raise PromotionError(
-            "No hay una oferta de promociones designada. Configura BEDS24_PROMO_OFFER_ID "
-            "con el número de una oferta creada en el panel de Beds24 (enable=always)."
-        )
-    return int(offer)
+    """Oferta destino de las promociones.
+
+    Verificado en vivo (2026-07-01): Beds24 asigna los fixed prices a la oferta
+    pública principal (offerId=1) sin importar el valor enviado; el "slot" no es
+    seleccionable por API. Por eso el destino es 1 por defecto; BEDS24_PROMO_OFFER_ID
+    queda como override opcional por si el canal empezara a respetarlo.
+    """
+    return int(settings.beds24_promo_offer_id or 1)
 
 
 def _round_cop(value: Decimal) -> Decimal:

@@ -127,15 +127,15 @@ async def test_past_and_inverted_dates_reject(session):
         )
 
 
-async def test_no_designated_offer_errors(session, monkeypatch):
+async def test_offer_defaults_to_one_when_unset(session, monkeypatch):
+    # Beds24 asigna offerId=1 pase lo que pase; sin config, el destino es 1.
     monkeypatch.setattr(settings, "beds24_promo_offer_id", None)
     unit = await _unit(session)
     cm = FakeCM()
-    with pytest.raises(PromotionError) as exc:
-        await svc.preview(
-            session, cm, unit_type_id=unit.id, first_night=F, last_night=L, name="X", price=D("1"),
-        )
-    assert "designada" in str(exc.value)
+    prev = await svc.preview(
+        session, cm, unit_type_id=unit.id, first_night=F, last_night=L, name="X", price=D("300000"),
+    )
+    assert prev.offer_id == 1
 
 
 async def test_overlap_warns_and_requires_confirm(session):
