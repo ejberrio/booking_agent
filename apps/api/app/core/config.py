@@ -88,6 +88,10 @@ class Settings(BaseSettings):
     search_api_key: str | None = None
     search_base_url: str = "https://api.tavily.com"
 
+    # Observabilidad
+    sentry_dsn: str | None = None  # si está, se activa Sentry; sin él es no-op
+    log_level: str = "INFO"
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
