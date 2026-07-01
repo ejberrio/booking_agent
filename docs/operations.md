@@ -78,3 +78,12 @@ Catálogo completo en [`../specs/007-production-deploy/contracts/environment.md`
 - El servicio privado (`api`) **no** lleva healthcheck HTTP en `railway.json`.
 - La `web` necesita carpeta `public/` para el `COPY` del Dockerfile.
 - `DATABASE_URL` de Neon se normaliza en código para asyncpg + SSL (`sslmode=require` → cifrado sin verificación).
+
+## Observabilidad
+
+- **Errores (Sentry)**: crea un proyecto en Sentry y pon `SENTRY_DSN` en los servicios `api`/`scan` y `NEXT_PUBLIC_SENTRY_DSN` (cliente) + `SENTRY_DSN` (server) en `web`. **Sin DSN la app funciona igual** (no-op). Solo errores (0% trazas), sin PII.
+- **Logs de la API**: una línea por petición en los logs de Railway: `method=GET path=/pricing/calendar status=200 ms=45`. Nivel con `LOG_LEVEL` (default INFO).
+- **Estado del sistema**: `GET /status` (vía el proxy autenticado) → `{version, environment, db, beds24, open_issues}`. El chequeo de Beds24 se cachea ~5 min. `/health` sigue como liveness básico para Railway.
+  ```bash
+  curl -s -H "Cookie: session=ok" "$WEB/api/proxy/status"
+  ```

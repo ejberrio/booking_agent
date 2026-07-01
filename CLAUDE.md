@@ -1,12 +1,12 @@
 <!-- SPECKIT START -->
-Feature activa: **009-booking-offers** (v1 LIGERA: claridad del agente + sección "Ofertas" con deep-links).
-Plan e artefactos: `specs/009-booking-offers/plan.md`, `research.md`, `data-model.md`,
-`contracts/{offers-page,agent-guidance}.md`, `quickstart.md`.
-HALLAZGO clave (research, verificado en vivo): la API de Beds24 V2 **NO gestiona los deals de Booking**
-(ni crear ni listar; se gestionan en el dashboard de Beds24 / extranet). → v1 NO sincroniza; entrega
-claridad del agente (deals visibles se gestionan fuera + enlace; distinguir de la promoción de precio
-interna) + página informativa "Ofertas" con deep-links. Sin entidades ni endpoints nuevos.
-App YA EN PRODUCCIÓN (Railway web+api + Neon, CD). Features 001-008 en `main`.
+Feature activa: **010-observability** (Sentry errores + logging estructurado + endpoint /status).
+Plan e artefactos: `specs/010-observability/plan.md`, `research.md`, `data-model.md`,
+`contracts/{status-endpoint,error-tracking,request-logging}.md`, `quickstart.md`.
+Decisiones: Sentry (sentry-sdk[fastapi] + @sentry/nextjs vía instrumentation, sin withSentryConfig),
+NO-OP sin DSN, send_default_pii=False, 0% trazas; logging por petición en líneas key=value (path sin
+query); /status (protegido) con version/db/beds24(cacheado ~5min)/open_issues, resiliente; /health se
+mantiene. Sin entidades/migraciones. Variables: SENTRY_DSN, NEXT_PUBLIC_SENTRY_DSN, LOG_LEVEL.
+App YA EN PRODUCCIÓN (Railway web+api + Neon, CD). Features 001-009 en `main`.
 <!-- SPECKIT END -->
 
 # Booking AI Agent
