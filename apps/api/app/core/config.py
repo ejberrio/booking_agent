@@ -82,6 +82,9 @@ class Settings(BaseSettings):
     beds24_api_version: str = "v1"
     beds24_v2_base_url: str = "https://api.beds24.com/v2"
     beds24_refresh_token: str | None = None  # se canjea por tokens de 24h en /authentication/token
+    # Oferta designada (slot 1–16) donde se cuelgan las promociones (feature 011).
+    # El "slot" se crea una vez en el panel de Beds24 (enable=always); aquí solo su número.
+    beds24_promo_offer_id: int | None = None
 
     # Busqueda web (eventos / mercado)
     search_provider: str = "tavily"

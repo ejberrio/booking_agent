@@ -147,3 +147,46 @@ psql "…/booking_restore" -c "SELECT count(*) FROM agent_action;"
 **Recomendación operativa:** ejecutar `backup_db.py` antes de cambios grandes
 (migraciones, borrados masivos) y de forma periódica (p. ej. semanal) archivando
 el dump fuera de Neon.
+
+## Promociones de precio vía API (feature 011)
+
+Promociones = una oferta con nombre y **precio con descuento** sobre un rango de
+fechas, publicada al Channel Manager como *fixed price* sobre una **oferta designada**.
+
+### Precondición (setup único en el panel de Beds24)
+
+1. En Beds24 → *Booking Page → Offers*: crea/designa una oferta con `Enable = Always`
+   (pública) y un nombre (p. ej. "Promociones"). Anota su número (1–16).
+2. Config: `BEDS24_PROMO_OFFER_ID=<n>` en los servicios `api` (y `scan` si aplica).
+
+Sin esa oferta designada, la app guía a configurarla y no crea promociones.
+
+### Uso
+
+- **Web**: sección *Ofertas* → crear (ver propuesta → confirmar), listar y retirar.
+- **Chat**: "crea una promoción del 15 al 31 de enero con 20% de descuento, mínimo 3
+  noches", "¿qué promociones tengo?", "quita la promo de enero".
+- El descuento se pide en % o precio; al canal se envía **precio absoluto** (se guarda
+  también el %). El precio queda fijado al crear (si cambia el base, la lista lo señala).
+
+### Retirada (la API no tiene DELETE)
+
+"Retirar" **neutraliza** la promo (`roomPriceEnable=false`: deja de descontar) y la
+oculta de las activas. Es reversible. Puede quedar un **registro neutralizado** en el
+panel de Beds24 hasta que lo borres a mano (limpieza opcional): *Prices → Fixed Prices*.
+
+### Verificación de escritura real (acotada, con confirmación del host)
+
+1. Crear una promo de prueba en la oferta designada, **fechas lejanas** (+300 días) y
+   descuento pequeño.
+2. Verificar en la lista (o `GET /inventory/fixedPrices`) que existe con su `external_id`.
+3. **Retirar** de inmediato (neutraliza) → deja de descontar.
+4. (Opcional) borrar el registro neutralizado en el dashboard.
+
+> Nunca dejar una promo de prueba descontando.
+
+### Salvedad
+
+Que la promoción aparezca como **deal NATIVO** de Booking (Genius/Basic Deal/Última
+hora, con badge) depende del mapeo de tarifas del canal; la API gestiona la tarifa
+lado Beds24. Los deals con badge se siguen creando en el panel de Beds24 / extranet.

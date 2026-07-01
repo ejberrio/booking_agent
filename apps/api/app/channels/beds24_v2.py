@@ -23,7 +23,10 @@ import httpx
 
 from app.channels.base import (
     ConnectionInfo,
+    FixedPriceWriteResult,
     RemoteBooking,
+    RemoteFixedPrice,
+    RemoteOffer,
     RemoteProperty,
     RemoteRate,
     RemoteRoom,
@@ -299,3 +302,121 @@ class Beds24V2Adapter:
         verified = ok and len(rates) == len(days) and all(r.available == num_avail for r in rates)
         detail = None if verified else "la disponibilidad no se confirmó al releer"
         return WriteResult(ok=ok, verified=verified, detail=detail)
+
+    # --- Promociones vía fixed price sobre una oferta (feature 011) ---
+
+    def _fixed_price_body(self, fp: RemoteFixedPrice) -> dict[str, Any]:
+        item: dict[str, Any] = {
+            "offerId": fp.offer_id,
+            "roomId": int(fp.room_external_id),
+            "firstNight": fp.first_night.isoformat(),
+            "lastNight": fp.last_night.isoformat(),
+            "name": fp.name,
+            "roomPrice": float(fp.price),
+            "roomPriceEnable": fp.price_enabled,
+        }
+        if self.prop_id:
+            item["propertyId"] = int(self.prop_id)
+        if fp.external_id is not None:
+            item["id"] = fp.external_id
+        if fp.min_nights is not None:
+            item["minNights"] = int(fp.min_nights)
+        return item
+
+    async def set_fixed_price(self, fp: RemoteFixedPrice) -> FixedPriceWriteResult:
+        result = await self._request(
+            "POST", "inventory/fixedPrices", json_body=[self._fixed_price_body(fp)]
+        )
+        ok = False
+        external_id = fp.external_id
+        # Respuesta: {"success":true,"data":[{... "id": N ...}]} o lista de resultados.
+        payload = result.get("data") if isinstance(result, dict) else result
+        if isinstance(result, dict):
+            ok = bool(result.get("success", True))
+        if isinstance(payload, list) and payload:
+            first = payload[0]
+            if isinstance(first, dict):
+                ok = bool(first.get("success", ok))
+                new_id = first.get("id") or (first.get("new") or {}).get("id")
+                if new_id is not None:
+                    external_id = int(new_id)
+        detail = None if ok else "el canal no confirmó la escritura del fixed price"
+        return FixedPriceWriteResult(ok=ok, verified=ok, external_id=external_id, detail=detail)
+
+    async def get_fixed_prices(self, room_external_id: str) -> list[RemoteFixedPrice]:
+        params: dict[str, Any] = {"roomId": room_external_id}
+        if self.prop_id:
+            params["propertyId"] = self.prop_id
+        data = await self._request("GET", "inventory/fixedPrices", params=params)
+        out: list[RemoteFixedPrice] = []
+        for fp in data.get("data", []) if isinstance(data, dict) else []:
+            try:
+                first_night = date.fromisoformat(fp["firstNight"])
+                last_night = date.fromisoformat(fp["lastNight"])
+            except (KeyError, ValueError, TypeError):
+                continue
+            out.append(
+                RemoteFixedPrice(
+                    offer_id=int(fp.get("offerId", 0) or 0),
+                    room_external_id=str(fp.get("roomId", room_external_id)),
+                    first_night=first_night,
+                    last_night=last_night,
+                    name=str(fp.get("name", "")),
+                    price=Decimal(str(fp.get("roomPrice", 0) or 0)),
+                    external_id=int(fp["id"]) if fp.get("id") is not None else None,
+                    price_enabled=bool(fp.get("roomPriceEnable", True)),
+                    min_nights=int(fp["minNights"]) if fp.get("minNights") else None,
+                )
+            )
+        return out
+
+    async def disable_fixed_price(
+        self, external_id: int, room_external_id: str
+    ) -> FixedPriceWriteResult:
+        item: dict[str, Any] = {
+            "id": external_id,
+            "roomId": int(room_external_id),
+            "roomPriceEnable": False,
+        }
+        if self.prop_id:
+            item["propertyId"] = int(self.prop_id)
+        result = await self._request("POST", "inventory/fixedPrices", json_body=[item])
+        ok = bool(result.get("success", True)) if isinstance(result, dict) else True
+        detail = None if ok else "el canal no confirmó la neutralización"
+        return FixedPriceWriteResult(ok=ok, verified=ok, external_id=external_id, detail=detail)
+
+    async def get_offers(
+        self,
+        property_external_id: str,
+        room_external_id: str,
+        arrival: date,
+        departure: date,
+        num_adults: int = 2,
+    ) -> list[RemoteOffer]:
+        data = await self._request(
+            "GET",
+            "inventory/rooms/offers",
+            params={
+                "propertyId": property_external_id,
+                "roomId": room_external_id,
+                "arrival": arrival.isoformat(),
+                "departure": departure.isoformat(),
+                "numAdults": num_adults,
+            },
+        )
+        out: list[RemoteOffer] = []
+        for room in data.get("data", []) if isinstance(data, dict) else []:
+            for offer in room.get("offers", []):
+                out.append(
+                    RemoteOffer(
+                        offer_id=int(offer.get("offerId", 0) or 0),
+                        name=str(offer.get("offerName", "")),
+                        price=Decimal(str(offer["price"])) if offer.get("price") is not None else None,
+                        units_available=(
+                            int(offer["unitsAvailable"])
+                            if offer.get("unitsAvailable") is not None
+                            else None
+                        ),
+                    )
+                )
+        return out

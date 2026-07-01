@@ -10,8 +10,14 @@ from app.api.routes.sync import get_adapter
 from app.db.session import get_session
 from app.models.enums import PromotionType
 from app.schemas.pricing import RangeSelection
-from app.services import availability_service, pricing_app_service, promotion_service
+from app.services import (
+    availability_service,
+    offer_promotion_service,
+    pricing_app_service,
+    promotion_service,
+)
 from app.services.audit_service import RollbackConflict
+from app.services.offer_promotion_service import PromotionError
 
 router = APIRouter()
 
@@ -65,6 +71,27 @@ class PromotionRequest(BaseModel):
     start_date: date
     end_date: date
     conditions: dict | None = None
+
+
+class OfferPromoPreviewRequest(BaseModel):
+    unit_type_id: int
+    first_night: date
+    last_night: date
+    name: str
+    discount_pct: Decimal | None = None
+    price: Decimal | None = None
+    min_nights: int | None = None
+    promotion_id: int | None = None  # presente = edición
+
+
+class OfferPromoApplyRequest(OfferPromoPreviewRequest):
+    fingerprint: str
+    confirm_overlap: bool = False
+
+
+class OfferPromoRetireRequest(BaseModel):
+    id: int
+    confirm: bool = True
 
 
 @router.get("/calendar")
@@ -186,7 +213,83 @@ async def get_history(
     ]
 
 
-@router.post("/promotions")
+@router.get("/promotions")
+async def list_promotions(unit_type_id: int, session: AsyncSession = Depends(get_session)):
+    promos = await offer_promotion_service.list_promotions(session, unit_type_id)
+    return {"promotions": [asdict(p) for p in promos]}
+
+
+@router.post("/promotions/preview")
+async def promotion_preview(
+    req: OfferPromoPreviewRequest, session: AsyncSession = Depends(get_session)
+):
+    adapter = get_adapter()
+    try:
+        prev = await offer_promotion_service.preview(
+            session,
+            adapter,
+            unit_type_id=req.unit_type_id,
+            first_night=req.first_night,
+            last_night=req.last_night,
+            name=req.name,
+            discount_pct=req.discount_pct,
+            price=req.price,
+            min_nights=req.min_nights,
+            exclude_id=req.promotion_id,
+        )
+        return asdict(prev)
+    except PromotionError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    finally:
+        await adapter.aclose()
+
+
+@router.post("/promotions/apply")
+async def promotion_apply(
+    req: OfferPromoApplyRequest, session: AsyncSession = Depends(get_session)
+):
+    adapter = get_adapter()
+    try:
+        result = await offer_promotion_service.apply(
+            session,
+            adapter,
+            unit_type_id=req.unit_type_id,
+            first_night=req.first_night,
+            last_night=req.last_night,
+            name=req.name,
+            discount_pct=req.discount_pct,
+            price=req.price,
+            min_nights=req.min_nights,
+            promotion_id=req.promotion_id,
+            fingerprint=req.fingerprint,
+            confirm_overlap=req.confirm_overlap,
+        )
+        await session.commit()
+        return asdict(result)
+    except PromotionError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    finally:
+        await adapter.aclose()
+
+
+@router.post("/promotions/retire")
+async def promotion_retire(
+    req: OfferPromoRetireRequest, session: AsyncSession = Depends(get_session)
+):
+    adapter = get_adapter()
+    try:
+        result = await offer_promotion_service.retire(
+            session, adapter, req.id, confirm=req.confirm
+        )
+        await session.commit()
+        return asdict(result)
+    except PromotionError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    finally:
+        await adapter.aclose()
+
+
+@router.post("/promotions/legacy")
 async def create_promotion(req: PromotionRequest, session: AsyncSession = Depends(get_session)):
     adapter = get_adapter()
     try:

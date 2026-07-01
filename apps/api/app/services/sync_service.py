@@ -15,7 +15,7 @@ from datetime import date
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.channels.base import ChannelManager
+from app.channels.base import ChannelManager, RemoteFixedPrice
 from app.channels.errors import AuthError, ChannelError
 from app.models.booking import Booking
 from app.models.calendar import CalendarDay, Rate
@@ -328,6 +328,102 @@ async def publish_availability(
     run.finished_at = _now()
     await session.flush()
     return run
+
+
+async def publish_promotion(
+    session: AsyncSession, adapter: ChannelManager, fp: RemoteFixedPrice
+) -> tuple[int | None, str | None]:
+    """Publica una promoción como fixed price. Devuelve (external_id, issue_detail).
+
+    issue_detail no-None indica fallo (se registró SyncIssue); el flujo NO se rompe.
+    """
+    run = SyncRun(direction=SyncDirection.outbound, status=SyncStatus.running)
+    session.add(run)
+    await session.flush()
+    try:
+        result = await adapter.set_fixed_price(fp)
+    except ChannelError as exc:
+        detail = str(exc)
+        session.add(
+            SyncIssue(
+                sync_run_id=run.id,
+                kind=SyncIssueKind.comm_error,
+                entity_ref=f"promo offer:{fp.offer_id} {fp.first_night}..{fp.last_night}",
+                detail=detail,
+            )
+        )
+        run.issue_count = 1
+        run.status = SyncStatus.error
+        run.finished_at = _now()
+        await session.flush()
+        return (fp.external_id, detail)
+    if not result.ok:
+        detail = result.detail or "escritura de promoción no confirmada"
+        session.add(
+            SyncIssue(
+                sync_run_id=run.id,
+                kind=SyncIssueKind.write_unverified,
+                entity_ref=f"promo offer:{fp.offer_id} {fp.first_night}..{fp.last_night}",
+                detail=detail,
+            )
+        )
+        run.issue_count = 1
+        run.status = SyncStatus.partial
+        run.finished_at = _now()
+        await session.flush()
+        return (result.external_id, detail)
+    run.updated_count = 1
+    run.status = SyncStatus.success
+    run.finished_at = _now()
+    await session.flush()
+    return (result.external_id, None)
+
+
+async def retire_promotion(
+    session: AsyncSession, adapter: ChannelManager, *, external_id: int, room_external_id: str,
+    offer_id: int,
+) -> str | None:
+    """Neutraliza una promoción (roomPriceEnable=false). Devuelve issue_detail o None."""
+    run = SyncRun(direction=SyncDirection.outbound, status=SyncStatus.running)
+    session.add(run)
+    await session.flush()
+    try:
+        result = await adapter.disable_fixed_price(external_id, room_external_id)
+    except ChannelError as exc:
+        detail = str(exc)
+        session.add(
+            SyncIssue(
+                sync_run_id=run.id,
+                kind=SyncIssueKind.comm_error,
+                entity_ref=f"promo offer:{offer_id} fixedPrice:{external_id}",
+                detail=detail,
+            )
+        )
+        run.issue_count = 1
+        run.status = SyncStatus.error
+        run.finished_at = _now()
+        await session.flush()
+        return detail
+    if not result.ok:
+        detail = result.detail or "retirada no confirmada"
+        session.add(
+            SyncIssue(
+                sync_run_id=run.id,
+                kind=SyncIssueKind.write_unverified,
+                entity_ref=f"promo offer:{offer_id} fixedPrice:{external_id}",
+                detail=detail,
+            )
+        )
+        run.issue_count = 1
+        run.status = SyncStatus.partial
+        run.finished_at = _now()
+        await session.flush()
+        return detail
+    run.updated_count = 1
+    run.status = SyncStatus.success
+    run.finished_at = _now()
+    await session.flush()
+    return None
 
 
 async def list_open_issues(session: AsyncSession) -> list[SyncIssue]:

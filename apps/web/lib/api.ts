@@ -7,9 +7,23 @@ import type {
   ChangePreview,
   ChatReply,
   ConnectionStatus,
+  Promotion,
+  PromotionApplyResult,
+  PromotionPreview,
   RangeSelection,
   Suggestion,
 } from "@/lib/types";
+
+export interface PromotionInput {
+  unit_type_id: number;
+  first_night: string;
+  last_night: string;
+  name: string;
+  discount_pct?: number | null;
+  price?: number | null;
+  min_nights?: number | null;
+  promotion_id?: number | null;
+}
 
 // Las llamadas van al proxy server-side de la propia web (mismo origen).
 // El navegador nunca habla con la API directamente; el proxy reenvía a la API privada.
@@ -75,6 +89,25 @@ export const api = {
     req<Suggestion>(`/suggestions/${id}/reject`, { method: "POST" }),
   applySuggestion: (id: number) =>
     req<Suggestion>(`/suggestions/${id}/apply`, { method: "POST" }),
+
+  // Promociones (ofertas con descuento sobre fechas, feature 011)
+  listPromotions: (unitTypeId: number) =>
+    req<{ promotions: Promotion[] }>(`/pricing/promotions?unit_type_id=${unitTypeId}`),
+  previewPromotion: (body: PromotionInput) =>
+    req<PromotionPreview>(`/pricing/promotions/preview`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  applyPromotion: (body: PromotionInput & { fingerprint: string; confirm_overlap?: boolean }) =>
+    req<PromotionApplyResult>(`/pricing/promotions/apply`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  retirePromotion: (id: number) =>
+    req<PromotionApplyResult>(`/pricing/promotions/retire`, {
+      method: "POST",
+      body: JSON.stringify({ id, confirm: true }),
+    }),
 
   // Chat (no streaming)
   chat: (message: string, conversationId?: number) =>
