@@ -38,3 +38,7 @@ postgres-data/
 
 # Logs
 *.log
+
+# Backups locales (dumps con datos reales — nunca versionar)
+backups/
+*.dump
