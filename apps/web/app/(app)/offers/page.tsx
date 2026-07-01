@@ -152,6 +152,12 @@ export default function OffersPage() {
               {preview.discount_pct ? ` (${preview.discount_pct}%)` : ""} · Ahorro{" "}
               {money(preview.saving)}
             </p>
+            <p className="mt-1 text-muted-foreground">
+              Estancia mínima:{" "}
+              <strong className="text-foreground">
+                {preview.min_nights ? `${preview.min_nights} noches` : "sin mínimo"}
+              </strong>
+            </p>
             {preview.warnings.map((w) => (
               <p key={w} className="mt-1 text-amber-600">
                 ⚠️ {w}
