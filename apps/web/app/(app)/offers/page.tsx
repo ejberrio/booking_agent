@@ -245,16 +245,17 @@ export default function OffersPage() {
         <CardDescription>
           Los <strong>deals con etiqueta/badge</strong> (Basic Deal, Última hora, Early Booker,
           Genius) que el huésped ve en tu anuncio <strong>no se gestionan por API</strong>: se crean
-          en el panel de Beds24 o en el extranet de Booking.
+          y se activan/desactivan en Beds24 (sincroniza con Booking). Son permanentes: se configuran
+          una vez.
         </CardDescription>
         <div className="mt-3 flex flex-wrap gap-2">
           <a
-            href={EXTERNAL_LINKS.beds24Dashboard}
+            href={EXTERNAL_LINKS.beds24BookingPromotions}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground"
           >
-            Panel de Beds24 <ExternalLink size={14} />
+            Deals de Booking en Beds24 <ExternalLink size={14} />
           </a>
           <a
             href={EXTERNAL_LINKS.bookingExtranet}
@@ -265,6 +266,11 @@ export default function OffersPage() {
             Extranet de Booking <ExternalLink size={14} />
           </a>
         </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          El botón azul te lleva directo a <em>Channel Manager → Booking.com → Promotions</em>, donde
+          creas el deal y lo activas/desactivas con un clic. ⚠️ No pongas un deal con badge y una
+          promoción de precio (arriba) para las mismas fechas: se duplicaría el descuento.
+        </p>
       </Card>
     </div>
   );
