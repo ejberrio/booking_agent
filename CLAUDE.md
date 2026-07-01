@@ -1,12 +1,15 @@
 <!-- SPECKIT START -->
-Feature activa: **010-observability** (Sentry errores + logging estructurado + endpoint /status).
-Plan e artefactos: `specs/010-observability/plan.md`, `research.md`, `data-model.md`,
-`contracts/{status-endpoint,error-tracking,request-logging}.md`, `quickstart.md`.
-Decisiones: Sentry (sentry-sdk[fastapi] + @sentry/nextjs vía instrumentation, sin withSentryConfig),
-NO-OP sin DSN, send_default_pii=False, 0% trazas; logging por petición en líneas key=value (path sin
-query); /status (protegido) con version/db/beds24(cacheado ~5min)/open_issues, resiliente; /health se
-mantiene. Sin entidades/migraciones. Variables: SENTRY_DSN, NEXT_PUBLIC_SENTRY_DSN, LOG_LEVEL.
-App YA EN PRODUCCIÓN (Railway web+api + Neon, CD). Features 001-009 en `main`.
+Feature activa: **011-api-promotions** (gestión de promociones de precio vía API del Channel Manager).
+Plan e artefactos: `specs/011-api-promotions/plan.md`, `research.md`, `data-model.md`,
+`contracts/{promotions-api,channel-fixedprices}.md`, `quickstart.md`.
+Hallazgo (2026-07-01): Beds24 V2 SÍ escribe promociones vía `POST /inventory/fixedPrices` (array;
+crear=sin id; máx 100/room; NO hay DELETE), ligadas a una oferta por `offerId` (el slot es solo
+lectura). Decisiones: nueva entidad `Promotion` (external_id, offer_id, fechas, price, discount_pct,
+min_nights, status); oferta DESIGNADA por config `beds24_promo_offer_id`; descuento en % o precio pero
+se envía precio absoluto (se guarda % y base); retirada = neutralizar (roomPriceEnable=false) + ocultar;
+patrón preview→apply humano-en-el-bucle (AgentAction/SyncIssue); puerto ChannelManager +set/get/disable
+fixed price. Corrige la conclusión de la Feature 009 (que asumió que no se podía por API). ADR 0003.
+App YA EN PRODUCCIÓN (Railway web+api + Neon, CD). Features 001-010 en `main`.
 <!-- SPECKIT END -->
 
 # Booking AI Agent

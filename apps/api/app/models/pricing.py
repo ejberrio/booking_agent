@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Date, Enum, ForeignKey, Numeric, String
+from sqlalchemy import Boolean, Date, Enum, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -33,3 +33,13 @@ class Promotion(Base, TimestampMixin):
     status: Mapped[PromotionStatus] = mapped_column(
         Enum(PromotionStatus), default=PromotionStatus.active
     )
+    # --- Vía "oferta" (feature 011): promo publicada como fixed price sobre una oferta ---
+    # Cuando offer_id está poblado, la promo se publica al Channel Manager como un
+    # fixed price sobre esa oferta (no como recorte del precio base). external_id es
+    # el id del fixed price en el canal (necesario para editar/retirar). unit_type_id
+    # acota la promo a una habitación (la vía oferta trabaja por habitación).
+    unit_type_id: Mapped[int | None] = mapped_column(
+        ForeignKey("unit_type.id"), index=True, nullable=True
+    )
+    offer_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    external_id: Mapped[int | None] = mapped_column(Integer, nullable=True)

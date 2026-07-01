@@ -18,7 +18,12 @@ from app.models.agent import AgentAction
 from app.models.enums import ChangeOrigin, PromotionType
 from app.models.pricing import Promotion
 from app.schemas.pricing import RangeSelection
-from app.services import availability_service, pricing_app_service, promotion_service
+from app.services import (
+    availability_service,
+    offer_promotion_service,
+    pricing_app_service,
+    promotion_service,
+)
 
 REINFORCE_DAYS = 14
 REINFORCE_VARIATION = Decimal("0.25")
@@ -62,6 +67,13 @@ READ_TOOLS = [
             "properties": {"unit_type_id": _INT, "date_from": _STR, "date_to": _STR},
             "required": ["unit_type_id", "date_from", "date_to"],
         },
+        False,
+    ),
+    ToolSpec(
+        "get_offer_promotions",
+        "Lista las promociones de precio (ofertas con descuento sobre fechas) de una unidad: "
+        "nombre, fechas, precio con descuento, ahorro y estado. Úsala para '¿qué promociones tengo?'.",
+        {"type": "object", "properties": {"unit_type_id": _INT}, "required": ["unit_type_id"]},
         False,
     ),
     ToolSpec(
@@ -144,6 +156,34 @@ WRITE_TOOLS = [
         True,
     ),
     ToolSpec(
+        "propose_offer_promotion",
+        "Propone crear o editar una PROMOCIÓN DE PRECIO: una oferta con nombre y descuento sobre "
+        "un rango de fechas, que se publica al Channel Manager (Beds24) sobre la oferta designada. "
+        "Indica descuento como porcentaje (discount_pct) o precio absoluto (price). No aplica hasta "
+        "confirmar. Para editar una existente, incluye promotion_id.",
+        {
+            "type": "object",
+            "properties": {
+                "unit_type_id": _INT,
+                "name": _STR,
+                "first_night": _STR,
+                "last_night": _STR,
+                "discount_pct": _NUM,
+                "price": _NUM,
+                "min_nights": _INT,
+                "promotion_id": _INT,
+            },
+            "required": ["unit_type_id", "name", "first_night", "last_night"],
+        },
+        True,
+    ),
+    ToolSpec(
+        "propose_retire_offer_promotion",
+        "Propone retirar (dejar de aplicar) una promoción de precio por id. No aplica hasta confirmar.",
+        {"type": "object", "properties": {"promotion_id": _INT}, "required": ["promotion_id"]},
+        True,
+    ),
+    ToolSpec(
         "propose_rollback",
         "Propone revertir un cambio de precio por id de cambio.",
         {"type": "object", "properties": {"change_id": _INT}, "required": ["change_id"]},
@@ -203,6 +243,23 @@ def openai_tools(include_control: bool) -> list[dict]:
 
 
 async def exec_read(session: AsyncSession, name: str, args: dict) -> Any:
+    if name == "get_offer_promotions":
+        promos = await offer_promotion_service.list_promotions(session, int(args["unit_type_id"]))
+        return [
+            {
+                "id": p.id,
+                "name": p.name,
+                "first_night": p.first_night.isoformat(),
+                "last_night": p.last_night.isoformat(),
+                "price": str(p.price),
+                "base_price": str(p.base_price) if p.base_price is not None else None,
+                "saving": str(p.saving) if p.saving is not None else None,
+                "discount_pct": str(p.discount_pct) if p.discount_pct is not None else None,
+                "min_nights": p.min_nights,
+                "status": p.status,
+            }
+            for p in promos
+        ]
     if name == "get_suggestions":
         from app.models.enums import SuggestionStatus
         from app.services import intelligence_service
@@ -341,6 +398,33 @@ async def build_proposal(session: AsyncSession, name: str, args: dict) -> Propos
     if name == "propose_delete_promotion":
         return Proposal(name, args, {}, None, f"Propongo eliminar la promoción {args['promotion_id']}. ¿Confirmas?", False)
 
+    if name == "propose_offer_promotion":
+        first = date.fromisoformat(args["first_night"])
+        last = date.fromisoformat(args["last_night"])
+        if last < first:
+            raise ValueError("la última noche no puede ser anterior a la primera.")
+        if last < date.today():
+            raise ValueError("el rango de la promoción está en el pasado.")
+        pct = args.get("discount_pct")
+        price = args.get("price")
+        if pct is None and price is None:
+            raise ValueError("indica el descuento como porcentaje (discount_pct) o precio absoluto (price).")
+        if pct is not None and not (0 < float(pct) < 100):
+            raise ValueError("el porcentaje de descuento debe estar entre 0 y 100.")
+        if price is not None and float(price) <= 0:
+            raise ValueError("el precio con descuento debe ser mayor que 0.")
+        desc = f"{pct}% de descuento" if pct is not None else f"precio {price}"
+        mn = f", mínimo {args['min_nights']} noches" if args.get("min_nights") else ""
+        verbo = "editar" if args.get("promotion_id") else "crear"
+        reinforced = (last - first).days + 1 > REINFORCE_DAYS
+        summary = (
+            f"Propongo {verbo} la promoción '{args['name']}' ({desc}) del {first} al {last}{mn}. ¿Confirmas?"
+        )
+        return Proposal(name, args, {"first_night": first.isoformat(), "last_night": last.isoformat()}, None, summary, reinforced)
+
+    if name == "propose_retire_offer_promotion":
+        return Proposal(name, args, {}, None, f"Propongo retirar la promoción {args['promotion_id']} (dejará de aplicar el descuento). ¿Confirmas?", False)
+
     if name == "propose_rollback":
         return Proposal(name, args, {}, None, f"Propongo revertir el cambio {args['change_id']}. ¿Confirmas?", False)
 
@@ -418,6 +502,32 @@ async def apply_proposal(
             session, channel, int(args["promotion_id"]), origin=ChangeOrigin.chat
         )
         return ApplyOutcome("applied", "Promoción eliminada.", None)
+
+    if tool == "propose_offer_promotion":
+        res = await offer_promotion_service.apply(
+            session,
+            channel,
+            unit_type_id=int(args["unit_type_id"]),
+            first_night=date.fromisoformat(args["first_night"]),
+            last_night=date.fromisoformat(args["last_night"]),
+            name=args["name"],
+            discount_pct=Decimal(str(args["discount_pct"])) if args.get("discount_pct") is not None else None,
+            price=Decimal(str(args["price"])) if args.get("price") is not None else None,
+            min_nights=int(args["min_nights"]) if args.get("min_nights") else None,
+            promotion_id=int(args["promotion_id"]) if args.get("promotion_id") else None,
+            fingerprint=None,
+            confirm_overlap=True,
+            origin=ChangeOrigin.chat,
+        )
+        if res.status == "sync_error":
+            return ApplyOutcome("applied", f"Promoción guardada, pero falló la publicación: {res.issue}", f"promotion_id={res.id}")
+        return ApplyOutcome("applied", "Promoción creada y publicada.", f"promotion_id={res.id}")
+
+    if tool == "propose_retire_offer_promotion":
+        res = await offer_promotion_service.retire(
+            session, channel, int(args["promotion_id"]), confirm=True, origin=ChangeOrigin.chat
+        )
+        return ApplyOutcome("applied", "Promoción retirada (deja de aplicar el descuento).", f"promotion_id={res.id}")
 
     if tool == "propose_rollback":
         await pricing_app_service.rollback_and_publish(

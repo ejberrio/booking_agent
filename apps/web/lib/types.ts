@@ -59,6 +59,44 @@ export interface ApplyResult {
   stale: boolean;
 }
 
+export interface Promotion {
+  id: number;
+  name: string;
+  offer_id: number | null;
+  first_night: string;
+  last_night: string;
+  base_price: string | null;
+  price: string;
+  discount_pct: string | null;
+  saving: string | null;
+  min_nights: number | null;
+  status: "published" | "sync_error" | "retired";
+  published: boolean;
+}
+
+export interface PromotionPreview {
+  offer_id: number;
+  first_night: string;
+  last_night: string;
+  name: string;
+  base_price: string | null;
+  price: string;
+  discount_pct: string | null;
+  saving: string | null;
+  min_nights: number | null;
+  warnings: string[];
+  valid: boolean;
+  fingerprint: string;
+}
+
+export interface PromotionApplyResult {
+  id: number | null;
+  status: string;
+  external_id: number | null;
+  published: boolean;
+  issue: string | null;
+}
+
 export interface Suggestion {
   id: number;
   unit_type_id: number | null;
