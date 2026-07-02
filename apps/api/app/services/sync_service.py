@@ -28,9 +28,44 @@ from app.models.enums import (
     SyncIssueKind,
     SyncStatus,
 )
+from app.core.config import settings
 from app.models.mixins import _now
 from app.models.property import Channel, Property, UnitType
 from app.models.sync import ChannelManagerConnection, SyncIssue, SyncRun
+
+
+def _map_channel(token: str | None) -> ChannelKind:
+    """Token neutro del puerto → ChannelKind. Desconocido/ausente = direct.
+
+    Nunca lanza: un origen no contemplado no puede abortar el lote (FR-002).
+    """
+    if token:
+        t = token.strip().lower()
+        if t.startswith("booking"):
+            return ChannelKind.booking
+        if t.startswith("airbnb"):
+            return ChannelKind.airbnb
+    return ChannelKind.direct
+
+
+async def _upsert_channels(session: AsyncSession, prop: Property) -> None:
+    """Sincroniza las filas Channel con la configuración (CHANNELS_ACTIVE).
+
+    Los kinds configurados quedan activos; los registrados que salieron de la
+    config quedan inactivos (sus reservas históricas se conservan).
+    """
+    configured = set(settings.active_channel_kinds())
+    res = await session.execute(select(Channel).where(Channel.property_id == prop.id))
+    existing = {c.kind: c for c in res.scalars()}
+    for kind in configured:
+        if kind in existing:
+            existing[kind].is_active = True
+        else:
+            session.add(Channel(property_id=prop.id, kind=kind, is_active=True))
+    for kind, channel in existing.items():
+        if kind not in configured:
+            channel.is_active = False
+    await session.flush()
 
 
 # --------- helpers de upsert por external_ref ---------
@@ -55,10 +90,11 @@ async def _upsert_property(session: AsyncSession, ext_id: str, name: str, curren
         prop = Property(name=name, currency=currency, external_ref=ext_id)
         session.add(prop)
         await session.flush()
-        session.add(Channel(property_id=prop.id, kind=ChannelKind.booking, is_active=True))
     else:
         prop.name = name
         prop.currency = currency
+    # Canales conectados: desde configuración, no hardcoded (feature 012).
+    await _upsert_channels(session, prop)
     await session.flush()
     return prop
 
@@ -158,19 +194,24 @@ async def import_remote(
                     issues += 1
                 await _upsert_calendar(session, unit.id, rate.date, rate.available)
 
-        # Reservas: por propiedad, asignadas a su unidad.
+        # Reservas: por propiedad, asignadas a su unidad, con su canal REAL de
+        # origen. Si ya existe con canal incorrecto, re-importar la corrige
+        # (fix de históricos, feature 012). El status NO se sincroniza aquí
+        # (gap pre-existente, issue #91).
         for rb in await adapter.get_bookings(rp.external_id):
             unit = units_by_room.get(rb.room_external_id)
             if unit is None:
                 continue
+            kind = _map_channel(rb.channel)
             res = await session.execute(
                 select(Booking).where(Booking.external_ref == rb.external_id)
             )
-            if res.scalar_one_or_none() is None:
+            existing_booking = res.scalar_one_or_none()
+            if existing_booking is None:
                 session.add(
                     Booking(
                         unit_type_id=unit.id,
-                        channel_kind=ChannelKind.booking,
+                        channel_kind=kind,
                         check_in=rb.check_in,
                         check_out=rb.check_out,
                         status=BookingStatus.confirmed,
@@ -178,6 +219,9 @@ async def import_remote(
                     )
                 )
                 created += 1
+            elif existing_booking.channel_kind != kind:
+                existing_booking.channel_kind = kind
+                updated += 1
 
     run.created_count = created
     run.updated_count = updated

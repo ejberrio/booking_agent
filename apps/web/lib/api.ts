@@ -12,6 +12,7 @@ import type {
   PromotionPreview,
   RangeSelection,
   Suggestion,
+  SystemStatus,
 } from "@/lib/types";
 
 export interface PromotionInput {
@@ -115,6 +116,9 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ message, conversation_id: conversationId ?? null }),
     }),
+
+  // Estado del sistema (incluye canales conectados y reservas por canal)
+  getStatus: () => req<SystemStatus>(`/status`),
 
   // Sync
   testConnection: () => req<ConnectionStatus>(`/sync/test`, { method: "POST" }),

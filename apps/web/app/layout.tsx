@@ -4,7 +4,7 @@ import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
   title: "Booking AI Agent",
-  description: "Gestión inteligente de precios para Booking.com",
+  description: "Gestión inteligente de precios para Booking.com y Airbnb",
 };
 
 export default function RootLayout({

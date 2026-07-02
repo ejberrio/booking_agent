@@ -22,6 +22,18 @@ export default function DashboardPage() {
     queryKey: ["suggestions"],
     queryFn: () => api.listSuggestions("proposed"),
   });
+  const status = useQuery({
+    queryKey: ["system-status"],
+    queryFn: () => api.getStatus(),
+    staleTime: 60_000,
+  });
+
+  const CHANNEL_NAMES: Record<string, string> = {
+    booking: "Booking.com",
+    airbnb: "Airbnb",
+    direct: "Directo",
+  };
+  const channels = status.data?.channels ?? [];
 
   const days = calendar.data ?? [];
   // Solo días con datos (precio): evita contar días pasados/sin importar como ocupados.
@@ -62,6 +74,40 @@ export default function DashboardPage() {
           )}
         </Card>
 
+        <div className="space-y-4">
+        <Card>
+          <p className="mb-2 text-sm font-medium">Canales</p>
+          {status.isLoading ? (
+            <Skeleton className="h-16 w-full" />
+          ) : !channels.length ? (
+            <p className="text-xs text-muted-foreground">
+              Sin datos de canales (sincroniza para actualizar).
+            </p>
+          ) : (
+            <ul className="space-y-2 text-xs">
+              {channels.map((c) => (
+                <li
+                  key={c.kind}
+                  className="flex items-center justify-between rounded-md border border-border px-2 py-1"
+                >
+                  <span className="flex items-center gap-2">
+                    <span
+                      className={`inline-block h-2 w-2 rounded-full ${
+                        c.is_active ? "bg-emerald-500" : "bg-muted-foreground/40"
+                      }`}
+                      title={c.is_active ? "Conectado" : "Inactivo"}
+                    />
+                    {CHANNEL_NAMES[c.kind] ?? c.kind}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {c.bookings} {c.bookings === 1 ? "reserva" : "reservas"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
         <Card>
           <p className="mb-2 text-sm font-medium">Sugerencias recientes</p>
           {suggestions.isLoading ? (
@@ -79,6 +125,7 @@ export default function DashboardPage() {
             </ul>
           )}
         </Card>
+        </div>
       </div>
     </div>
   );

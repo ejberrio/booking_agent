@@ -95,10 +95,16 @@ READ_TOOLS = [
     ToolSpec(
         "get_bookings",
         "Lista las reservas confirmadas que se solapan con un rango de fechas "
-        "(con llegada/salida y número de noches). Úsala para preguntas sobre reservas.",
+        "(con canal de origen, llegada/salida y número de noches). Úsala para preguntas "
+        "sobre reservas; filtra por canal con 'channel' (booking|airbnb|direct) si el "
+        "host pregunta por un canal específico.",
         {
             "type": "object",
-            "properties": {"date_from": _STR, "date_to": _STR},
+            "properties": {
+                "date_from": _STR,
+                "date_to": _STR,
+                "channel": {"type": "string", "enum": ["booking", "airbnb", "direct"]},
+            },
             "required": ["date_from", "date_to"],
         },
         False,
@@ -289,11 +295,11 @@ async def exec_read(session: AsyncSession, name: str, args: dict) -> Any:
         from sqlalchemy import select
 
         from app.models.booking import Booking
-        from app.models.enums import BookingStatus
+        from app.models.enums import BookingStatus, ChannelKind
 
         df_b = date.fromisoformat(args["date_from"])
         dt_b = date.fromisoformat(args["date_to"])
-        res = await session.execute(
+        stmt = (
             select(Booking)
             .where(
                 Booking.status == BookingStatus.confirmed,
@@ -302,9 +308,13 @@ async def exec_read(session: AsyncSession, name: str, args: dict) -> Any:
             )
             .order_by(Booking.check_in)
         )
+        if args.get("channel"):
+            stmt = stmt.where(Booking.channel_kind == ChannelKind(args["channel"]))
+        res = await session.execute(stmt)
         return [
             {
                 "external_ref": b.external_ref,
+                "channel": b.channel_kind.value,
                 "check_in": b.check_in.isoformat(),
                 "check_out": b.check_out.isoformat(),
                 "nights": (b.check_out - b.check_in).days,

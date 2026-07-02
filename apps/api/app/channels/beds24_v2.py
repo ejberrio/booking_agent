@@ -31,6 +31,7 @@ from app.channels.base import (
     RemoteRate,
     RemoteRoom,
     WriteResult,
+    infer_channel_token,
 )
 from app.channels.errors import AuthError, ChannelError, RateLimited
 
@@ -238,6 +239,9 @@ class Beds24V2Adapter:
                     check_in=check_in,
                     check_out=check_out,
                     status=status,
+                    # V2 reporta el canal de venta ("booking", "airbnb"); referer es
+                    # el display ("Booking.com") y sirve de fallback.
+                    channel=infer_channel_token(b.get("channel"), b.get("referer")),
                 )
             )
         return out

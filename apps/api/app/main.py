@@ -16,8 +16,11 @@ _request_log = logging.getLogger("api.request")
 
 app = FastAPI(
     title="Booking AI Agent API",
-    version="0.1.1",
-    description="Agente de IA para gestion de precios y promociones en Booking.com.",
+    version="0.1.2",
+    description=(
+        "Agente de IA para gestion de precios, disponibilidad y promociones en "
+        "Booking.com y Airbnb via Channel Manager."
+    ),
 )
 
 

@@ -1,8 +1,11 @@
 import ssl as _ssl
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+if TYPE_CHECKING:  # solo para anotaciones; el import real es local (evita ciclo)
+    from app.models.enums import ChannelKind
 
 
 def normalize_db_url(url: str) -> tuple[str, dict[str, Any]]:
@@ -85,6 +88,11 @@ class Settings(BaseSettings):
     # Oferta designada (slot 1–16) donde se cuelgan las promociones (feature 011).
     # El "slot" se crea una vez en el panel de Beds24 (enable=always); aquí solo su número.
     beds24_promo_offer_id: int | None = None
+    # Canales conectados en el Channel Manager (feature 012). CSV de ChannelKind.
+    # Beds24 no expone el estado de conexión por canal de forma consultable, así que
+    # el operador lo declara aquí; quitar un canal = marcarlo inactivo (sus reservas
+    # históricas se conservan).
+    channels_active: str = "booking,airbnb"
 
     # Busqueda web (eventos / mercado)
     search_provider: str = "tavily"
@@ -98,6 +106,23 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    def active_channel_kinds(self) -> list["ChannelKind"]:
+        """Kinds de canal declarados como conectados (tolerante a espacios y valores inválidos)."""
+        from app.models.enums import ChannelKind  # import local: evita ciclo config<->models
+
+        out: list[ChannelKind] = []
+        for token in self.channels_active.split(","):
+            token = token.strip().lower()
+            if not token:
+                continue
+            try:
+                kind = ChannelKind(token)
+            except ValueError:
+                continue
+            if kind not in out:
+                out.append(kind)
+        return out
 
     @property
     def normalized_database_url(self) -> str:
