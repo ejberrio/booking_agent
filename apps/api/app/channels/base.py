@@ -12,6 +12,26 @@ from decimal import Decimal
 from typing import Protocol, runtime_checkable
 
 
+def infer_channel_token(channel: object | None, referer: object | None) -> str | None:
+    """Normaliza el canal de origen de una reserva a un token neutro en minúsculas.
+
+    Prioriza el campo `channel` del proveedor (ya un token, p. ej. "booking");
+    si falta, infiere del `referer` display ("Booking.com" → "booking",
+    "Airbnb" → "airbnb"). Nunca lanza: origen irreconocible → None.
+    """
+    if channel:
+        token = str(channel).strip().lower()
+        if token:
+            return token
+    if referer:
+        text = str(referer).lower()
+        if "booking" in text:
+            return "booking"
+        if "airbnb" in text:
+            return "airbnb"
+    return None
+
+
 @dataclass(frozen=True)
 class RemoteRoom:
     external_id: str
@@ -37,11 +57,20 @@ class RemoteRate:
 
 @dataclass(frozen=True)
 class RemoteBooking:
+    """Reserva reportada por el Channel Manager.
+
+    `channel` es un token NEUTRO en minúsculas que identifica el canal de venta de
+    origen ("booking", "airbnb", ...). None = el proveedor no reporta origen (p. ej.
+    reserva creada a mano en su panel). El mapeo a `ChannelKind` lo decide el dominio;
+    el puerto no importa enums del dominio.
+    """
+
     external_id: str
     room_external_id: str
     check_in: date
     check_out: date
     status: str = "confirmed"
+    channel: str | None = None
 
 
 @dataclass(frozen=True)

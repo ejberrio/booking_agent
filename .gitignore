@@ -42,3 +42,4 @@ postgres-data/
 # Backups locales (dumps con datos reales — nunca versionar)
 backups/
 *.dump
+*.tsbuildinfo

@@ -125,3 +125,18 @@ export interface RangeSelection {
   date_to: string;
   weekdays?: number[] | null;
 }
+
+export interface ChannelStatus {
+  kind: "booking" | "airbnb" | "direct";
+  is_active: boolean;
+  bookings: number;
+}
+
+export interface SystemStatus {
+  version: string;
+  environment: string;
+  db: string;
+  beds24: string;
+  open_issues: number;
+  channels: ChannelStatus[];
+}

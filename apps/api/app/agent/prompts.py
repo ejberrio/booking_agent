@@ -1,9 +1,25 @@
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
-_BASE_SYSTEM_PROMPT = (
-    "Eres el asistente de pricing de un host en Booking.com (single-tenant, moneda COP, "
-    "solo el canal Booking). Reglas:\n"
+# Nombres legibles de los canales para el prompt (token → display).
+_CHANNEL_DISPLAY = {"booking": "Booking.com", "airbnb": "Airbnb", "direct": "reservas directas"}
+
+
+def _channels_display(active_channels: list[str]) -> str:
+    names = [_CHANNEL_DISPLAY.get(c, c) for c in active_channels] or ["Booking.com"]
+    if len(names) == 1:
+        return names[0]
+    return ", ".join(names[:-1]) + " y " + names[-1]
+
+
+_BASE_SYSTEM_PROMPT_TEMPLATE = (
+    "Eres el asistente de pricing de un host con su propiedad publicada en {channels} "
+    "(single-tenant, moneda COP), gestionada a través de un Channel Manager. Reglas:\n"
+    "- MULTI-CANAL: los cambios de precio, disponibilidad o promoción se publican vía el "
+    "Channel Manager a TODOS los canales conectados a la vez (no por canal); dilo cuando "
+    "propongas un cambio. Las RESERVAS sí tienen canal de origen: 'get_bookings' acepta el "
+    "filtro opcional 'channel' (booking|airbnb|direct) y devuelve el canal de cada reserva; "
+    "identifica el canal al responder sobre reservas.\n"
     "- Para consultar precios o disponibilidad, USA SIEMPRE las herramientas; nunca inventes "
     "valores.\n"
     "- Para CUALQUIER cambio (precio o promoción) NO ejecutes directamente: usa una herramienta "
@@ -43,21 +59,26 @@ _BASE_SYSTEM_PROMPT = (
 _DOW = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 
 
-def system_prompt(today: date | None = None) -> str:
-    """System prompt con la fecha actual inyectada.
+def system_prompt(today: date | None = None, active_channels: list[str] | None = None) -> str:
+    """System prompt con la fecha actual y los canales activos inyectados.
 
-    Sin esto, el LLM asume su fecha de entrenamiento (p. ej. 2023) y calcula mal
+    Sin la fecha, el LLM asume su fecha de entrenamiento (p. ej. 2023) y calcula mal
     las fechas relativas. Se usa la zona horaria de Colombia (host single-tenant).
+    `active_channels` (tokens: "booking", "airbnb", ...) lo aporta el orquestador
+    desde la BD; sin él se asume solo Booking (retro-compatibilidad).
     """
     if today is None:
         today = datetime.now(ZoneInfo("America/Bogota")).date()
+    base = _BASE_SYSTEM_PROMPT_TEMPLATE.format(
+        channels=_channels_display(active_channels or ["booking"])
+    )
     return (
-        _BASE_SYSTEM_PROMPT
+        base
         + f"\n- HOY es {_DOW[today.weekday()]} {today.isoformat()} (año {today.year}). "
         "Calcula TODAS las fechas relativas (hoy, mañana, este fin de semana, los próximos "
         "meses, 'agosto', etc.) a partir de HOY y usando el año correcto; nunca asumas otro año."
     )
 
 
-# Compatibilidad: prompt base sin fecha.
-SYSTEM_PROMPT = _BASE_SYSTEM_PROMPT
+# Compatibilidad: prompt base sin fecha (asume solo Booking).
+SYSTEM_PROMPT = _BASE_SYSTEM_PROMPT_TEMPLATE.format(channels=_channels_display(["booking"]))

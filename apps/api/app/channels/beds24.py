@@ -22,6 +22,7 @@ from app.channels.base import (
     RemoteRate,
     RemoteRoom,
     WriteResult,
+    infer_channel_token,
 )
 from app.channels.errors import AuthError, ChannelError, RateLimited
 
@@ -199,6 +200,8 @@ class Beds24Adapter:
                     check_in=check_in,
                     check_out=check_out,
                     status=status,
+                    # V1 (legacy lectura): solo referer display, best-effort.
+                    channel=infer_channel_token(None, b.get("referer")),
                 )
             )
         return out

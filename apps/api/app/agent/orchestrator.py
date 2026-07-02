@@ -24,7 +24,7 @@ from app.core.config import settings
 from app.llm.client import LLM
 from app.models.agent import AgentAction, LLMConfig, Message
 from app.models.enums import AgentActionStatus, MessageRole
-from app.models.property import Property, UnitType
+from app.models.property import Channel, Property, UnitType
 
 MAX_STEPS = 6
 
@@ -93,11 +93,23 @@ async def _units_context(session: AsyncSession) -> str:
     return f"\n- Unidades del host: {listing}. Usa el unit_type_id correcto sin preguntar por IDs."
 
 
+async def _active_channels(session: AsyncSession) -> list[str]:
+    """Tokens de los canales activos registrados (para el prompt multi-canal)."""
+    rows = (
+        await session.execute(
+            select(Channel.kind).where(Channel.is_active.is_(True)).order_by(Channel.kind)
+        )
+    ).scalars()
+    return [k.value for k in rows]
+
+
 async def _build_messages(session: AsyncSession, conversation_id: int) -> list[dict]:
     res = await session.execute(
         select(Message).where(Message.conversation_id == conversation_id).order_by(Message.id)
     )
-    system = system_prompt() + await _units_context(session)
+    system = system_prompt(
+        active_channels=await _active_channels(session) or None
+    ) + await _units_context(session)
     msgs = [{"role": "system", "content": system}]
     for m in res.scalars():
         msgs.append({"role": _ROLE.get(m.role, "user"), "content": m.content})

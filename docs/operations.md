@@ -241,3 +241,24 @@ Airbnb `290392420`, listing `638897594982065399` mapeado al room 697411).
   con `{"from","to","minStay"}` (se usó para poner mínimo 2 noches jul-2026→feb-2027).
 - Reservas de Airbnb llegan por `GET /bookings` con su canal (`channel`/`referer`) —
   la app hoy las etiqueta como Booking: se corrige en la Feature 012 (issue #87).
+
+## Multi-canal (Feature 012 · issue #87)
+
+La app refleja la realidad multi-canal del Channel Manager (Booking.com + Airbnb):
+
+- **Canal real por reserva**: cada reserva importada registra su canal de origen
+  (`booking`/`airbnb`; origen desconocido o manual → `direct`). Beds24 lo reporta en
+  `GET /bookings` (`channel`, fallback `referer`).
+- **Corregir históricos**: re-importar desde Beds24 (Configuración → Sincronizar o
+  `POST /sync/import`). El import actualiza el canal de reservas existentes mal
+  etiquetadas sin duplicarlas (dedupe por referencia externa). OJO: los CAMBIOS DE
+  ESTADO (cancelaciones remotas) NO se sincronizan aún — issue #91.
+- **`CHANNELS_ACTIVE`** (default `booking,airbnb`): declara qué canales están
+  conectados en Beds24. Quitar uno lo marca inactivo (sus reservas se conservan);
+  el cambio se aplica en la siguiente sincronización. No hay detección automática
+  (Beds24 no expone el estado de conexión por API).
+- **`GET /status`** incluye `channels: [{kind, is_active, bookings}]` — canales y
+  reservas confirmadas por canal. El dashboard web lo muestra en la tarjeta "Canales".
+- **Agente**: conoce los canales activos ("¿qué reservas tengo de Airbnb?" filtra por
+  canal) y recuerda que precios/disponibilidad/promos publican a TODOS los canales
+  conectados a la vez (no por canal — el ajuste por canal es la Feature 013).

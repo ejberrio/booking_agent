@@ -1,15 +1,17 @@
 <!-- SPECKIT START -->
-Feature activa: **011-api-promotions** (gestión de promociones de precio vía API del Channel Manager).
-Plan e artefactos: `specs/011-api-promotions/plan.md`, `research.md`, `data-model.md`,
-`contracts/{promotions-api,channel-fixedprices}.md`, `quickstart.md`.
-Hallazgo (2026-07-01): Beds24 V2 SÍ escribe promociones vía `POST /inventory/fixedPrices` (array;
-crear=sin id; máx 100/room; NO hay DELETE), ligadas a una oferta por `offerId` (el slot es solo
-lectura). Decisiones: nueva entidad `Promotion` (external_id, offer_id, fechas, price, discount_pct,
-min_nights, status); oferta DESIGNADA por config `beds24_promo_offer_id`; descuento en % o precio pero
-se envía precio absoluto (se guarda % y base); retirada = neutralizar (roomPriceEnable=false) + ocultar;
-patrón preview→apply humano-en-el-bucle (AgentAction/SyncIssue); puerto ChannelManager +set/get/disable
-fixed price. Corrige la conclusión de la Feature 009 (que asumió que no se podía por API). ADR 0003.
-App YA EN PRODUCCIÓN (Railway web+api + Neon, CD). Features 001-010 en `main`.
+Feature activa: **012-multichannel-core** (núcleo multi-canal Booking.com + Airbnb vía Beds24; issue #87).
+Plan e artefactos: `specs/012-multichannel-core/plan.md`, `research.md`, `data-model.md`,
+`contracts/{channel-manager-port,status-api,agent-tools}.md`, `quickstart.md`.
+Contexto: Airbnb YA conectado a Beds24 (issue #86, sync Prices & Availability). Hoy el import
+etiqueta TODA reserva como `ChannelKind.booking` (hardcode en `sync_service.py`) y el prompt del
+agente dice "solo el canal Booking". Decisiones: `RemoteBooking.channel: str | None` (token neutro;
+Beds24 V2 lo da en `b["channel"]`, fallback `referer`); normalización en dominio booking/airbnb/
+desconocido→direct (nunca aborta); corrección de históricos DENTRO del import (re-importar corrige
+`channel_kind` de reservas existentes; dedupe por `external_ref` ⇒ 0 duplicados; SIN migración —
+no hay cambios de esquema); canales activos por config `CHANNELS_ACTIVE` (default booking,airbnb);
+`system_prompt(today, active_channels)`; tool `get_bookings` += filtro/salida `channel`;
+`GET /status` += bloque `channels` (resiliente); dashboard web tarjeta "Canales" vía proxy.
+Principio III intacto (feature de lectura/etiquetado). Features 001-011 en `main`, app EN PRODUCCIÓN.
 <!-- SPECKIT END -->
 
 # Booking AI Agent
