@@ -190,3 +190,54 @@ panel de Beds24 hasta que lo borres a mano (limpieza opcional): *Prices → Fixe
 Que la promoción aparezca como **deal NATIVO** de Booking (Genius/Basic Deal/Última
 hora, con badge) depende del mapeo de tarifas del canal; la API gestiona la tarifa
 lado Beds24. Los deals con badge se siguen creando en el panel de Beds24 / extranet.
+
+## Conexión con Airbnb (Fase 2 · issue #86, 2026-07-02)
+
+El mismo apartamento está ahora conectado a **Airbnb vía Beds24** (API oficial, cuenta
+Airbnb `290392420`, listing `638897594982065399` mapeado al room 697411).
+
+### Configuración (Beds24 → Channel Manager → Airbnb)
+
+- **Sync Type = "Prices and Availability"**: Beds24 envía precios, disponibilidad,
+  estancia mínima y preaviso, e importa reservas. Fotos, textos y **descuentos de
+  Airbnb** (semanal 5%, mensual 25%) se siguen gestionando **en Airbnb**.
+- **Pricing clásico Per Day** (NO Rate Plans: cambian toda la cuenta a inventory grid
+  y no soportan modificaciones de reserva).
+- **Moneda — CRÍTICO**: la API de Airbnb **NO soporta COP**. Config correcta en
+  *Mapping → Property Settings*: `Currency = USD` + `Multiplier = *[CONVERT:COP-USD]`
+  (Beds24 convierte con tasa de mercado; 350.000 COP → ~$102/noche). Con
+  `Currency=COP` los precios llegan corruptos (~mitad). El huésped que paga en COP ve
+  ~8% más por el margen cambiario de Airbnb sobre anuncios USD (inevitable); neto
+  para el host sigue siendo mejor que Booking (comisión ~3% vs ~15%).
+- **Dates with no Price = "Make unavailable"**: fechas sin precio cargado (hoy, desde
+  el 13-feb-2027) aparecen cerradas en Airbnb → cargar precios antes de ese horizonte.
+- Con la API solo funciona **Instant Book**.
+
+### Qué es de quién
+
+| Se gestiona en la app / Beds24 (fluye a AMBOS canales) | Se gestiona en Airbnb |
+|---|---|
+| Precios por día/rango | Fotos, textos del anuncio |
+| Disponibilidad / bloqueos | Descuentos semanal/mensual y promociones de Airbnb |
+| Estancia mínima (calendario + default del room = 2 noches) | Política de cancelación, reseñas |
+| Promociones de precio (fixed prices) — ⚠️ aplican a los dos canales | |
+
+### Aprendizajes operativos
+
+- El botón **Connect** del Room Mapping solo aparece tras resolver los
+  **"Fix Content Errors"** (aunque el sync no envíe contenido): Rack Rate > 0
+  (`Channel Manager → Property Content → Room Content`, quedó 350000), descripción del
+  room > 50 caracteres, y camas suficientes para la capacidad
+  (`Properties → Rooms → Setup → edit bedrooms`; real: H1 doble, H2 camarote
+  doble+sencilla, H3 sencilla = 6 personas).
+- **Los bloqueos manuales de Airbnb NO se importan**: replicarlos en Beds24 ANTES de
+  conectar (se hizo vía la app: jul 6 y oct 19-21). Las reservas de Airbnb sí se
+  importan (`Import Existing Bookings`; estadías > 4 semanas no).
+- El primer sync **pisa el calendario de Airbnb** con los datos de Beds24 (por diseño).
+- Verificación: *Mapping → Update* (espera "Success") + *Check Connection Status*;
+  `https://beds24.com/api/airbnb.com/showdata.php?roomid=697411` muestra exactamente
+  qué se envía (incluido el multiplicador). Airbnb tarda minutos en aplicar.
+- La escritura de `minStay` por **API v2** funciona: `POST /inventory/rooms/calendar`
+  con `{"from","to","minStay"}` (se usó para poner mínimo 2 noches jul-2026→feb-2027).
+- Reservas de Airbnb llegan por `GET /bookings` con su canal (`channel`/`referer`) —
+  la app hoy las etiqueta como Booking: se corrige en la Feature 012 (issue #87).
