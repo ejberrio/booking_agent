@@ -8,15 +8,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.routes.sync import get_adapter
 from app.db.session import get_session
-from app.models.enums import PromotionType
+from app.models.enums import ChangeOrigin, PromotionType
 from app.schemas.pricing import RangeSelection
 from app.services import (
     availability_service,
+    channel_pricing_service,
     offer_promotion_service,
     pricing_app_service,
     promotion_service,
 )
 from app.services.audit_service import RollbackConflict
+from app.services.channel_pricing_service import ChannelOffsetError, FingerprintError
 from app.services.offer_promotion_service import PromotionError
 
 router = APIRouter()
@@ -82,6 +84,7 @@ class OfferPromoPreviewRequest(BaseModel):
     price: Decimal | None = None
     min_nights: int | None = None
     promotion_id: int | None = None  # presente = edición
+    channels_scope: list[str] | None = None  # None = todos los canales
 
 
 class OfferPromoApplyRequest(OfferPromoPreviewRequest):
@@ -92,6 +95,15 @@ class OfferPromoApplyRequest(OfferPromoPreviewRequest):
 class OfferPromoRetireRequest(BaseModel):
     id: int
     confirm: bool = True
+
+
+class ChannelOffsetPreviewRequest(BaseModel):
+    channel: str
+    offset_pct: Decimal
+
+
+class ChannelOffsetApplyRequest(ChannelOffsetPreviewRequest):
+    fingerprint: str
 
 
 @router.get("/calendar")
@@ -236,6 +248,7 @@ async def promotion_preview(
             price=req.price,
             min_nights=req.min_nights,
             exclude_id=req.promotion_id,
+            channels_scope=req.channels_scope,
         )
         return asdict(prev)
     except PromotionError as exc:
@@ -263,6 +276,7 @@ async def promotion_apply(
             promotion_id=req.promotion_id,
             fingerprint=req.fingerprint,
             confirm_overlap=req.confirm_overlap,
+            channels_scope=req.channels_scope,
         )
         await session.commit()
         return asdict(result)
@@ -285,6 +299,56 @@ async def promotion_retire(
         return asdict(result)
     except PromotionError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    finally:
+        await adapter.aclose()
+
+
+@router.get("/channel-offsets")
+async def get_channel_offsets(session: AsyncSession = Depends(get_session)):
+    adapter = get_adapter()
+    try:
+        offsets = await channel_pricing_service.get_offsets(session, adapter)
+        return {"offsets": offsets}
+    finally:
+        await adapter.aclose()
+
+
+@router.post("/channel-offsets/preview")
+async def channel_offset_preview(
+    req: ChannelOffsetPreviewRequest, session: AsyncSession = Depends(get_session)
+):
+    adapter = get_adapter()
+    try:
+        return await channel_pricing_service.preview_offset(
+            session, adapter, req.channel, req.offset_pct
+        )
+    except ChannelOffsetError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    finally:
+        await adapter.aclose()
+
+
+@router.post("/channel-offsets/apply")
+async def channel_offset_apply(
+    req: ChannelOffsetApplyRequest, session: AsyncSession = Depends(get_session)
+):
+    adapter = get_adapter()
+    try:
+        result = await channel_pricing_service.apply_offset(
+            session,
+            adapter,
+            req.channel,
+            req.offset_pct,
+            fingerprint=req.fingerprint,
+            origin=ChangeOrigin.manual,
+        )
+        await session.commit()
+        return result
+    except FingerprintError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ChannelOffsetError as exc:
+        await session.commit()  # persistir la SyncIssue del fallo
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     finally:
         await adapter.aclose()
 

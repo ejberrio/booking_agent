@@ -23,6 +23,30 @@ export default function CalendarPage() {
     queryKey: ["calendar", unitTypeId, from, to],
     queryFn: () => api.getCalendar(unitTypeId, from, to),
   });
+  const offsets = useQuery({
+    queryKey: ["channel-offsets"],
+    queryFn: () => api.getChannelOffsets(),
+    staleTime: 5 * 60_000,
+  });
+
+  // Precio efectivo por canal del día seleccionado (solo si hay offsets ≠ 0;
+  // con 0/null el panel queda exactamente igual que antes).
+  const CHANNEL_NAMES: Record<string, string> = { booking: "Booking.com", airbnb: "Airbnb" };
+  const activeOffsets = (offsets.data?.offsets ?? []).filter((o) => o.offset_pct);
+  const selectedDay = selection
+    ? (data ?? []).find((d) => d.date === selection.from)
+    : undefined;
+  const channelPrices =
+    activeOffsets.length && selectedDay?.base_price
+      ? [
+          { name: "Booking.com", value: Number(selectedDay.base_price), note: "" },
+          ...activeOffsets.map((o) => ({
+            name: CHANNEL_NAMES[o.channel] ?? o.channel,
+            value: Math.round(Number(selectedDay.base_price) * (1 + (o.offset_pct ?? 0) / 100)),
+            note: ` (${(o.offset_pct ?? 0) > 0 ? "+" : ""}${o.offset_pct}%)`,
+          })),
+        ]
+      : null;
 
   function move(delta: number) {
     setSelection(null);
@@ -69,7 +93,25 @@ export default function CalendarPage() {
               onSelect={(f, t) => setSelection({ from: f, to: t })}
             />
           </Card>
-          <RangeEditor unitTypeId={unitTypeId} selection={selection} onApplied={() => refetch()} />
+          <div className="space-y-4">
+            <RangeEditor unitTypeId={unitTypeId} selection={selection} onApplied={() => refetch()} />
+            {channelPrices && (
+              <Card>
+                <p className="text-xs font-medium">Precio por canal · {selection?.from}</p>
+                <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
+                  {channelPrices.map((c) => (
+                    <li key={c.name}>
+                      {c.name}: <strong className="text-foreground">{c.value.toLocaleString("es-CO")} COP</strong>
+                      {c.note && <span>{c.note}</span>}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  Airbnb lo muestra en la moneda del huésped (margen cambiario propio).
+                </p>
+              </Card>
+            )}
+          </div>
         </div>
       )}
     </div>

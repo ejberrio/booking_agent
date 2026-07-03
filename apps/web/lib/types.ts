@@ -72,6 +72,7 @@ export interface Promotion {
   min_nights: number | null;
   status: "published" | "sync_error" | "retired";
   published: boolean;
+  channels_scope: string[] | null;
 }
 
 export interface PromotionPreview {
@@ -87,6 +88,7 @@ export interface PromotionPreview {
   warnings: string[];
   valid: boolean;
   fingerprint: string;
+  channels_scope: string[] | null;
 }
 
 export interface PromotionApplyResult {
@@ -139,4 +141,28 @@ export interface SystemStatus {
   beds24: string;
   open_issues: number;
   channels: ChannelStatus[];
+}
+
+export interface ChannelOffset {
+  channel: "booking" | "airbnb";
+  offset_pct: number | null;
+  supported: boolean;
+  is_active: boolean;
+}
+
+export interface OffsetPreview {
+  channel: string;
+  current_pct: string | null;
+  new_pct: string;
+  example: { base: string; effective: string };
+  warnings: string[];
+  fingerprint: string;
+}
+
+export interface OffsetApplyResult {
+  applied: boolean;
+  verified: boolean;
+  channel: string;
+  offset_pct: number;
+  issue: string | null;
 }

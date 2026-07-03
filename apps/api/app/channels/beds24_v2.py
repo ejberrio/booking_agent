@@ -14,6 +14,7 @@ Las pruebas usan httpx.MockTransport, sin llamar a la API real.
 from __future__ import annotations
 
 import asyncio
+import re
 import time
 from datetime import date, timedelta
 from decimal import Decimal
@@ -325,6 +326,13 @@ class Beds24V2Adapter:
             item["id"] = fp.external_id
         if fp.min_nights is not None:
             item["minNights"] = int(fp.min_nights)
+        if fp.channels is not None:
+            # Alcance por canal: solo se envían los tokens presentes; el resto de
+            # canales del CM no se altera. Clave `enable` (payload real de la API;
+            # el yaml dice `enabled` — ver research R2 de la feature 013).
+            item["channels"] = {
+                token: {"enable": bool(flag)} for token, flag in fp.channels.items()
+            }
         return item
 
     async def set_fixed_price(self, fp: RemoteFixedPrice) -> FixedPriceWriteResult:
@@ -424,3 +432,78 @@ class Beds24V2Adapter:
                     )
                 )
         return out
+
+    # --- Ajuste de precio por canal (feature 013) ---
+    # El multiplier del canal es una fórmula string (p. ej. "*[CONVERT:COP-USD]").
+    # Convención: el sufijo "*<número>" final es NUESTRO factor de ajuste; todo lo
+    # anterior es el prefijo del operador y es INTOCABLE. Endpoint /channels/settings
+    # en estado Alpha → toda escritura se verifica con re-GET.
+
+    _ADJUSTABLE_CHANNELS = frozenset({"airbnb"})
+    _FACTOR_SUFFIX = re.compile(r"\*(\d+(?:\.\d+)?)$")
+
+    def supports_price_adjustment(self, channel: str) -> bool:
+        return channel in self._ADJUSTABLE_CHANNELS
+
+    @classmethod
+    def _split_multiplier(cls, multiplier: str | None) -> tuple[str, Decimal | None]:
+        """Separa (prefijo_intocable, factor_nuestro) de la fórmula del multiplier."""
+        text = (multiplier or "").strip()
+        m = cls._FACTOR_SUFFIX.search(text)
+        if m is None:
+            return text, None
+        return text[: m.start()], Decimal(m.group(1))
+
+    @staticmethod
+    def _compose_multiplier(prefix: str, factor: Decimal | None) -> str:
+        if factor is None:
+            return prefix
+        return f"{prefix}*{factor.quantize(Decimal('0.0001')).normalize()}"
+
+    async def _get_channel_multiplier(
+        self, property_external_id: str, channel: str
+    ) -> str | None:
+        data = await self._request(
+            "GET",
+            "channels/settings",
+            params={"propertyId": property_external_id, "channel[]": channel},
+        )
+        for entry in data.get("data", []) if isinstance(data, dict) else []:
+            if entry.get("channel") != channel:
+                continue
+            for prop in entry.get("properties", []):
+                if str(prop.get("id")) == str(property_external_id):
+                    return prop.get("multiplier")
+        return None
+
+    async def get_channel_price_adjustment(
+        self, property_external_id: str, channel: str
+    ) -> Decimal | None:
+        multiplier = await self._get_channel_multiplier(property_external_id, channel)
+        return self._split_multiplier(multiplier)[1]
+
+    async def set_channel_price_adjustment(
+        self, property_external_id: str, channel: str, factor: Decimal | None
+    ) -> WriteResult:
+        if not self.supports_price_adjustment(channel):
+            return WriteResult(False, False, f"canal sin soporte de ajuste: {channel}")
+        current = await self._get_channel_multiplier(property_external_id, channel)
+        prefix, _ = self._split_multiplier(current)
+        new_multiplier = self._compose_multiplier(prefix, factor)
+        body = [
+            {
+                "channel": channel,
+                "properties": [
+                    {"id": int(property_external_id), "multiplier": new_multiplier or None}
+                ],
+            }
+        ]
+        result = await self._request("POST", "channels/settings", json_body=body)
+        ok = bool(result.get("success", True)) if isinstance(result, dict) else True
+        if not ok:
+            return WriteResult(False, False, "el canal rechazó la escritura del multiplier")
+        # Verificación (endpoint Alpha): releer y comparar.
+        after = await self._get_channel_multiplier(property_external_id, channel)
+        verified = (after or "") == new_multiplier
+        detail = None if verified else f"esperado {new_multiplier!r}, leído {after!r}"
+        return WriteResult(True, verified, detail)

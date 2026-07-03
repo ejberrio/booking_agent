@@ -10,6 +10,9 @@ import type {
   Promotion,
   PromotionApplyResult,
   PromotionPreview,
+  ChannelOffset,
+  OffsetApplyResult,
+  OffsetPreview,
   RangeSelection,
   Suggestion,
   SystemStatus,
@@ -24,6 +27,7 @@ export interface PromotionInput {
   price?: number | null;
   min_nights?: number | null;
   promotion_id?: number | null;
+  channels_scope?: string[] | null;
 }
 
 // Las llamadas van al proxy server-side de la propia web (mismo origen).
@@ -119,6 +123,19 @@ export const api = {
 
   // Estado del sistema (incluye canales conectados y reservas por canal)
   getStatus: () => req<SystemStatus>(`/status`),
+
+  // Ajuste de precio por canal (feature 013)
+  getChannelOffsets: () => req<{ offsets: ChannelOffset[] }>(`/pricing/channel-offsets`),
+  previewChannelOffset: (body: { channel: string; offset_pct: number }) =>
+    req<OffsetPreview>(`/pricing/channel-offsets/preview`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  applyChannelOffset: (body: { channel: string; offset_pct: number; fingerprint: string }) =>
+    req<OffsetApplyResult>(`/pricing/channel-offsets/apply`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 
   // Sync
   testConnection: () => req<ConnectionStatus>(`/sync/test`, { method: "POST" }),

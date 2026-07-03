@@ -232,3 +232,15 @@ class Beds24Adapter:
     ) -> WriteResult:
         # Las escrituras de la API V1 no funcionan; producción usa V2.
         raise ChannelError("La API V1 no soporta escritura de disponibilidad; usa la V2.")
+
+    # --- Ajuste de precio por canal (feature 013) ---
+    # V1 es legacy de solo lectura: no expone channel settings.
+
+    def supports_price_adjustment(self, channel: str) -> bool:
+        return False
+
+    async def get_channel_price_adjustment(self, property_external_id, channel):
+        return None
+
+    async def set_channel_price_adjustment(self, property_external_id, channel, factor):
+        return WriteResult(False, False, "no soportado por la API V1 (legacy de lectura)")
