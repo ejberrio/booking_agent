@@ -15,7 +15,7 @@ from app.services.pricing_service import set_base_price
 async def _get(session: AsyncSession, suggestion_id: int) -> PriceSuggestion:
     s = await session.get(PriceSuggestion, suggestion_id)
     if s is None:
-        raise ValueError(f"No existe la sugerencia {suggestion_id}")
+        raise LookupError(f"No existe la sugerencia {suggestion_id}")
     return s
 
 
@@ -29,9 +29,12 @@ async def approve(session: AsyncSession, suggestion_id: int) -> PriceSuggestion:
 
 
 async def reject(session: AsyncSession, suggestion_id: int) -> PriceSuggestion:
+    # Acepta también 'approved': las aprobadas-sin-aplicar históricas no quedan huérfanas.
     s = await _get(session, suggestion_id)
-    if s.status is not SuggestionStatus.proposed:
-        raise ValueError("Solo se rechaza una sugerencia 'proposed'")
+    if s.status not in (SuggestionStatus.proposed, SuggestionStatus.approved):
+        raise ValueError(
+            f"La sugerencia ya está resuelta (estado real: {s.status.value})"
+        )
     s.status = SuggestionStatus.rejected
     await session.flush()
     return s

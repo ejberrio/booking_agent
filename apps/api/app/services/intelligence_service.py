@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -65,6 +65,14 @@ async def scan(
     return run
 
 
+class SuggestionStateError(ValueError):
+    """Conflicto de estado o vigencia: la acción no procede y no tuvo efectos."""
+
+
+class SuggestionPublishError(RuntimeError):
+    """La publicación al canal falló por completo: nada debe quedar aplicado."""
+
+
 async def approve(session: AsyncSession, suggestion_id: int) -> PriceSuggestion:
     return await suggestion_service.approve(session, suggestion_id)
 
@@ -73,19 +81,36 @@ async def reject(session: AsyncSession, suggestion_id: int) -> PriceSuggestion:
     return await suggestion_service.reject(session, suggestion_id)
 
 
-async def apply_suggestion(session: AsyncSession, channel, suggestion_id: int) -> PriceSuggestion:
-    """Aplica una sugerencia vía el motor de precios (origen=sugerencia): audita + publica."""
+async def apply_suggestion(
+    session: AsyncSession, channel, suggestion_id: int, *, today: date | None = None
+) -> tuple[PriceSuggestion, date, int]:
+    """Acción única "Aprobar y aplicar": valida → aplica (solo días no pasados) → publica → audita.
+
+    Devuelve (sugerencia, applied_from, publish_issues). Las noches pasadas nunca
+    se tocan; si la publicación falla por completo se lanza SuggestionPublishError
+    ANTES de marcarla aplicada (sin commit no queda nada persistido).
+    """
     sug = await session.get(PriceSuggestion, suggestion_id)
     if sug is None:
-        raise ValueError(f"No existe la sugerencia {suggestion_id}")
+        raise LookupError(f"No existe la sugerencia {suggestion_id}")
+    if sug.status not in (SuggestionStatus.proposed, SuggestionStatus.approved):
+        raise SuggestionStateError(
+            f"La sugerencia ya está resuelta (estado real: {sug.status.value})"
+        )
     if sug.unit_type_id is None:
-        raise ValueError("La sugerencia no tiene unidad asignada")
+        raise SuggestionStateError("La sugerencia no tiene unidad asignada")
 
-    from datetime import timedelta
+    today = today or date.today()
+    if sug.date_to < today:
+        raise SuggestionStateError(
+            f"La sugerencia venció (rango {sug.date_from} → {sug.date_to}, todo en el pasado)"
+        )
+    applied_from = max(sug.date_from, today)
 
-    day = sug.date_from
+    applied = issues = 0
+    day = applied_from
     while day <= sug.date_to:
-        await pricing_app_service.set_day_price(
+        result = await pricing_app_service.set_day_price(
             session,
             channel,
             unit_type_id=sug.unit_type_id,
@@ -93,27 +118,45 @@ async def apply_suggestion(session: AsyncSession, channel, suggestion_id: int) -
             price=sug.suggested_price,
             origin=ChangeOrigin.suggestion,
         )
+        applied += len(result.applied_days)
+        issues += result.publish_issues
         day += timedelta(days=1)
+
+    if applied == 0:
+        raise SuggestionStateError(
+            "El precio sugerido viola la regla de precios vigente; no se aplicó nada"
+        )
+    if issues > 0:
+        # El precio de la sugerencia es uniforme (un solo grupo por día): cualquier
+        # incidencia significa que ese día no llegó al canal.
+        raise SuggestionPublishError(
+            "no se pudo publicar el precio al canal; la sugerencia sigue pendiente"
+        )
 
     res = await session.execute(
         select(PriceChangeLog.id)
         .where(
             PriceChangeLog.unit_type_id == sug.unit_type_id,
-            PriceChangeLog.date == sug.date_from,
+            PriceChangeLog.date == applied_from,
         )
         .order_by(PriceChangeLog.id.desc())
     )
     sug.applied_change_id = res.scalars().first()
     sug.status = SuggestionStatus.applied
     await session.flush()
-    return sug
+    return sug, applied_from, issues
 
 
 async def list_suggestions(
-    session: AsyncSession, *, status: SuggestionStatus | None = None
+    session: AsyncSession,
+    *,
+    status: SuggestionStatus | None = None,
+    statuses: list[SuggestionStatus] | None = None,
 ) -> list[PriceSuggestion]:
     stmt = select(PriceSuggestion).order_by(PriceSuggestion.date_from)
-    if status is not None:
+    if statuses is not None:
+        stmt = stmt.where(PriceSuggestion.status.in_(statuses))
+    elif status is not None:
         stmt = stmt.where(PriceSuggestion.status == status)
     res = await session.execute(stmt)
     return list(res.scalars())
