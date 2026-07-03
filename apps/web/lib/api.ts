@@ -12,6 +12,8 @@ import type {
   PromotionPreview,
   ChannelOffset,
   MonthKpis,
+  NativeDeal,
+  NativeDealInput,
   OffsetApplyResult,
   OffsetPreview,
   RangeSelection,
@@ -106,6 +108,18 @@ export const api = {
     req<Suggestion>(`/suggestions/${id}/apply`, { method: "POST" }),
 
   // Promociones (ofertas con descuento sobre fechas, feature 011)
+  // Deals nativos (feature 015: registro informativo local)
+  listNativeDeals: () => req<{ deals: NativeDeal[] }>(`/pricing/native-deals`),
+  createNativeDeal: (body: NativeDealInput) =>
+    req<NativeDeal>(`/pricing/native-deals`, { method: "POST", body: JSON.stringify(body) }),
+  updateNativeDeal: (id: number, body: Partial<NativeDealInput>) =>
+    req<NativeDeal>(`/pricing/native-deals/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+  deleteNativeDeal: (id: number) =>
+    req<{ deleted: boolean }>(`/pricing/native-deals/${id}`, { method: "DELETE" }),
+
   listPromotions: (unitTypeId: number) =>
     req<{ promotions: Promotion[] }>(`/pricing/promotions?unit_type_id=${unitTypeId}`),
   previewPromotion: (body: PromotionInput) =>

@@ -32,6 +32,11 @@ export default function DashboardPage() {
     queryFn: () => api.getKpis(unitTypeId, from, to),
     staleTime: 60_000,
   });
+  const deals = useQuery({
+    queryKey: ["native-deals"],
+    queryFn: () => api.listNativeDeals(),
+    staleTime: 60_000,
+  });
 
   const CHANNEL_NAMES: Record<string, string> = {
     booking: "Booking.com",
@@ -46,6 +51,21 @@ export default function DashboardPage() {
   const occupied = withData.filter((d) => d.available === 0).length;
   const occupancy = withData.length ? Math.round((occupied / withData.length) * 100) : 0;
   const promos = days.filter((d) => d.promotions.length > 0).length;
+
+  // Días del mes con deal nativo activo (extremos abiertos = cubren siempre por ese lado).
+  const activeDeals = (deals.data?.deals ?? []).filter((d) => d.is_active);
+  const nativeDealDates = new Set<string>();
+  for (const d of days) {
+    if (
+      activeDeals.some(
+        (deal) =>
+          (!deal.date_from || deal.date_from <= d.date) &&
+          (!deal.date_to || deal.date_to >= d.date),
+      )
+    ) {
+      nativeDealDates.add(d.date);
+    }
+  }
 
   const reserved = kpis.data?.reserved_nights;
   const reservedHint = reserved
@@ -94,6 +114,7 @@ export default function DashboardPage() {
               days={days}
               selection={null}
               onSelect={() => {}}
+              nativeDealDates={nativeDealDates}
             />
           )}
         </Card>
