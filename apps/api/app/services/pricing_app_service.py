@@ -11,14 +11,15 @@ from __future__ import annotations
 from datetime import date, timedelta
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.channels.base import ChannelManager
 from app.domain.pricing import violates_rule
 from app.models.audit import PriceChangeLog
+from app.models.booking import Booking
 from app.models.calendar import CalendarDay
-from app.models.enums import ChangeOrigin, PromotionStatus
+from app.models.enums import BookingStatus, ChangeOrigin, ChannelKind, PromotionStatus
 from app.models.pricing import Promotion
 from app.models.property import UnitType
 from app.schemas.pricing import (
@@ -100,6 +101,51 @@ async def get_calendar(
             )
         )
     return views
+
+
+async def get_kpis(
+    session: AsyncSession, unit_type_id: int, date_from: date, date_to: date
+) -> dict:
+    """KPIs del rango: noches reservadas por canal y noches bloqueadas.
+
+    Una noche pertenece al rango si su fecha ∈ [date_from, date_to]; una reserva
+    ocupa las noches [check_in, check_out). Los bloqueos son globales (cierran
+    todos los canales a la vez), por eso no llevan desglose por canal.
+    """
+    rows = (
+        await session.execute(
+            select(Booking.channel_kind, Booking.check_in, Booking.check_out).where(
+                Booking.unit_type_id == unit_type_id,
+                Booking.status == BookingStatus.confirmed,
+                Booking.check_in <= date_to,
+                Booking.check_out > date_from,
+            )
+        )
+    ).all()
+    nights: dict[str, int] = {kind.value: 0 for kind in ChannelKind}
+    for kind, check_in, check_out in rows:
+        first = max(check_in, date_from)
+        last = min(check_out, date_to + timedelta(days=1))
+        nights[kind.value] += max(0, (last - first).days)
+
+    blocked = (
+        await session.execute(
+            select(func.count()).where(
+                CalendarDay.unit_type_id == unit_type_id,
+                CalendarDay.date >= date_from,
+                CalendarDay.date <= date_to,
+                CalendarDay.is_blocked.is_(True),
+            )
+        )
+    ).scalar_one()
+
+    return {
+        "date_from": date_from,
+        "date_to": date_to,
+        "reserved_nights": nights,
+        "total_reserved": sum(nights.values()),
+        "blocked_nights": int(blocked),
+    }
 
 
 async def publish_effective(
