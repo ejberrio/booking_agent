@@ -11,6 +11,7 @@ import type {
   PromotionApplyResult,
   PromotionPreview,
   ChannelOffset,
+  MonthKpis,
   OffsetApplyResult,
   OffsetPreview,
   RangeSelection,
@@ -51,6 +52,8 @@ export const api = {
     req<CalendarDay[]>(
       `/pricing/calendar?unit_type_id=${unitTypeId}&date_from=${from}&date_to=${to}`,
     ),
+  getKpis: (unitTypeId: number, from: string, to: string) =>
+    req<MonthKpis>(`/pricing/kpis?unit_type_id=${unitTypeId}&date_from=${from}&date_to=${to}`),
   previewRange: (body: { unit_type_id: number; selection: RangeSelection; price: number }) =>
     req<ChangePreview>(`/pricing/range/preview`, {
       method: "POST",

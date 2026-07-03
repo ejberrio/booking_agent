@@ -114,6 +114,13 @@ async def calendar(
     return [asdict(v) for v in views]
 
 
+@router.get("/kpis")
+async def kpis(
+    unit_type_id: int, date_from: date, date_to: date, session: AsyncSession = Depends(get_session)
+):
+    return await pricing_app_service.get_kpis(session, unit_type_id, date_from, date_to)
+
+
 @router.post("/day")
 async def set_day(req: DayPriceRequest, session: AsyncSession = Depends(get_session)):
     adapter = get_adapter()

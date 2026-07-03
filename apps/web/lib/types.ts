@@ -128,6 +128,14 @@ export interface RangeSelection {
   weekdays?: number[] | null;
 }
 
+export interface MonthKpis {
+  date_from: string;
+  date_to: string;
+  reserved_nights: Record<"booking" | "airbnb" | "direct", number>;
+  total_reserved: number;
+  blocked_nights: number;
+}
+
 export interface ChannelStatus {
   kind: "booking" | "airbnb" | "direct";
   is_active: boolean;

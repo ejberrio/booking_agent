@@ -27,6 +27,11 @@ export default function DashboardPage() {
     queryFn: () => api.getStatus(),
     staleTime: 60_000,
   });
+  const kpis = useQuery({
+    queryKey: ["month-kpis", unitTypeId, from, to],
+    queryFn: () => api.getKpis(unitTypeId, from, to),
+    staleTime: 60_000,
+  });
 
   const CHANNEL_NAMES: Record<string, string> = {
     booking: "Booking.com",
@@ -42,6 +47,15 @@ export default function DashboardPage() {
   const occupancy = withData.length ? Math.round((occupied / withData.length) * 100) : 0;
   const promos = days.filter((d) => d.promotions.length > 0).length;
 
+  const reserved = kpis.data?.reserved_nights;
+  const reservedHint = reserved
+    ? [
+        `Booking ${reserved.booking}`,
+        `Airbnb ${reserved.airbnb}`,
+        ...(reserved.direct > 0 ? [`Directo ${reserved.direct}`] : []),
+      ].join(" · ")
+    : undefined;
+
   return (
     <div className="mx-auto max-w-5xl space-y-5">
       <h1 className="text-xl font-semibold">Panorama</h1>
@@ -49,8 +63,18 @@ export default function DashboardPage() {
       {calendar.isLoading ? (
         <Skeleton className="h-24 w-full" />
       ) : (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-          <Kpi label="Ocupación (mes)" value={`${occupancy}%`} hint={`${occupied} noches reservadas`} />
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
+          <Kpi label="Ocupación (mes)" value={`${occupancy}%`} hint={`${occupied} noches ocupadas`} />
+          <Kpi
+            label="Noches reservadas (mes)"
+            value={String(kpis.data?.total_reserved ?? "—")}
+            hint={reservedHint}
+          />
+          <Kpi
+            label="Noches bloqueadas (mes)"
+            value={String(kpis.data?.blocked_nights ?? "—")}
+            hint="bloqueo global: cierra todos los canales"
+          />
           <Kpi label="Sugerencias pendientes" value={String(suggestions.data?.length ?? 0)} />
           <Kpi label="Días con promoción" value={String(promos)} />
         </div>
