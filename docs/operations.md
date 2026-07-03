@@ -284,3 +284,19 @@ La app refleja la realidad multi-canal del Channel Manager (Booking.com + Airbnb
   Nota: en Airbnb una promoción recibe ADEMÁS el offset del canal (allowMultiplier).
 - Si la escritura del offset falla o no se verifica (endpoint Alpha de Beds24), queda
   una incidencia en /status (`open_issues`) y el estado local no miente.
+
+## Sugerencias: acción única "Aprobar y aplicar" (Feature 014 · issue #95)
+
+- Una sugerencia se resuelve con UNA acción: **Aprobar y aplicar** (aprueba + fija el
+  precio + publica al canal + audita con enlace al cambio) o **Rechazar**. El paso
+  intermedio "aprobar sin aplicar" y su ruta `POST /suggestions/{id}/approve` fueron
+  retirados (2026-07-03); las `approved` históricas siguen siendo resolubles en ambos
+  sentidos y aparecen en la lista de pendientes.
+- Dónde: en el **calendario** (los días con sugerencia vigente llevan punto violeta;
+  clic en el día → panel con precio actual vs sugerido, rango, confianza y racional) y
+  en la página **Sugerencias** (pendientes = `proposed` + `approved`).
+- **Días pasados nunca se tocan**: si el rango ya empezó, se aplica desde hoy
+  (`applied_from` en la respuesta y aviso en la UI); si venció por completo → 409.
+- **Fallo del canal**: 502, incidencia `comm_error` visible en /status y la sugerencia
+  sigue pendiente (el estado local no miente; no queda nada aplicado a medias).
+- Reintentar una ya resuelta → 409 con el estado real (sin doble aplicación).

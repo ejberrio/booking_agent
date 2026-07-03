@@ -10,33 +10,35 @@ import { api } from "@/lib/api";
 export default function SuggestionsPage() {
   const qc = useQueryClient();
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["suggestions"],
-    queryFn: () => api.listSuggestions("proposed"),
+    queryKey: ["suggestions", "pending"],
+    queryFn: () => api.listPendingSuggestions(),
   });
 
-  const refresh = () => qc.invalidateQueries({ queryKey: ["suggestions"] });
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ["suggestions"] });
+    qc.invalidateQueries({ queryKey: ["calendar"] });
+  };
 
   const apply = useMutation({
     mutationFn: (id: number) => api.applySuggestion(id),
-    onSuccess: () => {
-      toast.success("Sugerencia aplicada y publicada");
-      refresh();
+    onSuccess: (s) => {
+      if (s.applied_from && s.applied_from > s.date_from) {
+        toast.success(`Sugerencia aplicada desde ${s.applied_from} (las noches pasadas no se tocan)`);
+      } else {
+        toast.success("Sugerencia aplicada y publicada");
+      }
     },
-    onError: () => toast.error("No se pudo aplicar"),
-  });
-  const approve = useMutation({
-    mutationFn: (id: number) => api.approveSuggestion(id),
-    onSuccess: refresh,
+    onError: (e: Error) => toast.error(e.message),
+    onSettled: refresh,
   });
   const reject = useMutation({
     mutationFn: (id: number) => api.rejectSuggestion(id),
-    onSuccess: () => {
-      toast("Sugerencia rechazada");
-      refresh();
-    },
+    onSuccess: () => toast("Sugerencia rechazada"),
+    onError: (e: Error) => toast.error(e.message),
+    onSettled: refresh,
   });
 
-  const busy = apply.isPending || approve.isPending || reject.isPending;
+  const busy = apply.isPending || reject.isPending;
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
@@ -66,7 +68,6 @@ export default function SuggestionsPage() {
               suggestion={s}
               busy={busy}
               onApply={() => apply.mutate(s.id)}
-              onApprove={() => approve.mutate(s.id)}
               onReject={() => reject.mutate(s.id)}
             />
           ))}

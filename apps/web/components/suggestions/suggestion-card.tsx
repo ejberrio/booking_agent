@@ -8,19 +8,33 @@ import type { Suggestion } from "@/lib/types";
 
 interface Props {
   suggestion: Suggestion;
-  onApprove: () => void;
   onReject: () => void;
   onApply: () => void;
   busy?: boolean;
 }
 
-export function SuggestionCard({ suggestion: s, onApprove, onReject, onApply, busy }: Props) {
+const PENDING = new Set(["proposed", "approved"]);
+
+export function SuggestionCard({ suggestion: s, onReject, onApply, busy }: Props) {
   const range = s.date_from === s.date_to ? s.date_from : `${s.date_from} → ${s.date_to}`;
   return (
     <Card className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium">{formatCOP(s.suggested_price)}</span>
-        <Badge variant={s.status === "applied" ? "success" : "muted"}>{s.status}</Badge>
+        <span className="text-sm font-medium">
+          {s.current_price ? (
+            <>
+              <span className="font-normal text-muted-foreground">
+                {formatCOP(s.current_price)} →{" "}
+              </span>
+              {formatCOP(s.suggested_price)}
+            </>
+          ) : (
+            formatCOP(s.suggested_price)
+          )}
+        </span>
+        <Badge variant={s.status === "applied" ? "success" : "muted"}>
+          {s.status === "approved" ? "aprobada (pendiente de aplicar)" : s.status}
+        </Badge>
       </div>
       <p className="text-xs text-muted-foreground">{range}</p>
       {s.rationale?.text && <p className="text-xs">{s.rationale.text}</p>}
@@ -29,13 +43,10 @@ export function SuggestionCard({ suggestion: s, onApprove, onReject, onApply, bu
           Confianza: {Math.round(Number(s.confidence) * 100)}%
         </p>
       )}
-      {s.status === "proposed" && (
+      {PENDING.has(s.status) && (
         <div className="flex gap-2 pt-1">
           <Button onClick={onApply} disabled={busy}>
-            Aplicar
-          </Button>
-          <Button className="bg-muted text-foreground" onClick={onApprove} disabled={busy}>
-            Aprobar
+            Aprobar y aplicar
           </Button>
           <Button className="bg-muted text-foreground" onClick={onReject} disabled={busy}>
             Rechazar

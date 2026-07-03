@@ -105,9 +105,11 @@ export interface Suggestion {
   date_from: string;
   date_to: string;
   suggested_price: string;
+  current_price?: string | null;
   rationale: { text?: string; event_relevance?: string | null } | null;
   confidence: string | null;
   status: string;
+  applied_from?: string; // solo en la respuesta de apply (recorte de días pasados)
 }
 
 export interface ChatReply {

@@ -46,8 +46,8 @@ No hay prerequisitos bloqueantes: no hay modelos nuevos, migraciones ni configur
 
 **Independent Test**: con una sugerencia `proposed` vigente, el calendario marca exactamente sus días; `npm run build` verde.
 
-- [ ] T006 [P] [US2] Añadir prop opcional `suggestionDates?: Set<string>` a `apps/web/components/calendar/price-calendar.tsx`: punto violeta (`bg-violet-500`, title "Sugerencia") junto a los existentes y entrada "Sugerencia" en la leyenda solo si la prop llega con elementos
-- [ ] T007 [US2] En `apps/web/app/(app)/calendar/page.tsx`: query `["suggestions"]` → `api.listSuggestions("proposed")`, helper de vigencia (`date_to >= hoy` en fecha local), computar `suggestionsByDate: Map<string, Suggestion[]>` y pasar `suggestionDates` al `PriceCalendar`
+- [X] T006 [P] [US2] Añadir prop opcional `suggestionDates?: Set<string>` a `apps/web/components/calendar/price-calendar.tsx`: punto violeta (`bg-violet-500`, title "Sugerencia") junto a los existentes y entrada "Sugerencia" en la leyenda solo si la prop llega con elementos
+- [X] T007 [US2] En `apps/web/app/(app)/calendar/page.tsx`: query `["suggestions"]` → `api.listSuggestions("proposed")`, helper de vigencia (`date_to >= hoy` en fecha local), computar `suggestionsByDate: Map<string, Suggestion[]>` y pasar `suggestionDates` al `PriceCalendar`
 
 **Checkpoint**: contexto visual completo; clic aún abre solo el editor de rango.
 
@@ -59,8 +59,8 @@ No hay prerequisitos bloqueantes: no hay modelos nuevos, migraciones ni configur
 
 **Independent Test**: clic en día marcado muestra el panel; "Aprobar y aplicar" actualiza precio y quita el marcador; reintento sobre resuelta muestra toast con el estado real y refresca.
 
-- [ ] T008 [P] [US3] Crear `apps/web/components/calendar/suggestion-panel.tsx`: recibe `suggestions: Suggestion[]` del día seleccionado + `currentPrice: string | null`; por sugerencia muestra sugerido vs actual (formatCOP), rango completo, confianza %, `rationale.text`, botones "Aprobar y aplicar" (primario) y "Rechazar"; mutaciones `api.applySuggestion`/`api.rejectSuggestion` con toasts (éxito: "Sugerencia aplicada y publicada" / aviso de recorte si `applied_from` > `date_from`; error: `detail` del servidor) e invalidación de `["suggestions"]` y `["calendar"]` en `onSettled`
-- [ ] T009 [US3] Integrar el panel en `apps/web/app/(app)/calendar/page.tsx`: cuando la selección es un solo día con sugerencias vigentes, renderizar `SuggestionPanel` en la columna lateral (encima de "Precio por canal"); tipos: `Suggestion` gana `applied_from?: string` en `apps/web/lib/types.ts` y el error de la API expone `detail` (ajustar `req()` en `apps/web/lib/api.ts` para incluir el detail del body en el mensaje del Error)
+- [X] T008 [P] [US3] Crear `apps/web/components/calendar/suggestion-panel.tsx`: recibe `suggestions: Suggestion[]` del día seleccionado + `currentPrice: string | null`; por sugerencia muestra sugerido vs actual (formatCOP), rango completo, confianza %, `rationale.text`, botones "Aprobar y aplicar" (primario) y "Rechazar"; mutaciones `api.applySuggestion`/`api.rejectSuggestion` con toasts (éxito: "Sugerencia aplicada y publicada" / aviso de recorte si `applied_from` > `date_from`; error: `detail` del servidor) e invalidación de `["suggestions"]` y `["calendar"]` en `onSettled`
+- [X] T009 [US3] Integrar el panel en `apps/web/app/(app)/calendar/page.tsx`: cuando la selección es un solo día con sugerencias vigentes, renderizar `SuggestionPanel` en la columna lateral (encima de "Precio por canal"); tipos: `Suggestion` gana `applied_from?: string` en `apps/web/lib/types.ts` y el error de la API expone `detail` (ajustar `req()` en `apps/web/lib/api.ts` para incluir el detail del body en el mensaje del Error)
 
 **Checkpoint**: ciclo completo ver→decidir→resolver sin salir del calendario.
 
@@ -72,8 +72,8 @@ No hay prerequisitos bloqueantes: no hay modelos nuevos, migraciones ni configur
 
 **Independent Test**: la lista muestra "Aprobar y aplicar"/"Rechazar", ambas funcionan; el build no referencia `approveSuggestion`.
 
-- [ ] T010 [P] [US4] Actualizar `apps/web/components/suggestions/suggestion-card.tsx`: quitar botón/prop `onApprove`, renombrar botón principal a "Aprobar y aplicar", mostrar "Actual → Sugerido" con `current_price` (FR-004) y badge para `approved` históricas
-- [ ] T011 [US4] Actualizar `apps/web/app/(app)/suggestions/page.tsx` (consultar pendientes `proposed`+`approved` vía `pending=true`, quitar mutación approve, pasar solo apply/reject, toast de recorte con `applied_from` como en T008) y en `apps/web/lib/api.ts` eliminar `approveSuggestion` y añadir `listPendingSuggestions`
+- [X] T010 [P] [US4] Actualizar `apps/web/components/suggestions/suggestion-card.tsx`: quitar botón/prop `onApprove`, renombrar botón principal a "Aprobar y aplicar", mostrar "Actual → Sugerido" con `current_price` (FR-004) y badge para `approved` históricas
+- [X] T011 [US4] Actualizar `apps/web/app/(app)/suggestions/page.tsx` (consultar pendientes `proposed`+`approved` vía `pending=true`, quitar mutación approve, pasar solo apply/reject, toast de recorte con `applied_from` como en T008) y en `apps/web/lib/api.ts` eliminar `approveSuggestion` y añadir `listPendingSuggestions`
 
 **Checkpoint**: una sola semántica de resolución en toda la app.
 
@@ -81,8 +81,8 @@ No hay prerequisitos bloqueantes: no hay modelos nuevos, migraciones ni configur
 
 ## Phase 6: Polish & Cross-Cutting
 
-- [ ] T012 [P] Documentar en `docs/operations.md` (sección Sugerencias): acción única, recorte de días pasados, qué pasa en fallo de canal (SyncIssue), y que `approve` fue retirado
-- [ ] T013 Verificación final: `cd apps/api && uv run pytest -q` y `cd apps/web && npm run build`; revisar `git diff` contra FR-012 (sin sugerencias vigentes, respuestas y render idénticos)
+- [X] T012 [P] Documentar en `docs/operations.md` (sección Sugerencias): acción única, recorte de días pasados, qué pasa en fallo de canal (SyncIssue), y que `approve` fue retirado
+- [X] T013 Verificación final: `cd apps/api && uv run pytest -q` y `cd apps/web && npm run build`; revisar `git diff` contra FR-012 (sin sugerencias vigentes, respuestas y render idénticos)
 - [ ] T014 Verificación EN VIVO acotada según `quickstart.md` (crear sugerencia de prueba en fechas lejanas, resolverla desde el calendario, verificar auditoría y precio, REVERTIR con rollback) — requiere confirmación del host antes de escribir (Principio III)
 
 ---

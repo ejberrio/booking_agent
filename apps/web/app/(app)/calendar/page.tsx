@@ -5,12 +5,14 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { PriceCalendar } from "@/components/calendar/price-calendar";
 import { RangeEditor } from "@/components/calendar/range-editor";
+import { SuggestionPanel } from "@/components/calendar/suggestion-panel";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useActiveUnit } from "@/lib/active-unit";
 import { api } from "@/lib/api";
-import { monthLabel, monthRange } from "@/lib/format";
+import { monthLabel, monthRange, ymd } from "@/lib/format";
+import type { Suggestion } from "@/lib/types";
 
 export default function CalendarPage() {
   const [unitTypeId] = useActiveUnit();
@@ -28,6 +30,23 @@ export default function CalendarPage() {
     queryFn: () => api.getChannelOffsets(),
     staleTime: 5 * 60_000,
   });
+  const suggestions = useQuery({
+    queryKey: ["suggestions"],
+    queryFn: () => api.listSuggestions("proposed"),
+  });
+
+  // Sugerencias vigentes (proposed y con al menos un día no pasado) por fecha.
+  const today = ymd(new Date());
+  const suggestionsByDate = new Map<string, Suggestion[]>();
+  for (const s of suggestions.data ?? []) {
+    if (s.date_to < today) continue; // vencida: no genera marcador
+    for (let d = new Date(`${s.date_from}T00:00:00Z`); ; d.setUTCDate(d.getUTCDate() + 1)) {
+      const key = ymd(d);
+      if (key > s.date_to) break;
+      if (key >= today) suggestionsByDate.set(key, [...(suggestionsByDate.get(key) ?? []), s]);
+    }
+  }
+  const suggestionDates = new Set(suggestionsByDate.keys());
 
   // Precio efectivo por canal del día seleccionado (solo si hay offsets ≠ 0;
   // con 0/null el panel queda exactamente igual que antes).
@@ -91,9 +110,18 @@ export default function CalendarPage() {
               days={data ?? []}
               selection={selection}
               onSelect={(f, t) => setSelection({ from: f, to: t })}
+              suggestionDates={suggestionDates}
             />
           </Card>
           <div className="space-y-4">
+            {selection &&
+              selection.from === selection.to &&
+              suggestionsByDate.has(selection.from) && (
+                <SuggestionPanel
+                  date={selection.from}
+                  suggestions={suggestionsByDate.get(selection.from) ?? []}
+                />
+              )}
             <RangeEditor unitTypeId={unitTypeId} selection={selection} onApplied={() => refetch()} />
             {channelPrices && (
               <Card>
