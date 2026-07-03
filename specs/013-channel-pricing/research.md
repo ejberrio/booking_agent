@@ -21,7 +21,7 @@
 
 - **Decision**: SÍ — campo `channels` del schema `fixedPrice`: objeto por canal con bandera de habilitación. Para alcance "solo Booking" se escribe `{"airbnb": {"enable": false}}` (solo los tokens gestionados que se excluyen; el resto no se toca).
 - **Evidencia (en vivo)**: `GET /inventory/fixedPrices?roomId=697411` → los 6 fixed prices reales traen `channels: {"agoda": {"enable": true}, "airbnb": {"enable": true}, ...}` (todos habilitados por defecto).
-- **⚠️ Discrepancia yaml vs realidad**: el yaml declara la clave **`enabled`**, el payload real usa **`enable`**. Se usa `enable` (dato real) y la prueba en vivo del quickstart lo confirma en escritura; si el POST rechazara, probar `enabled` (nota para implement).
+- **⚠️ Discrepancia yaml vs realidad**: el yaml declara la clave **`enabled`**, el payload real usa **`enable`**. Se usa `enable` (dato real) y la prueba en vivo del quickstart lo confirma en escritura; CONFIRMADO EN ESCRITURA (T024, 2026-07-02): el POST acepta `enable` y el read-back lo refleja.
 - **Campo relacionado**: `allowMultiplier` (bool) en fixedPrice — controla si el multiplier del canal aplica también al fixed price. Comportamiento deseado: dejarlo como esté (default) ⇒ una promoción en Airbnb también recibe el offset del canal (coherente con "el offset es del canal, no del precio").
 - **Alternatives considered**: `channelManagement: notUsed|exportPrice|normalPrice` — es un interruptor global (canal sí/no todos), no por canal; se mantiene en su valor actual.
 
