@@ -262,3 +262,25 @@ La app refleja la realidad multi-canal del Channel Manager (Booking.com + Airbnb
 - **Agente**: conoce los canales activos ("¿qué reservas tengo de Airbnb?" filtra por
   canal) y recuerda que precios/disponibilidad/promos publican a TODOS los canales
   conectados a la vez (no por canal — el ajuste por canal es la Feature 013).
+
+## Precio por canal (Feature 013 · issue #88)
+
+- **Offset por canal**: recargo/descuento % del canal sobre el precio base (p. ej.
+  Airbnb +8%), gestionado en Configuración → "Precio por canal" o por chat
+  ("ponle +8% a Airbnb"), siempre con propuesta → confirmación → auditoría
+  (`channel_offset_log`) → verificación. Se materializa como sufijo del **multiplier**
+  del canal en Beds24 (`*[CONVERT:COP-USD]*1.08`): la conversión de moneda se preserva
+  SIEMPRE; quitar el offset (0%) restaura la fórmula original exacta.
+- **Booking vende al precio base**: su ajuste no es configurable (Beds24 no expone
+  multiplier de Booking por API). Para mover el precio relativo, ajusta el base o el
+  offset de Airbnb.
+- **Precio efectivo mostrado** = base × (1 + offset%). La conversión de moneda es
+  neutra en valor; el margen cambiario que Airbnb aplica al huésped (~8%) es suyo.
+- **Alcance de promociones**: al crear una promoción de precio se puede limitar a
+  Booking o Airbnb (checkboxes en Ofertas o `channels_scope` por chat); el preview y
+  la lista SIEMPRE muestran el alcance. Sin elección = todos los canales (como antes).
+- ⚠️ **Doble descuento**: no combinar un deal nativo (badge de Booking / descuento
+  semanal-mensual de Airbnb) con una promoción de precio en las mismas fechas y canal.
+  Nota: en Airbnb una promoción recibe ADEMÁS el offset del canal (allowMultiplier).
+- Si la escritura del offset falla o no se verifica (endpoint Alpha de Beds24), queda
+  una incidencia en /status (`open_issues`) y el estado local no miente.

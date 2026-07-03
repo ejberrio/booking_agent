@@ -1,17 +1,21 @@
 <!-- SPECKIT START -->
-Feature activa: **012-multichannel-core** (núcleo multi-canal Booking.com + Airbnb vía Beds24; issue #87).
-Plan e artefactos: `specs/012-multichannel-core/plan.md`, `research.md`, `data-model.md`,
-`contracts/{channel-manager-port,status-api,agent-tools}.md`, `quickstart.md`.
-Contexto: Airbnb YA conectado a Beds24 (issue #86, sync Prices & Availability). Hoy el import
-etiqueta TODA reserva como `ChannelKind.booking` (hardcode en `sync_service.py`) y el prompt del
-agente dice "solo el canal Booking". Decisiones: `RemoteBooking.channel: str | None` (token neutro;
-Beds24 V2 lo da en `b["channel"]`, fallback `referer`); normalización en dominio booking/airbnb/
-desconocido→direct (nunca aborta); corrección de históricos DENTRO del import (re-importar corrige
-`channel_kind` de reservas existentes; dedupe por `external_ref` ⇒ 0 duplicados; SIN migración —
-no hay cambios de esquema); canales activos por config `CHANNELS_ACTIVE` (default booking,airbnb);
-`system_prompt(today, active_channels)`; tool `get_bookings` += filtro/salida `channel`;
-`GET /status` += bloque `channels` (resiliente); dashboard web tarjeta "Canales" vía proxy.
-Principio III intacto (feature de lectura/etiquetado). Features 001-011 en `main`, app EN PRODUCCIÓN.
+Feature activa: **013-channel-pricing** (precios y promociones por canal; issue #88).
+Plan e artefactos: `specs/013-channel-pricing/plan.md`, `research.md`, `data-model.md`,
+`contracts/{channel-manager-port,pricing-api,agent-tools}.md`, `quickstart.md`.
+Hallazgos EN VIVO (2026-07-02): (R1) el ajuste % por canal se materializa en el **multiplier del
+canal** vía `POST /channels/settings` (Alpha; string componible: `*[CONVERT:COP-USD]` + 8% ⇒
+`*[CONVERT:COP-USD]*1.08`; el prefijo del operador es INTOCABLE; verificar con re-GET). Soportado
+solo para airbnb (booking vende a precio base — honestidad). (R2) los fixed prices SÍ se limitan
+por canal: campo `channels: {airbnb: {enable: bool}, ...}` (⚠️ clave real `enable`, el yaml dice
+`enabled`). Diseño: puerto neutro `get/set_channel_price_adjustment(channel, factor: Decimal)` +
+`supports_price_adjustment`; `RemoteFixedPrice.channels: dict[str,bool]|None`; servicio nuevo
+`channel_pricing_service` (preview→confirm(fingerprint)→apply→audit AgentAction→verify re-GET,
+fallo ⇒ SyncIssue sin persistir); rango offset [−50,+100]; `Channel.price_offset_pct` se ACTIVA
+(0 migraciones); scope de promos en `Promotion.conditions["channels_scope"]` (None=todos, []=inválido);
+endpoints `GET/POST /pricing/channel-offsets(/preview|/apply)` + `channels_scope` en promotions;
+tools `get_channel_offsets`/`propose_channel_offset`; web: tarjeta "Precio por canal" en Configuración,
+alcance+deep-links Airbnb en Ofertas. Precio efectivo = base×(1+pct/100) (el CONVERT es neutro en
+valor). ADR 0004. Features 001-012 en `main`, app EN PRODUCCIÓN (v0.1.2).
 <!-- SPECKIT END -->
 
 # Booking AI Agent

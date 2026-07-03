@@ -40,3 +40,20 @@ class PromotionChangeLog(Base, TimestampMixin):
     after: Mapped[dict | None] = mapped_column(JSONBType, nullable=True)
     origin: Mapped[ChangeOrigin] = mapped_column(Enum(ChangeOrigin), default=ChangeOrigin.manual)
     changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, index=True)
+
+
+class ChannelOffsetLog(Base, TimestampMixin):
+    """Auditoría del ajuste de precio por canal (feature 013). Append-only.
+
+    `detail` guarda contexto útil de la escritura (p. ej. el multiplier antes/después
+    reportado por el Channel Manager) sin acoplar columnas al proveedor.
+    """
+
+    __tablename__ = "channel_offset_log"
+
+    channel_id: Mapped[int] = mapped_column(ForeignKey("channel.id"), index=True)
+    before_pct: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
+    after_pct: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
+    origin: Mapped[ChangeOrigin] = mapped_column(Enum(ChangeOrigin), default=ChangeOrigin.manual)
+    detail: Mapped[dict | None] = mapped_column(JSONBType, nullable=True)
+    changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, index=True)

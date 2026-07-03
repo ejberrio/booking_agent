@@ -32,9 +32,23 @@ export default function OffersPage() {
     discount_pct: "",
     min_nights: "",
   });
+  // Alcance de canales: ambos marcados = todos (null); una selección parcial limita.
+  const [scope, setScope] = useState<{ booking: boolean; airbnb: boolean }>({
+    booking: true,
+    airbnb: true,
+  });
   const [preview, setPreview] = useState<PromotionPreview | null>(null);
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["promotions", unitTypeId] });
+
+  const scopeList = (): string[] | null => {
+    const selected = (["booking", "airbnb"] as const).filter((c) => scope[c]);
+    return selected.length === 2 ? null : selected;
+  };
+  const scopeLabel = (s: string[] | null | undefined) =>
+    !s || s.length === 2
+      ? "Todos los canales"
+      : `Solo ${s.map((c) => (c === "booking" ? "Booking.com" : "Airbnb")).join(" y ")}`;
 
   const buildInput = (): PromotionInput => ({
     unit_type_id: unitTypeId,
@@ -43,6 +57,7 @@ export default function OffersPage() {
     last_night: form.last_night,
     discount_pct: form.discount_pct ? Number(form.discount_pct) : null,
     min_nights: form.min_nights ? Number(form.min_nights) : null,
+    channels_scope: scopeList(),
   });
 
   const previewM = useMutation({
@@ -141,6 +156,24 @@ export default function OffersPage() {
               placeholder="3"
             />
           </div>
+          <div className="col-span-2">
+            <Label>Canales donde aplica</Label>
+            <div className="mt-1 flex gap-4 text-sm">
+              {(["booking", "airbnb"] as const).map((c) => (
+                <label key={c} className="flex items-center gap-1.5">
+                  <input
+                    type="checkbox"
+                    checked={scope[c]}
+                    onChange={(e) => setScope({ ...scope, [c]: e.target.checked })}
+                  />
+                  {c === "booking" ? "Booking.com" : "Airbnb"}
+                </label>
+              ))}
+              <span className="text-xs text-muted-foreground self-center">
+                (ambos = todos los canales)
+              </span>
+            </div>
+          </div>
         </div>
 
         {preview ? (
@@ -156,7 +189,9 @@ export default function OffersPage() {
               Estancia mínima:{" "}
               <strong className="text-foreground">
                 {preview.min_nights ? `${preview.min_nights} noches` : "sin mínimo"}
-              </strong>
+              </strong>{" "}
+              · Alcance:{" "}
+              <strong className="text-foreground">{scopeLabel(preview.channels_scope)}</strong>
             </p>
             {preview.warnings.map((w) => (
               <p key={w} className="mt-1 text-amber-600">
@@ -209,6 +244,8 @@ export default function OffersPage() {
                     {p.first_night} → {p.last_night} · {money(p.price)}
                     {p.saving ? ` · ahorro ${money(p.saving)}` : ""}
                     {p.min_nights ? ` · mín ${p.min_nights} noches` : ""}
+                    {" · "}
+                    {scopeLabel(p.channels_scope)}
                   </div>
                   {p.status === "sync_error" ? (
                     <div className="text-amber-600">No publicada (incidencia de sincronización)</div>
@@ -237,16 +274,18 @@ export default function OffersPage() {
         )}
       </Card>
 
-      {/* Distinción con los deals nativos de Booking */}
+      {/* Guía: qué se gestiona dónde (3 vías) */}
       <Card>
         <CardTitle className="flex items-center gap-2">
-          <BadgePercent size={16} className="text-amber-500" /> ¿Y los deals con badge de Booking?
+          <BadgePercent size={16} className="text-amber-500" /> ¿Y los deals nativos de los canales?
         </CardTitle>
         <CardDescription>
-          Los <strong>deals con etiqueta/badge</strong> (Basic Deal, Última hora, Early Booker,
-          Genius) que el huésped ve en tu anuncio <strong>no se gestionan por API</strong>: se crean
-          y se activan/desactivan en Beds24 (sincroniza con Booking). Son permanentes: se configuran
-          una vez.
+          Hay tres tipos de descuento y cada uno se gestiona en su sitio:{" "}
+          <strong>1) Promociones de precio</strong> (arriba): baja el precio en los canales que
+          elijas, sin badge. <strong>2) Deals con badge de Booking</strong> (Basic Deal, Última
+          hora, Genius): en Beds24, sincronizan con Booking.{" "}
+          <strong>3) Descuentos de Airbnb</strong> (semanal, mensual, promos del anuncio): en
+          Airbnb.
         </CardDescription>
         <div className="mt-3 flex flex-wrap gap-2">
           <a
@@ -258,6 +297,22 @@ export default function OffersPage() {
             Deals de Booking en Beds24 <ExternalLink size={14} />
           </a>
           <a
+            href={EXTERNAL_LINKS.airbnbMulticalendar}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground"
+          >
+            Descuentos del anuncio en Airbnb <ExternalLink size={14} />
+          </a>
+          <a
+            href={EXTERNAL_LINKS.beds24AirbnbPromotions}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-md bg-muted px-3 py-2 text-sm text-foreground"
+          >
+            Promotions de Airbnb en Beds24 <ExternalLink size={14} />
+          </a>
+          <a
             href={EXTERNAL_LINKS.bookingExtranet}
             target="_blank"
             rel="noopener noreferrer"
@@ -267,9 +322,9 @@ export default function OffersPage() {
           </a>
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
-          El botón azul te lleva directo a <em>Channel Manager → Booking.com → Promotions</em>, donde
-          creas el deal y lo activas/desactivas con un clic. ⚠️ No pongas un deal con badge y una
-          promoción de precio (arriba) para las mismas fechas: se duplicaría el descuento.
+          ⚠️ No combines un deal nativo (badge de Booking o descuento de Airbnb) con una promoción
+          de precio para las mismas fechas y el mismo canal: el descuento se duplicaría. En Airbnb,
+          una promoción de precio recibe además el ajuste del canal si lo tienes configurado.
         </p>
       </Card>
     </div>

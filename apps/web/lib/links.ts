@@ -10,4 +10,10 @@ export const EXTERNAL_LINKS = {
     "https://beds24.com/control3.php?pagetype=syncroniserbookingcomxmlpromotions",
   // Extranet de Booking.com para Partners (Promociones / Oportunidades).
   bookingExtranet: "https://admin.booking.com/",
+  // Calendario/precios del anuncio en Airbnb (descuentos semanal/mensual y promos del
+  // anuncio se gestionan ahí; con la conexión API los precios los manda Beds24).
+  airbnbMulticalendar: "https://www.airbnb.com/multicalendar",
+  // Página de Promotions de Airbnb en Beds24 (Channel Manager → Airbnb → Promotions).
+  beds24AirbnbPromotions:
+    "https://beds24.com/control3.php?pagetype=syncroniserairbnbpromotions",
 } as const;

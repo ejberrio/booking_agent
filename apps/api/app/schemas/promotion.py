@@ -25,6 +25,7 @@ class PromotionPreview:
     valid: bool = True
     reason: str | None = None
     fingerprint: str = ""
+    channels_scope: list[str] | None = None  # None = todos los canales
 
 
 @dataclass
@@ -43,6 +44,7 @@ class PromotionView:
     min_nights: int | None
     status: str  # "published" | "sync_error" | "retired"
     published: bool
+    channels_scope: list[str] | None = None  # None = todos los canales
 
 
 @dataclass

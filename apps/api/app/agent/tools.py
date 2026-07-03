@@ -14,12 +14,14 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.routes.sync import get_adapter
 from app.models.agent import AgentAction
 from app.models.enums import ChangeOrigin, PromotionType
 from app.models.pricing import Promotion
 from app.schemas.pricing import RangeSelection
 from app.services import (
     availability_service,
+    channel_pricing_service,
     offer_promotion_service,
     pricing_app_service,
     promotion_service,
@@ -74,6 +76,14 @@ READ_TOOLS = [
         "Lista las promociones de precio (ofertas con descuento sobre fechas) de una unidad: "
         "nombre, fechas, precio con descuento, ahorro y estado. Úsala para '¿qué promociones tengo?'.",
         {"type": "object", "properties": {"unit_type_id": _INT}, "required": ["unit_type_id"]},
+        False,
+    ),
+    ToolSpec(
+        "get_channel_offsets",
+        "Ajuste de precio por canal vigente (offset %). Devuelve por canal: offset_pct "
+        "(null = sin ajuste), supported (si es configurable) y si está activo. Úsala para "
+        "preguntas de precio por canal y ANTES de proponer precios si podría haber ajustes.",
+        {"type": "object", "properties": {}},
         False,
     ),
     ToolSpec(
@@ -178,8 +188,27 @@ WRITE_TOOLS = [
                 "price": _NUM,
                 "min_nights": _INT,
                 "promotion_id": _INT,
+                "channels_scope": {
+                    "type": "array",
+                    "items": {"type": "string", "enum": ["booking", "airbnb"]},
+                },
             },
             "required": ["unit_type_id", "name", "first_night", "last_night"],
+        },
+        True,
+    ),
+    ToolSpec(
+        "propose_channel_offset",
+        "Propone un AJUSTE DE PRECIO POR CANAL (offset %): recargo/descuento porcentual del "
+        "canal sobre el precio base (p. ej. Airbnb +8%). 0 = quitar el ajuste. No aplica hasta "
+        "confirmar. Solo canales configurables (Booking vende al precio base).",
+        {
+            "type": "object",
+            "properties": {
+                "channel": {"type": "string", "enum": ["booking", "airbnb"]},
+                "offset_pct": _NUM,
+            },
+            "required": ["channel", "offset_pct"],
         },
         True,
     ),
@@ -266,6 +295,13 @@ async def exec_read(session: AsyncSession, name: str, args: dict) -> Any:
             }
             for p in promos
         ]
+    if name == "get_channel_offsets":
+        adapter = get_adapter()
+        try:
+            return await channel_pricing_service.get_offsets(session, adapter)
+        finally:
+            await adapter.aclose()
+
     if name == "get_suggestions":
         from app.models.enums import SuggestionStatus
         from app.services import intelligence_service
@@ -425,12 +461,33 @@ async def build_proposal(session: AsyncSession, name: str, args: dict) -> Propos
             raise ValueError("el precio con descuento debe ser mayor que 0.")
         desc = f"{pct}% de descuento" if pct is not None else f"precio {price}"
         mn = f", mínimo {args['min_nights']} noches" if args.get("min_nights") else ""
+        scope = args.get("channels_scope")
+        alcance = f" (solo {', '.join(scope)})" if scope else " (todos los canales)"
         verbo = "editar" if args.get("promotion_id") else "crear"
         reinforced = (last - first).days + 1 > REINFORCE_DAYS
         summary = (
-            f"Propongo {verbo} la promoción '{args['name']}' ({desc}) del {first} al {last}{mn}. ¿Confirmas?"
+            f"Propongo {verbo} la promoción '{args['name']}' ({desc}) del {first} al {last}{mn}{alcance}. ¿Confirmas?"
         )
         return Proposal(name, args, {"first_night": first.isoformat(), "last_night": last.isoformat()}, None, summary, reinforced)
+
+    if name == "propose_channel_offset":
+        adapter = get_adapter()
+        try:
+            prev = await channel_pricing_service.preview_offset(
+                session, adapter, str(args["channel"]), Decimal(str(args["offset_pct"]))
+            )
+        except channel_pricing_service.ChannelOffsetError as exc:
+            raise ValueError(str(exc)) from exc
+        finally:
+            await adapter.aclose()
+        pct_txt = prev["new_pct"]
+        example = prev["example"]
+        extra = "".join(f" ⚠️ {w}" for w in prev["warnings"])
+        summary = (
+            f"Propongo ajustar el precio del canal {prev['channel']} a {pct_txt}% "
+            f"(ej.: base {example['base']} → {example['effective']} COP).{extra} ¿Confirmas?"
+        )
+        return Proposal(name, args, prev, None, summary, False)
 
     if name == "propose_retire_offer_promotion":
         return Proposal(name, args, {}, None, f"Propongo retirar la promoción {args['promotion_id']} (dejará de aplicar el descuento). ¿Confirmas?", False)
@@ -528,10 +585,25 @@ async def apply_proposal(
             fingerprint=None,
             confirm_overlap=True,
             origin=ChangeOrigin.chat,
+            channels_scope=args.get("channels_scope"),
         )
         if res.status == "sync_error":
             return ApplyOutcome("applied", f"Promoción guardada, pero falló la publicación: {res.issue}", f"promotion_id={res.id}")
         return ApplyOutcome("applied", "Promoción creada y publicada.", f"promotion_id={res.id}")
+
+    if tool == "propose_channel_offset":
+        res = await channel_pricing_service.apply_offset(
+            session,
+            channel,
+            str(args["channel"]),
+            Decimal(str(args["offset_pct"])),
+            fingerprint=None,  # gate humano = confirmación del chat
+            origin=ChangeOrigin.chat,
+        )
+        msg = f"Ajuste del canal {res['channel']} aplicado: {res['offset_pct']}%."
+        if not res["verified"]:
+            msg += f" ⚠️ No se pudo verificar en el Channel Manager: {res['issue']}"
+        return ApplyOutcome("applied", msg, f"channel={res['channel']}")
 
     if tool == "propose_retire_offer_promotion":
         res = await offer_promotion_service.retire(

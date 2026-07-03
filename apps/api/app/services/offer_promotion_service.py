@@ -53,6 +53,23 @@ def _designated_offer_id() -> int:
     return int(settings.beds24_promo_offer_id or 1)
 
 
+_MANAGED_CHANNEL_TOKENS = ["booking", "airbnb"]
+
+
+def _validate_scope(channels_scope: list[str] | None) -> list[str] | None:
+    """Alcance de canales: None = todos; [] o tokens desconocidos = error."""
+    if channels_scope is None:
+        return None
+    scope = [str(c).strip().lower() for c in channels_scope]
+    if not scope:
+        raise PromotionError("el alcance de canales no puede estar vacío (omítelo para 'todos')")
+    unknown = [c for c in scope if c not in _MANAGED_CHANNEL_TOKENS]
+    if unknown:
+        raise PromotionError(f"canal(es) no gestionado(s): {', '.join(unknown)}")
+    # orden estable y sin duplicados
+    return [c for c in _MANAGED_CHANNEL_TOKENS if c in scope]
+
+
 def _round_cop(value: Decimal) -> Decimal:
     """Redondea a entero (COP no usa decimales)."""
     return value.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
@@ -97,14 +114,23 @@ async def _overlaps(
     return [p for p in res.scalars() if exclude_id is None or p.id != exclude_id]
 
 
-def _conditions(base: Decimal | None, price: Decimal, min_nights: int | None, published: bool) -> dict:
-    return {
+def _conditions(
+    base: Decimal | None,
+    price: Decimal,
+    min_nights: int | None,
+    published: bool,
+    channels_scope: list[str] | None = None,
+) -> dict:
+    out = {
         "offer": True,
         "base_price": str(base) if base is not None else None,
         "price": str(price),
         "min_nights": min_nights,
         "published": published,
     }
+    if channels_scope is not None:
+        out["channels_scope"] = channels_scope
+    return out
 
 
 def _price_of(p: Promotion) -> Decimal:
@@ -141,6 +167,7 @@ def _view(p: Promotion) -> PromotionView:
         min_nights=c.get("min_nights"),
         status=status,
         published=published,
+        channels_scope=c.get("channels_scope"),
     )
 
 
@@ -168,7 +195,9 @@ async def preview(
     price: Decimal | None = None,
     min_nights: int | None = None,
     exclude_id: int | None = None,
+    channels_scope: list[str] | None = None,
 ) -> PromotionPreview:
+    channels_scope = _validate_scope(channels_scope)
     offer_id = _designated_offer_id()
     unit = await session.get(UnitType, unit_type_id)
     if unit is None:
@@ -235,6 +264,7 @@ async def preview(
         warnings=warnings,
         valid=True,
         fingerprint=promotion_fingerprint(offer_id, first_night, last_night, final_price, base),
+        channels_scope=channels_scope,
     )
 
 
@@ -253,6 +283,7 @@ async def apply(
     promotion_id: int | None = None,
     confirm_overlap: bool = False,
     origin: ChangeOrigin = ChangeOrigin.manual,
+    channels_scope: list[str] | None = None,
 ) -> PromotionApplyResult:
     prev = await preview(
         session,
@@ -265,7 +296,9 @@ async def apply(
         price=price,
         min_nights=min_nights,
         exclude_id=promotion_id,
+        channels_scope=channels_scope,
     )
+    channels_scope = prev.channels_scope
     if fingerprint is not None and prev.fingerprint != fingerprint:
         raise PromotionError("La propuesta quedó obsoleta (cambió el precio base o el estado). Revísala de nuevo.")
     has_overlap = any("solapa" in w for w in prev.warnings)
@@ -287,7 +320,10 @@ async def apply(
             start_date=first_night,
             end_date=last_night,
             status=PromotionStatus.active,
-            conditions=_conditions(prev.base_price, prev.price, min_nights, published=False),
+            conditions=_conditions(
+                prev.base_price, prev.price, min_nights, published=False,
+                channels_scope=channels_scope,
+            ),
         )
         session.add(promo)
         await session.flush()
@@ -298,7 +334,10 @@ async def apply(
         promo.start_date = first_night
         promo.end_date = last_night
         promo.status = PromotionStatus.active
-        promo.conditions = _conditions(prev.base_price, prev.price, min_nights, published=False)
+        promo.conditions = _conditions(
+            prev.base_price, prev.price, min_nights, published=False,
+            channels_scope=channels_scope,
+        )
         await session.flush()
 
     # Publicar como fixed price
@@ -314,6 +353,13 @@ async def apply(
         external_id=promo.external_id,
         price_enabled=True,
         min_nights=min_nights,
+        # Alcance: los canales gestionados EXCLUIDOS se deshabilitan; el resto
+        # no se toca (default del CM = todos habilitados).
+        channels=(
+            {t: False for t in _MANAGED_CHANNEL_TOKENS if t not in channels_scope}
+            if channels_scope is not None
+            else None
+        ),
     )
     external_id, issue = await sync_service.publish_promotion(session, adapter, fp)
     if external_id is not None:

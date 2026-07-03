@@ -90,6 +90,10 @@ class RemoteFixedPrice:
     external_id: int | None = None
     price_enabled: bool = True
     min_nights: int | None = None
+    # Alcance por canal: token neutro → habilitado. None = no tocar (todos los
+    # canales, comportamiento por defecto del proveedor). Solo se envían los
+    # tokens presentes; los canales no mencionados no se alteran.
+    channels: dict[str, bool] | None = None
 
 
 @dataclass(frozen=True)
@@ -172,3 +176,25 @@ class ChannelManager(Protocol):
         departure: date,
         num_adults: int = 2,
     ) -> list[RemoteOffer]: ...
+
+    # --- Ajuste de precio por canal (feature 013) ---
+    # El dominio habla en `factor: Decimal` (p. ej. 1.08 = +8%); la fórmula
+    # propietaria del proveedor (multiplier) vive SOLO en el adaptador.
+
+    def supports_price_adjustment(self, channel: str) -> bool:
+        """¿El proveedor permite materializar un ajuste de precio para este canal?"""
+        ...
+
+    async def get_channel_price_adjustment(
+        self, property_external_id: str, channel: str
+    ) -> Decimal | None:
+        """Factor vigente del canal (None = sin ajuste propio)."""
+        ...
+
+    async def set_channel_price_adjustment(
+        self, property_external_id: str, channel: str, factor: Decimal | None
+    ) -> WriteResult:
+        """Escribe el factor (None = quitar). El prefijo del operador (p. ej.
+        conversión de moneda) se preserva SIEMPRE. verified=True solo si la
+        relectura confirma el valor escrito."""
+        ...
