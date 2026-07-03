@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { PriceCalendar } from "@/components/calendar/price-calendar";
 import { RangeEditor } from "@/components/calendar/range-editor";
+import { OffersPanel } from "@/components/calendar/offers-panel";
 import { SuggestionPanel } from "@/components/calendar/suggestion-panel";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -12,7 +13,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useActiveUnit } from "@/lib/active-unit";
 import { api } from "@/lib/api";
 import { monthLabel, monthRange, ymd } from "@/lib/format";
-import type { Suggestion } from "@/lib/types";
+import type { NativeDeal, Suggestion } from "@/lib/types";
+
+function dealCoversDay(deal: NativeDeal, day: string): boolean {
+  // Extremos abiertos: sin fecha = cubre por ese lado.
+  return (!deal.date_from || deal.date_from <= day) && (!deal.date_to || deal.date_to >= day);
+}
 
 export default function CalendarPage() {
   const [unitTypeId] = useActiveUnit();
@@ -34,6 +40,16 @@ export default function CalendarPage() {
     queryKey: ["suggestions"],
     queryFn: () => api.listSuggestions("proposed"),
   });
+  const deals = useQuery({
+    queryKey: ["native-deals"],
+    queryFn: () => api.listNativeDeals(),
+    staleTime: 60_000,
+  });
+  const promotions = useQuery({
+    queryKey: ["promotions", unitTypeId],
+    queryFn: () => api.listPromotions(unitTypeId),
+    staleTime: 60_000,
+  });
 
   // Sugerencias vigentes (proposed y con al menos un día no pasado) por fecha.
   const today = ymd(new Date());
@@ -47,6 +63,23 @@ export default function CalendarPage() {
     }
   }
   const suggestionDates = new Set(suggestionsByDate.keys());
+
+  // Días del mes visible cubiertos por deals nativos ACTIVOS (extremos abiertos).
+  const activeDeals = (deals.data?.deals ?? []).filter((d) => d.is_active);
+  const nativeDealDates = new Set<string>();
+  if (activeDeals.length) {
+    const { from: mFrom, to: mTo } = monthRange(ym.year, ym.month);
+    for (let d = new Date(`${mFrom}T00:00:00Z`); ; d.setUTCDate(d.getUTCDate() + 1)) {
+      const key = ymd(d);
+      if (key > mTo) break;
+      if (activeDeals.some((deal) => dealCoversDay(deal, key))) nativeDealDates.add(key);
+    }
+  }
+  const dealsOfDay = (day: string) => activeDeals.filter((d) => dealCoversDay(d, day));
+  const promosOfDay = (day: string) =>
+    (promotions.data?.promotions ?? []).filter(
+      (p) => p.status !== "retired" && p.first_night <= day && p.last_night >= day,
+    );
 
   // Precio efectivo por canal del día seleccionado (solo si hay offsets ≠ 0;
   // con 0/null el panel queda exactamente igual que antes).
@@ -111,6 +144,7 @@ export default function CalendarPage() {
               selection={selection}
               onSelect={(f, t) => setSelection({ from: f, to: t })}
               suggestionDates={suggestionDates}
+              nativeDealDates={nativeDealDates}
             />
           </Card>
           <div className="space-y-4">
@@ -122,6 +156,13 @@ export default function CalendarPage() {
                   suggestions={suggestionsByDate.get(selection.from) ?? []}
                 />
               )}
+            {selection && selection.from === selection.to && (
+              <OffersPanel
+                date={selection.from}
+                promotions={promosOfDay(selection.from)}
+                deals={dealsOfDay(selection.from)}
+              />
+            )}
             <RangeEditor unitTypeId={unitTypeId} selection={selection} onApplied={() => refetch()} />
             {channelPrices && (
               <Card>

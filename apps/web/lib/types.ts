@@ -138,6 +138,25 @@ export interface MonthKpis {
   blocked_nights: number;
 }
 
+export interface NativeDeal {
+  id: number;
+  channel: "booking" | "airbnb";
+  name: string;
+  discount_pct: string;
+  date_from: string | null;
+  date_to: string | null;
+  is_active: boolean;
+}
+
+export interface NativeDealInput {
+  channel: "booking" | "airbnb";
+  name: string;
+  discount_pct: number;
+  date_from?: string | null;
+  date_to?: string | null;
+  is_active?: boolean;
+}
+
 export interface ChannelStatus {
   kind: "booking" | "airbnb" | "direct";
   is_active: boolean;

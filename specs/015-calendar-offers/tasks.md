@@ -59,9 +59,9 @@ Monorepo: `apps/api/` (FastAPI) y `apps/web/` (Next.js), según plan.md.
 
 **Independent Test**: con un deal jul 3-31 y uno siempre-activo, el mes marca lo que corresponde; desactivar → desaparece; `npm run build` verde.
 
-- [ ] T008 [P] [US2] `apps/web/lib/types.ts` (+`NativeDeal`) y `apps/web/lib/api.ts` (+`listNativeDeals`, `createNativeDeal`, `updateNativeDeal`, `deleteNativeDeal`)
-- [ ] T009 [P] [US2] `apps/web/components/calendar/price-calendar.tsx`: prop opcional `nativeDealDates?: Set<string>` → punto cian (`bg-cyan-500`, title "Deal nativo") + entrada de leyenda condicional (patrón de `suggestionDates`)
-- [ ] T010 [US2] `apps/web/app/(app)/calendar/page.tsx`: query `["native-deals"]` (staleTime 60s), helper `dealCoversDay(deal, ymd)` (extremos abiertos), computar `dealsByDate`/`nativeDealDates` del mes visible (solo activos) y pasar la prop; `apps/web/app/(app)/page.tsx` (dashboard): misma query + prop en su PriceCalendar
+- [X] T008 [P] [US2] `apps/web/lib/types.ts` (+`NativeDeal`) y `apps/web/lib/api.ts` (+`listNativeDeals`, `createNativeDeal`, `updateNativeDeal`, `deleteNativeDeal`)
+- [X] T009 [P] [US2] `apps/web/components/calendar/price-calendar.tsx`: prop opcional `nativeDealDates?: Set<string>` → punto cian (`bg-cyan-500`, title "Deal nativo") + entrada de leyenda condicional (patrón de `suggestionDates`)
+- [X] T010 [US2] `apps/web/app/(app)/calendar/page.tsx`: query `["native-deals"]` (staleTime 60s), helper `dealCoversDay(deal, ymd)` (extremos abiertos), computar `dealsByDate`/`nativeDealDates` del mes visible (solo activos) y pasar la prop; `apps/web/app/(app)/page.tsx` (dashboard): misma query + prop en su PriceCalendar
 
 **Checkpoint**: panorama visual completo.
 
@@ -73,8 +73,8 @@ Monorepo: `apps/api/` (FastAPI) y `apps/web/` (Next.js), según plan.md.
 
 **Independent Test**: día con promo+deal muestra ambos; día sin ofertas no muestra el panel.
 
-- [ ] T011 [P] [US3] Crear `apps/web/components/calendar/offers-panel.tsx`: recibe `date`, `promotions: Promotion[]` (de la app, ya con name/discount_pct/first_night/last_night/channels_scope) y `deals: NativeDeal[]`; secciones "Promociones de la app" y "Deals nativos" con los datos del contrato; "siempre activo" para rango abierto; sin acciones de escritura (informativo; los deals se gestionan en Ofertas)
-- [ ] T012 [US3] Integrar en `apps/web/app/(app)/calendar/page.tsx`: query `["promotions"]` (api.listPromotions existente; status ≠ retired), `promosByDate` por `first_night..last_night`; si la selección es un día con ofertas, renderizar `OffersPanel` en la columna lateral junto a los paneles existentes
+- [X] T011 [P] [US3] Crear `apps/web/components/calendar/offers-panel.tsx`: recibe `date`, `promotions: Promotion[]` (de la app, ya con name/discount_pct/first_night/last_night/channels_scope) y `deals: NativeDeal[]`; secciones "Promociones de la app" y "Deals nativos" con los datos del contrato; "siempre activo" para rango abierto; sin acciones de escritura (informativo; los deals se gestionan en Ofertas)
+- [X] T012 [US3] Integrar en `apps/web/app/(app)/calendar/page.tsx`: query `["promotions"]` (api.listPromotions existente; status ≠ retired), `promosByDate` por `first_night..last_night`; si la selección es un día con ofertas, renderizar `OffersPanel` en la columna lateral junto a los paneles existentes
 
 **Checkpoint**: ver → entender sin salir del calendario.
 
@@ -86,15 +86,15 @@ Monorepo: `apps/api/` (FastAPI) y `apps/web/` (Next.js), según plan.md.
 
 **Independent Test**: alta/edición/interruptor/borrado desde la UI reflejados en lista y calendario; los 3 deals reales visibles tras la semilla.
 
-- [ ] T013 [US1] Tarjeta "Deals nativos registrados" en `apps/web/app/(app)/offers/page.tsx`: lista (canal con nombre display, nombre, %, vigencia o "siempre activo", switch activo), formulario de alta (canal, nombre, %, fechas opcionales), editar y borrar (confirmación simple), toasts con `detail` del server; enlazar con la guía existente ("cuando crees/quites un deal en el panel del canal, anótalo aquí")
+- [X] T013 [US1] Tarjeta "Deals nativos registrados" en `apps/web/app/(app)/offers/page.tsx`: lista (canal con nombre display, nombre, %, vigencia o "siempre activo", switch activo), formulario de alta (canal, nombre, %, fechas opcionales), editar y borrar (confirmación simple), toasts con `detail` del server; enlazar con la guía existente ("cuando crees/quites un deal en el panel del canal, anótalo aquí")
 - [ ] T014 [US5] Semilla EN PROD tras el deploy, CON CONFIRMACIÓN DEL HOST de los valores (quickstart.md): "Vacaciones Julio · mín 3" (booking, 20, 2026-07-03→2026-07-31), "Descuento semanal" (airbnb, 5, abierto), "Descuento mensual" (airbnb, 25, abierto); verificar calendario y advertencia real con un preview de prueba (sin aplicar)
 
 ---
 
 ## Phase 7: Polish & Cross-Cutting
 
-- [ ] T015 [P] Documentar en `docs/operations.md`: registro de deals nativos (qué es y qué NO es), advertencia real de doble descuento, y el flujo "creas el deal en el panel → lo anotas en la app"
-- [ ] T016 Verificación final: `cd apps/api && uv run pytest -q` + ruff, `cd apps/web && npm run build`; upgrade/downgrade de la migración en SQLite/local; revisar FR-010 (sin deals, todo idéntico)
+- [X] T015 [P] Documentar en `docs/operations.md`: registro de deals nativos (qué es y qué NO es), advertencia real de doble descuento, y el flujo "creas el deal en el panel → lo anotas en la app"
+- [X] T016 Verificación final: `cd apps/api && uv run pytest -q` + ruff, `cd apps/web && npm run build`; upgrade/downgrade de la migración en SQLite/local; revisar FR-010 (sin deals, todo idéntico)
 
 ---
 

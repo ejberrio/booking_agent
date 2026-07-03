@@ -300,3 +300,17 @@ La app refleja la realidad multi-canal del Channel Manager (Booking.com + Airbnb
 - **Fallo del canal**: 502, incidencia `comm_error` visible en /status y la sugerencia
   sigue pendiente (el estado local no miente; no queda nada aplicado a medias).
 - Reintentar una ya resuelta → 409 con el estado real (sin doble aplicación).
+
+## Deals nativos: registro manual + advertencia real (Feature 015 · issue #94)
+
+- Los deals nativos (badge de Booking, semanal/mensual de Airbnb) **no tienen API**:
+  se gestionan en los paneles (deep-links en Ofertas) y se **ANOTAN** en la app
+  (Ofertas → "Deals nativos registrados": canal, nombre, %, vigencia — vacía =
+  "siempre activo" — y activo sí/no). El registro es informativo: **no escribe nada
+  al canal**; mantenerlo alineado con el panel es responsabilidad del host (~10 s).
+- Con el registro al día: el calendario (y el dashboard) marcan los días en oferta
+  (punto cian = deal nativo, ámbar = promoción de la app; clic → panel "Ofertas del
+  día" con el detalle) y el preview de promociones avisa con el **deal concreto**
+  si una promo solaparía fechas y canal (cero avisos falsos; no bloquea — combinar
+  a propósito es decisión del host). La protección aplica también al agente (mismo
+  preview).

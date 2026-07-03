@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useActiveUnit } from "@/lib/active-unit";
 import { api, type PromotionInput } from "@/lib/api";
 import { EXTERNAL_LINKS } from "@/lib/links";
-import type { PromotionPreview } from "@/lib/types";
+import type { NativeDeal, NativeDealInput, PromotionPreview } from "@/lib/types";
 
 const money = (v: string | null) =>
   v == null ? "—" : `${Number(v).toLocaleString("es-CO")} COP`;
@@ -327,6 +327,208 @@ export default function OffersPage() {
           una promoción de precio recibe además el ajuste del canal si lo tienes configurado.
         </p>
       </Card>
+
+      <NativeDealsCard />
     </div>
+  );
+}
+
+const DEAL_CHANNELS = { booking: "Booking.com", airbnb: "Airbnb" } as const;
+
+function dealVigencia(d: NativeDeal): string {
+  if (!d.date_from && !d.date_to) return "siempre activo";
+  if (d.date_from && d.date_to) return `${d.date_from} → ${d.date_to}`;
+  return d.date_from ? `desde ${d.date_from}` : `hasta ${d.date_to}`;
+}
+
+/** Registro informativo de deals nativos (feature 015). No escribe nada al canal:
+ *  el deal se crea/gestiona en el panel (enlaces de arriba) y aquí se ANOTA para
+ *  verlo en el calendario y activar la advertencia real de doble descuento. */
+function NativeDealsCard() {
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["native-deals"],
+    queryFn: () => api.listNativeDeals(),
+  });
+  const empty = { channel: "booking" as "booking" | "airbnb", name: "", pct: "", from: "", to: "" };
+  const [form, setForm] = useState(empty);
+  const [editingId, setEditingId] = useState<number | null>(null);
+
+  const refresh = () => qc.invalidateQueries({ queryKey: ["native-deals"] });
+  const onError = (e: Error) => toast.error(e.message);
+
+  const buildInput = (): NativeDealInput => ({
+    channel: form.channel,
+    name: form.name.trim(),
+    discount_pct: Number(form.pct),
+    date_from: form.from || null,
+    date_to: form.to || null,
+  });
+
+  const save = useMutation({
+    mutationFn: () =>
+      editingId === null
+        ? api.createNativeDeal(buildInput())
+        : api.updateNativeDeal(editingId, buildInput()),
+    onSuccess: () => {
+      toast.success(editingId === null ? "Deal anotado" : "Deal actualizado");
+      setForm(empty);
+      setEditingId(null);
+      refresh();
+    },
+    onError,
+  });
+  const toggle = useMutation({
+    mutationFn: (d: NativeDeal) => api.updateNativeDeal(d.id, { is_active: !d.is_active }),
+    onSuccess: refresh,
+    onError,
+  });
+  const remove = useMutation({
+    mutationFn: (id: number) => api.deleteNativeDeal(id),
+    onSuccess: () => {
+      toast("Deal borrado del registro");
+      refresh();
+    },
+    onError,
+  });
+
+  const deals = data?.deals ?? [];
+
+  return (
+    <Card>
+      <CardTitle>Deals nativos registrados</CardTitle>
+      <CardDescription>
+        Cuando crees o quites un deal en el panel del canal (enlaces de arriba), anótalo aquí:
+        la app lo marca en el calendario y te avisa si una promoción tuya duplicaría el
+        descuento. Este registro NO cambia nada en el canal.
+      </CardDescription>
+
+      {isLoading ? (
+        <Skeleton className="mt-3 h-16 w-full" />
+      ) : deals.length ? (
+        <div className="mt-3 space-y-2">
+          {deals.map((d) => (
+            <div
+              key={d.id}
+              className="flex items-center justify-between rounded-md border border-border p-3 text-sm"
+            >
+              <div className={d.is_active ? "" : "opacity-50"}>
+                <div className="font-medium">{d.name}</div>
+                <div className="text-muted-foreground">
+                  {DEAL_CHANNELS[d.channel]} · {Number(d.discount_pct)}% · {dealVigencia(d)}
+                  {d.is_active ? "" : " · inactivo"}
+                </div>
+              </div>
+              <div className="flex gap-1">
+                <Button
+                  className="bg-transparent px-2 text-muted-foreground hover:bg-muted"
+                  onClick={() => toggle.mutate(d)}
+                  disabled={toggle.isPending}
+                >
+                  {d.is_active ? "Desactivar" : "Reactivar"}
+                </Button>
+                <Button
+                  className="bg-transparent px-2 text-muted-foreground hover:bg-muted"
+                  onClick={() => {
+                    setEditingId(d.id);
+                    setForm({
+                      channel: d.channel,
+                      name: d.name,
+                      pct: String(Number(d.discount_pct)),
+                      from: d.date_from ?? "",
+                      to: d.date_to ?? "",
+                    });
+                  }}
+                >
+                  Editar
+                </Button>
+                <Button
+                  className="bg-transparent px-2 text-muted-foreground hover:bg-muted"
+                  onClick={() => remove.mutate(d.id)}
+                  disabled={remove.isPending}
+                >
+                  <Trash2 size={14} />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <CardDescription className="mt-2">
+          Sin deals anotados. Registra los que tengas activos en Booking/Airbnb.
+        </CardDescription>
+      )}
+
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <div>
+          <Label htmlFor="dch">Canal</Label>
+          <select
+            id="dch"
+            className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+            value={form.channel}
+            onChange={(e) => setForm({ ...form, channel: e.target.value as "booking" | "airbnb" })}
+          >
+            <option value="booking">Booking.com</option>
+            <option value="airbnb">Airbnb</option>
+          </select>
+        </div>
+        <div>
+          <Label htmlFor="dpct">Descuento %</Label>
+          <Input
+            id="dpct"
+            type="number"
+            value={form.pct}
+            onChange={(e) => setForm({ ...form, pct: e.target.value })}
+            placeholder="20"
+          />
+        </div>
+        <div className="col-span-2">
+          <Label htmlFor="dname">Nombre</Label>
+          <Input
+            id="dname"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            placeholder="Vacaciones Julio · mín 3"
+          />
+        </div>
+        <div>
+          <Label htmlFor="dfrom">Desde (vacío = siempre)</Label>
+          <Input
+            id="dfrom"
+            type="date"
+            value={form.from}
+            onChange={(e) => setForm({ ...form, from: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label htmlFor="dto">Hasta (vacío = siempre)</Label>
+          <Input
+            id="dto"
+            type="date"
+            value={form.to}
+            onChange={(e) => setForm({ ...form, to: e.target.value })}
+          />
+        </div>
+      </div>
+      <div className="mt-3 flex gap-2">
+        <Button
+          onClick={() => save.mutate()}
+          disabled={save.isPending || !form.name.trim() || !form.pct}
+        >
+          {editingId === null ? "Anotar deal" : "Guardar cambios"}
+        </Button>
+        {editingId !== null && (
+          <Button
+            className="bg-transparent text-muted-foreground hover:bg-muted"
+            onClick={() => {
+              setEditingId(null);
+              setForm(empty);
+            }}
+          >
+            Cancelar
+          </Button>
+        )}
+      </div>
+    </Card>
   );
 }
