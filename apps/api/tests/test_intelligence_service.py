@@ -110,8 +110,10 @@ async def test_apply_suggestion_origin_and_publishes(session):
         )
     )[0]
     cm = FakeCM()
-    applied = await intelligence_service.apply_suggestion(session, cm, sug.id)
+    applied, applied_from, issues = await intelligence_service.apply_suggestion(session, cm, sug.id)
     assert applied.status is SuggestionStatus.applied
+    assert applied_from == DAY
+    assert issues == 0
     assert applied.applied_change_id is not None
     assert await pricing_service.get_price(session, unit.id, DAY) == sug.suggested_price
     log = (

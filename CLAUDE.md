@@ -1,21 +1,19 @@
 <!-- SPECKIT START -->
-Feature activa: **013-channel-pricing** (precios y promociones por canal; issue #88).
-Plan e artefactos: `specs/013-channel-pricing/plan.md`, `research.md`, `data-model.md`,
-`contracts/{channel-manager-port,pricing-api,agent-tools}.md`, `quickstart.md`.
-Hallazgos EN VIVO (2026-07-02): (R1) el ajuste % por canal se materializa en el **multiplier del
-canal** vía `POST /channels/settings` (Alpha; string componible: `*[CONVERT:COP-USD]` + 8% ⇒
-`*[CONVERT:COP-USD]*1.08`; el prefijo del operador es INTOCABLE; verificar con re-GET). Soportado
-solo para airbnb (booking vende a precio base — honestidad). (R2) los fixed prices SÍ se limitan
-por canal: campo `channels: {airbnb: {enable: bool}, ...}` (⚠️ clave real `enable`, el yaml dice
-`enabled`). Diseño: puerto neutro `get/set_channel_price_adjustment(channel, factor: Decimal)` +
-`supports_price_adjustment`; `RemoteFixedPrice.channels: dict[str,bool]|None`; servicio nuevo
-`channel_pricing_service` (preview→confirm(fingerprint)→apply→audit AgentAction→verify re-GET,
-fallo ⇒ SyncIssue sin persistir); rango offset [−50,+100]; `Channel.price_offset_pct` se ACTIVA
-(0 migraciones); scope de promos en `Promotion.conditions["channels_scope"]` (None=todos, []=inválido);
-endpoints `GET/POST /pricing/channel-offsets(/preview|/apply)` + `channels_scope` en promotions;
-tools `get_channel_offsets`/`propose_channel_offset`; web: tarjeta "Precio por canal" en Configuración,
-alcance+deep-links Airbnb en Ofertas. Precio efectivo = base×(1+pct/100) (el CONVERT es neutro en
-valor). ADR 0004. Features 001-012 en `main`, app EN PRODUCCIÓN (v0.1.2).
+Feature activa: **014-calendar-suggestions** (sugerencias en el calendario + acción única
+"Aprobar y aplicar"; issue #95). Plan y artefactos: `specs/014-calendar-suggestions/plan.md`,
+`research.md`, `data-model.md`, `contracts/suggestions-api.md`, `quickstart.md`.
+Diseño (R1-R6): la acción combinada ES `POST /suggestions/{id}/apply` reforzado — hoy ya publica y
+transiciona directo a `applied` pero SIN validar estado (bug latente de doble aplicación) ni recortar
+días pasados. Se añade: estados de entrada `proposed|approved` (otro ⇒ 409 honesto con estado real),
+recorte `effective_from=max(date_from,hoy)` (todo pasado ⇒ 409 "vencida"), respuesta + `applied_from`,
+fallo de canal ⇒ SyncIssue + sin commit (sigue `proposed`) + 502. `reject` acepta también `approved`
+(simetría) y unifica 400→409. Ruta `approve` RETIRADA (consumidor único: botón web que desaparece;
+`suggestion_service.approve` y el estado `approved` se conservan). Calendario: marcado client-side
+(query `["suggestions"]` compartida; vigente = `proposed` && `date_to>=hoy`); `PriceCalendar` gana prop
+opcional `suggestionDates: Set<string>` (punto violeta + leyenda); resolución en panel lateral nuevo
+`SuggestionPanel` (sugerido vs actual, rango, confianza %, racional, botones; N sugerencias/día;
+toasts con `detail` del server; invalida `["suggestions"]`+`["calendar"]` siempre). Lista: 2 botones.
+Sin migraciones. 174 tests deben seguir verdes. Features 001-013 + #97 en `main`, PRODUCCIÓN (v0.1.2).
 <!-- SPECKIT END -->
 
 # Booking AI Agent

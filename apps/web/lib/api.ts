@@ -42,7 +42,15 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
     cache: "no-store",
     ...init,
   });
-  if (!res.ok) throw new Error(`API ${res.status} en ${path}`);
+  if (!res.ok) {
+    // El backend responde errores honestos en `detail` (p. ej. estado real de una
+    // sugerencia ya resuelta): se propaga para mostrarlo tal cual.
+    const detail = await res
+      .json()
+      .then((b) => (typeof b?.detail === "string" ? b.detail : null))
+      .catch(() => null);
+    throw new Error(detail ?? `API ${res.status} en ${path}`);
+  }
   return (await res.json()) as T;
 }
 
@@ -91,8 +99,7 @@ export const api = {
   // Suggestions
   listSuggestions: (status?: string) =>
     req<Suggestion[]>(`/suggestions${status ? `?status=${status}` : ""}`),
-  approveSuggestion: (id: number) =>
-    req<Suggestion>(`/suggestions/${id}/approve`, { method: "POST" }),
+  listPendingSuggestions: () => req<Suggestion[]>(`/suggestions?pending=true`),
   rejectSuggestion: (id: number) =>
     req<Suggestion>(`/suggestions/${id}/reject`, { method: "POST" }),
   applySuggestion: (id: number) =>

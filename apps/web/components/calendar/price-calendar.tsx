@@ -13,9 +13,10 @@ interface Props {
   days: CalendarDay[];
   selection: { from: string; to: string } | null;
   onSelect: (from: string, to: string) => void;
+  suggestionDates?: Set<string>;
 }
 
-export function PriceCalendar({ year, month, days, selection, onSelect }: Props) {
+export function PriceCalendar({ year, month, days, selection, onSelect, suggestionDates }: Props) {
   const byDate = useMemo(() => new Map(days.map((d) => [d.date, d])), [days]);
   const [dragStart, setDragStart] = useState<string | null>(null);
   const [dragEnd, setDragEnd] = useState<string | null>(null);
@@ -92,6 +93,9 @@ export function PriceCalendar({ year, month, days, selection, onSelect }: Props)
                 {eff !== null ? `$${Math.round(eff / 1000)}k` : "—"}
               </span>
               <span className="flex gap-0.5">
+                {suggestionDates?.has(date) ? (
+                  <span title="Sugerencia" className="h-1 w-1 rounded-full bg-violet-500" />
+                ) : null}
                 {d?.promotions.length ? (
                   <span title="Promoción" className="h-1 w-1 rounded-full bg-amber-500" />
                 ) : null}
@@ -116,6 +120,11 @@ export function PriceCalendar({ year, month, days, selection, onSelect }: Props)
         <span className="flex items-center gap-1">
           <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Promoción
         </span>
+        {suggestionDates && suggestionDates.size > 0 ? (
+          <span className="flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-violet-500" /> Sugerencia
+          </span>
+        ) : null}
         <span>— = sin datos</span>
       </div>
     </div>
