@@ -7,7 +7,7 @@ from app.models.availability import AvailabilityChangeLog
 from app.models.booking import Booking
 from app.models.calendar import CalendarDay, Rate
 from app.models.market import Event, PriceSuggestion
-from app.models.pricing import PricingRule, Promotion
+from app.models.pricing import NativeDeal, PricingRule, Promotion
 from app.models.property import Channel, Property, UnitType
 from app.models.sync import ChannelManagerConnection, SyncIssue, SyncRun
 
@@ -19,6 +19,7 @@ __all__ = [
     "Rate",
     "PricingRule",
     "Promotion",
+    "NativeDeal",
     "Booking",
     "Event",
     "PriceSuggestion",

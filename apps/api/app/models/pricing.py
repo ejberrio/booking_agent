@@ -5,7 +5,7 @@ from sqlalchemy import Boolean, Date, Enum, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
-from app.models.enums import PromotionStatus, PromotionType
+from app.models.enums import ChannelKind, PromotionStatus, PromotionType
 from app.models.mixins import JSONBType, TimestampMixin
 
 
@@ -43,3 +43,22 @@ class Promotion(Base, TimestampMixin):
     )
     offer_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     external_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+
+class NativeDeal(Base, TimestampMixin):
+    """Registro informativo de un deal nativo gestionado en el panel del canal.
+
+    Los deals nativos (badge de Booking, semanal/mensual de Airbnb) no tienen API:
+    el host los anota aquí para verlos en el calendario y para la advertencia real
+    de doble descuento. NUNCA se escribe nada al canal desde este registro.
+    date_from/date_to en NULL = extremo abierto (ambos NULL = "siempre activo").
+    """
+
+    __tablename__ = "native_deal"
+
+    channel: Mapped[ChannelKind] = mapped_column(Enum(ChannelKind))
+    name: Mapped[str] = mapped_column(String(120))
+    discount_pct: Mapped[Decimal] = mapped_column(Numeric(5, 2))
+    date_from: Mapped[date | None] = mapped_column(Date, nullable=True)
+    date_to: Mapped[date | None] = mapped_column(Date, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)

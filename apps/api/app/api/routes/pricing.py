@@ -8,17 +8,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.routes.sync import get_adapter
 from app.db.session import get_session
-from app.models.enums import ChangeOrigin, PromotionType
+from app.models.enums import ChangeOrigin, ChannelKind, PromotionType
 from app.schemas.pricing import RangeSelection
 from app.services import (
     availability_service,
     channel_pricing_service,
+    native_deal_service,
     offer_promotion_service,
     pricing_app_service,
     promotion_service,
 )
 from app.services.audit_service import RollbackConflict
 from app.services.channel_pricing_service import ChannelOffsetError, FingerprintError
+from app.services.native_deal_service import NativeDealError
 from app.services.offer_promotion_service import PromotionError
 
 router = APIRouter()
@@ -106,6 +108,25 @@ class ChannelOffsetApplyRequest(ChannelOffsetPreviewRequest):
     fingerprint: str
 
 
+class NativeDealCreateRequest(BaseModel):
+    channel: str
+    name: str
+    discount_pct: Decimal
+    date_from: date | None = None
+    date_to: date | None = None
+    is_active: bool = True
+
+
+class NativeDealUpdateRequest(BaseModel):
+    # Parcial: solo lo enviado se actualiza; date_from/date_to aceptan null explícito.
+    channel: str | None = None
+    name: str | None = None
+    discount_pct: Decimal | None = None
+    date_from: date | None = None
+    date_to: date | None = None
+    is_active: bool | None = None
+
+
 @router.get("/calendar")
 async def calendar(
     unit_type_id: int, date_from: date, date_to: date, session: AsyncSession = Depends(get_session)
@@ -119,6 +140,92 @@ async def kpis(
     unit_type_id: int, date_from: date, date_to: date, session: AsyncSession = Depends(get_session)
 ):
     return await pricing_app_service.get_kpis(session, unit_type_id, date_from, date_to)
+
+
+# --------- deals nativos (feature 015: registro informativo local) ---------
+
+
+def _deal_view(d) -> dict:
+    return {
+        "id": d.id,
+        "channel": d.channel.value,
+        "name": d.name,
+        "discount_pct": str(d.discount_pct),
+        "date_from": d.date_from.isoformat() if d.date_from else None,
+        "date_to": d.date_to.isoformat() if d.date_to else None,
+        "is_active": d.is_active,
+    }
+
+
+def _deal_channel(value: str) -> ChannelKind:
+    try:
+        return ChannelKind(value)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="El canal debe ser booking o airbnb") from exc
+
+
+@router.get("/native-deals")
+async def list_native_deals(session: AsyncSession = Depends(get_session)):
+    deals = await native_deal_service.list_deals(session)
+    return {"deals": [_deal_view(d) for d in deals]}
+
+
+@router.post("/native-deals")
+async def create_native_deal(
+    req: NativeDealCreateRequest, session: AsyncSession = Depends(get_session)
+):
+    try:
+        deal = await native_deal_service.create(
+            session,
+            channel=_deal_channel(req.channel),
+            name=req.name,
+            discount_pct=req.discount_pct,
+            date_from=req.date_from,
+            date_to=req.date_to,
+            is_active=req.is_active,
+        )
+        await session.commit()
+        return _deal_view(deal)
+    except NativeDealError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.patch("/native-deals/{deal_id}")
+async def update_native_deal(
+    deal_id: int, req: NativeDealUpdateRequest, session: AsyncSession = Depends(get_session)
+):
+    kwargs: dict = {}
+    sent = req.model_fields_set
+    if "channel" in sent and req.channel is not None:
+        kwargs["channel"] = _deal_channel(req.channel)
+    if "name" in sent and req.name is not None:
+        kwargs["name"] = req.name
+    if "discount_pct" in sent and req.discount_pct is not None:
+        kwargs["discount_pct"] = req.discount_pct
+    if "date_from" in sent:
+        kwargs["date_from"] = req.date_from  # null explícito = abrir el extremo
+    if "date_to" in sent:
+        kwargs["date_to"] = req.date_to
+    if "is_active" in sent and req.is_active is not None:
+        kwargs["is_active"] = req.is_active
+    try:
+        deal = await native_deal_service.update(session, deal_id, **kwargs)
+        await session.commit()
+        return _deal_view(deal)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except NativeDealError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.delete("/native-deals/{deal_id}")
+async def delete_native_deal(deal_id: int, session: AsyncSession = Depends(get_session)):
+    try:
+        await native_deal_service.delete(session, deal_id)
+        await session.commit()
+        return {"deleted": True}
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @router.post("/day")

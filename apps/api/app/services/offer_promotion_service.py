@@ -30,6 +30,7 @@ from app.models.enums import (
 )
 from app.models.pricing import Promotion
 from app.models.property import UnitType
+from app.services import native_deal_service
 from app.schemas.promotion import (
     PromotionApplyResult,
     PromotionPreview,
@@ -54,6 +55,7 @@ def _designated_offer_id() -> int:
 
 
 _MANAGED_CHANNEL_TOKENS = ["booking", "airbnb"]
+_CHANNEL_DISPLAY = {"booking": "Booking.com", "airbnb": "Airbnb"}
 
 
 def _validate_scope(channels_scope: list[str] | None) -> list[str] | None:
@@ -249,6 +251,18 @@ async def preview(
         warnings.append(
             f"Hay {booked} reserva(s) confirmada(s) en el rango; sus precios no cambian "
             "(la promoción afecta solo a nuevas reservas)."
+        )
+    # Doble descuento REAL (feature 015): deals nativos registrados que solapan
+    # fechas y canal. Advierte con nombre concreto; no bloquea (combinar a propósito
+    # es decisión del host).
+    for deal in await native_deal_service.find_overlapping(
+        session, first_night, last_night, channels_scope
+    ):
+        pct = f"{deal.discount_pct}".rstrip("0").rstrip(".")
+        display = _CHANNEL_DISPLAY.get(deal.channel.value, deal.channel.value)
+        warnings.append(
+            f"Puede duplicar descuento con el deal nativo '{deal.name}' "
+            f"({display}, {pct}%). Revísalo antes de confirmar."
         )
 
     return PromotionPreview(

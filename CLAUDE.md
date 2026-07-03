@@ -1,19 +1,21 @@
 <!-- SPECKIT START -->
-Feature activa: **014-calendar-suggestions** (sugerencias en el calendario + acción única
-"Aprobar y aplicar"; issue #95). Plan y artefactos: `specs/014-calendar-suggestions/plan.md`,
-`research.md`, `data-model.md`, `contracts/suggestions-api.md`, `quickstart.md`.
-Diseño (R1-R6): la acción combinada ES `POST /suggestions/{id}/apply` reforzado — hoy ya publica y
-transiciona directo a `applied` pero SIN validar estado (bug latente de doble aplicación) ni recortar
-días pasados. Se añade: estados de entrada `proposed|approved` (otro ⇒ 409 honesto con estado real),
-recorte `effective_from=max(date_from,hoy)` (todo pasado ⇒ 409 "vencida"), respuesta + `applied_from`,
-fallo de canal ⇒ SyncIssue + sin commit (sigue `proposed`) + 502. `reject` acepta también `approved`
-(simetría) y unifica 400→409. Ruta `approve` RETIRADA (consumidor único: botón web que desaparece;
-`suggestion_service.approve` y el estado `approved` se conservan). Calendario: marcado client-side
-(query `["suggestions"]` compartida; vigente = `proposed` && `date_to>=hoy`); `PriceCalendar` gana prop
-opcional `suggestionDates: Set<string>` (punto violeta + leyenda); resolución en panel lateral nuevo
-`SuggestionPanel` (sugerido vs actual, rango, confianza %, racional, botones; N sugerencias/día;
-toasts con `detail` del server; invalida `["suggestions"]`+`["calendar"]` siempre). Lista: 2 botones.
-Sin migraciones. 174 tests deben seguir verdes. Features 001-013 + #97 en `main`, PRODUCCIÓN (v0.1.2).
+Feature activa: **015-calendar-offers** (calendario con promos + deals nativos visibles, registro
+manual NativeDeal; issue #94). Plan y artefactos: `specs/015-calendar-offers/plan.md`, `research.md`,
+`data-model.md`, `contracts/native-deals-api.md`, `quickstart.md`.
+Diseño (R1-R6): la "advertencia de doble descuento" actual NO existe en el backend (solo guía web +
+prompt) → warning NUEVO en `offer_promotion_service.preview` por cada NativeDeal activo que solape
+fechas ∩ canal (scope None = todos; no bloquea) — protege web Y agente por el mismo cuello. Modelo
+plano `native_deal` (channel enum ChannelKind reutilizado `create_type=False`, name ≤120,
+discount_pct 0-100, date_from/date_to NULLABLE = extremos abiertos, ambos NULL = "siempre activo"
+Airbnb semanal/mensual, is_active). Migración `c9d0e1f2a3b4` (down b7c8d9e0f1a2). Solape:
+`(from IS NULL OR from<=last) AND (to IS NULL OR to>=first)`. CRUD `/pricing/native-deals`
+(GET/POST/PATCH/DELETE, SIN fingerprint — registro local, cero llamadas al CM; DELETE real).
+Calendario: patrón client-side 014 — `/pricing/calendar` NO se toca; web cruza GET native-deals +
+GET /pricing/promotions existente (ya trae name/discount_pct/first-last_night/channels_scope);
+`PriceCalendar` + prop `nativeDealDates` (punto CIAN + leyenda); panel nuevo `OffersPanel` (promos
+app + deals del día); tarjeta CRUD en Ofertas; dashboard también marca. Semilla post-deploy con
+confirmación del host: Vacaciones Julio·mín 3 (booking 20% jul 3-31), semanal 5% y mensual 25%
+(airbnb, abiertos). 187 tests deben seguir verdes. Features 001-014 + #97 en `main`, PRODUCCIÓN.
 <!-- SPECKIT END -->
 
 # Booking AI Agent
