@@ -314,3 +314,15 @@ La app refleja la realidad multi-canal del Channel Manager (Booking.com + Airbnb
   si una promo solaparía fechas y canal (cero avisos falsos; no bloquea — combinar
   a propósito es decisión del host). La protección aplica también al agente (mismo
   preview).
+
+## Detalle de reservas y notas del host (Feature 016 · issue #96)
+
+- **Clic en un día reservado** → panel con huésped (si el canal lo reportó; "sin
+  nombre" si no), canal, llegada → salida, noches, estado y referencia. El nombre
+  es dato personal: solo se muestra dentro de la app y nunca aparece en logs (el
+  middleware registra solo method/path/status). El día de salida no cuenta como
+  ocupado por esa reserva. Para poblar nombres de reservas históricas: re-import.
+- **Notas del host**: selecciona un día o rango en el calendario y guarda una nota
+  (típico: el porqué de un bloqueo — "reserva personal de…"). Punto lima en los
+  días cubiertos; editar/borrar desde el panel. Dato 100% local: nunca toca el
+  Channel Manager. Máx 500 caracteres; los rangos pueden solaparse.

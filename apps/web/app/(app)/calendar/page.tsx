@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { PriceCalendar } from "@/components/calendar/price-calendar";
 import { RangeEditor } from "@/components/calendar/range-editor";
+import { DayInfoPanel } from "@/components/calendar/day-info-panel";
 import { OffersPanel } from "@/components/calendar/offers-panel";
 import { SuggestionPanel } from "@/components/calendar/suggestion-panel";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,15 @@ export default function CalendarPage() {
     queryFn: () => api.listPromotions(unitTypeId),
     staleTime: 60_000,
   });
+  const bookings = useQuery({
+    queryKey: ["bookings", unitTypeId, from, to],
+    queryFn: () => api.listBookings(unitTypeId, from, to),
+    staleTime: 60_000,
+  });
+  const notes = useQuery({
+    queryKey: ["calendar-notes", unitTypeId],
+    queryFn: () => api.listCalendarNotes(unitTypeId),
+  });
 
   // Sugerencias vigentes (proposed y con al menos un día no pasado) por fecha.
   const today = ymd(new Date());
@@ -80,6 +90,22 @@ export default function CalendarPage() {
     (promotions.data?.promotions ?? []).filter(
       (p) => p.status !== "retired" && p.first_night <= day && p.last_night >= day,
     );
+
+  // Reservas cuya NOCHE es el día (el día de salida no ocupa) y notas del rango.
+  const bookingsOfNight = (day: string) =>
+    (bookings.data?.bookings ?? []).filter((b) => b.check_in <= day && day < b.check_out);
+  const allNotes = notes.data?.notes ?? [];
+  const notesCovering = (fromD: string, toD: string) =>
+    allNotes.filter((n) => n.date_from <= toD && n.date_to >= fromD);
+  const noteDates = new Set<string>();
+  if (allNotes.length) {
+    const { from: mFrom, to: mTo } = monthRange(ym.year, ym.month);
+    for (let d = new Date(`${mFrom}T00:00:00Z`); ; d.setUTCDate(d.getUTCDate() + 1)) {
+      const key = ymd(d);
+      if (key > mTo) break;
+      if (allNotes.some((n) => n.date_from <= key && n.date_to >= key)) noteDates.add(key);
+    }
+  }
 
   // Precio efectivo por canal del día seleccionado (solo si hay offsets ≠ 0;
   // con 0/null el panel queda exactamente igual que antes).
@@ -145,6 +171,7 @@ export default function CalendarPage() {
               onSelect={(f, t) => setSelection({ from: f, to: t })}
               suggestionDates={suggestionDates}
               nativeDealDates={nativeDealDates}
+              noteDates={noteDates}
             />
           </Card>
           <div className="space-y-4">
@@ -161,6 +188,16 @@ export default function CalendarPage() {
                 date={selection.from}
                 promotions={promosOfDay(selection.from)}
                 deals={dealsOfDay(selection.from)}
+              />
+            )}
+            {selection && (
+              <DayInfoPanel
+                unitTypeId={unitTypeId}
+                selection={selection}
+                bookings={
+                  selection.from === selection.to ? bookingsOfNight(selection.from) : []
+                }
+                notes={notesCovering(selection.from, selection.to)}
               />
             )}
             <RangeEditor unitTypeId={unitTypeId} selection={selection} onApplied={() => refetch()} />

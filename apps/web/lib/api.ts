@@ -10,6 +10,8 @@ import type {
   Promotion,
   PromotionApplyResult,
   PromotionPreview,
+  BookingView,
+  CalendarNote,
   ChannelOffset,
   MonthKpis,
   NativeDeal,
@@ -108,6 +110,20 @@ export const api = {
     req<Suggestion>(`/suggestions/${id}/apply`, { method: "POST" }),
 
   // Promociones (ofertas con descuento sobre fechas, feature 011)
+  // Reservas (lectura) y notas del host (feature 016)
+  listBookings: (unitTypeId: number, from: string, to: string) =>
+    req<{ bookings: BookingView[] }>(
+      `/bookings?unit_type_id=${unitTypeId}&date_from=${from}&date_to=${to}`,
+    ),
+  listCalendarNotes: (unitTypeId: number) =>
+    req<{ notes: CalendarNote[] }>(`/calendar-notes?unit_type_id=${unitTypeId}`),
+  createCalendarNote: (body: { unit_type_id: number; date_from: string; date_to: string; text: string }) =>
+    req<CalendarNote>(`/calendar-notes`, { method: "POST", body: JSON.stringify(body) }),
+  updateCalendarNote: (id: number, body: { text?: string; date_from?: string; date_to?: string }) =>
+    req<CalendarNote>(`/calendar-notes/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteCalendarNote: (id: number) =>
+    req<{ deleted: boolean }>(`/calendar-notes/${id}`, { method: "DELETE" }),
+
   // Deals nativos (feature 015: registro informativo local)
   listNativeDeals: () => req<{ deals: NativeDeal[] }>(`/pricing/native-deals`),
   createNativeDeal: (body: NativeDealInput) =>

@@ -48,8 +48,8 @@ Monorepo: `apps/api/` (FastAPI) y `apps/web/` (Next.js), según plan.md.
 
 - [X] T006 [US1] Crear `apps/api/app/api/routes/bookings.py`: `GET /bookings?unit_type_id&date_from&date_to` → confirmadas con `check_in <= date_to AND check_out > date_from`, orden check_in, respuesta del contrato (`nights=(check_out-check_in).days`, `channel=channel_kind.value`); registrar el router en `apps/api/app/api/router.py` (prefijo `/bookings`)
 - [X] T007 [US1] Tests en `apps/api/tests/test_bookings_api.py` (cliente ASGITransport): solape del rango, cancelada excluida, nights, guest_name null, bordes (check_out == date_from no solapa)
-- [ ] T008 [P] [US1] Web: `BookingView` en `apps/web/lib/types.ts` + `api.listBookings(unitTypeId, from, to)` en `apps/web/lib/api.ts`
-- [ ] T009 [US1] Web: en `apps/web/app/(app)/calendar/page.tsx` query `["bookings", unitTypeId, from, to]`; helper noche `b.check_in <= d && d < b.check_out`; sección "Reservas" del nuevo `apps/web/components/calendar/day-info-panel.tsx` (huésped o "sin nombre", canal display, llegada → salida, noches, estado, ref) visible cuando la selección es un día con reservas
+- [X] T008 [P] [US1] Web: `BookingView` en `apps/web/lib/types.ts` + `api.listBookings(unitTypeId, from, to)` en `apps/web/lib/api.ts`
+- [X] T009 [US1] Web: en `apps/web/app/(app)/calendar/page.tsx` query `["bookings", unitTypeId, from, to]`; helper noche `b.check_in <= d && d < b.check_out`; sección "Reservas" del nuevo `apps/web/components/calendar/day-info-panel.tsx` (huésped o "sin nombre", canal display, llegada → salida, noches, estado, ref) visible cuando la selección es un día con reservas
 
 **Checkpoint**: "¿quién llega ese día?" respondido en un clic.
 
@@ -64,7 +64,7 @@ Monorepo: `apps/api/` (FastAPI) y `apps/web/` (Next.js), según plan.md.
 - [X] T010 [US3] Crear `apps/api/app/services/calendar_note_service.py`: `CalendarNoteError`; list (por unit_type_id, orden date_from/id), create/update(parcial)/delete con validación (texto 1-500 tras strip, date_from <= date_to); LookupError si no existe
 - [X] T011 [US3] Crear `apps/api/app/api/routes/calendar_notes.py`: `GET /calendar-notes?unit_type_id`, `POST`, `PATCH /{id}`, `DELETE /{id}` según contrato (422 CalendarNoteError, 404 LookupError); registrar router en `apps/api/app/api/router.py` (prefijo `/calendar-notes`)
 - [X] T012 [US3] Tests en `apps/api/tests/test_calendar_notes.py`: CRUD completo, día único (from==to), solapes múltiples, 422 (vacío, 501 chars, fechas invertidas), 404
-- [ ] T013 [P] [US3] Web: `CalendarNote` en `apps/web/lib/types.ts` + `listCalendarNotes/createCalendarNote/updateCalendarNote/deleteCalendarNote` en `apps/web/lib/api.ts`
+- [X] T013 [P] [US3] Web: `CalendarNote` en `apps/web/lib/types.ts` + `listCalendarNotes/createCalendarNote/updateCalendarNote/deleteCalendarNote` en `apps/web/lib/api.ts`
 
 **Checkpoint**: la memoria del host tiene dónde vivir.
 
@@ -76,9 +76,9 @@ Monorepo: `apps/api/` (FastAPI) y `apps/web/` (Next.js), según plan.md.
 
 **Independent Test**: nota oct 19-21 → esos días marcados; panel muestra/edita; borrar quita el marcador; sin notas, render idéntico.
 
-- [ ] T014 [P] [US4] `apps/web/components/calendar/price-calendar.tsx`: prop opcional `noteDates?: Set<string>` → punto lima (`bg-lime-500`, title "Nota") + leyenda condicional "Nota" (patrón de las props 014/015)
-- [ ] T015 [US4] Completar `apps/web/components/calendar/day-info-panel.tsx` con la sección "Notas": lista de notas que cubren la selección (texto + rango) con editar inline (textarea) y borrar; formulario "Añadir nota" que crea sobre TODO el rango seleccionado (un día o arrastre); toasts con `detail`; invalidar `["calendar-notes"]`
-- [ ] T016 [US4] Integrar en `apps/web/app/(app)/calendar/page.tsx`: query `["calendar-notes", unitTypeId]`, `noteDates` del mes visible, prop al PriceCalendar y `DayInfoPanel` en la columna lateral (visible con cualquier selección; secciones internas condicionales)
+- [X] T014 [P] [US4] `apps/web/components/calendar/price-calendar.tsx`: prop opcional `noteDates?: Set<string>` → punto lima (`bg-lime-500`, title "Nota") + leyenda condicional "Nota" (patrón de las props 014/015)
+- [X] T015 [US4] Completar `apps/web/components/calendar/day-info-panel.tsx` con la sección "Notas": lista de notas que cubren la selección (texto + rango) con editar inline (textarea) y borrar; formulario "Añadir nota" que crea sobre TODO el rango seleccionado (un día o arrastre); toasts con `detail`; invalidar `["calendar-notes"]`
+- [X] T016 [US4] Integrar en `apps/web/app/(app)/calendar/page.tsx`: query `["calendar-notes", unitTypeId]`, `noteDates` del mes visible, prop al PriceCalendar y `DayInfoPanel` en la columna lateral (visible con cualquier selección; secciones internas condicionales)
 
 **Checkpoint**: anotar → reencontrar cerrado.
 
@@ -86,8 +86,8 @@ Monorepo: `apps/api/` (FastAPI) y `apps/web/` (Next.js), según plan.md.
 
 ## Phase 6: Polish & Cross-Cutting
 
-- [ ] T017 [P] Documentar en `docs/operations.md`: detalle de reservas al clic (privacidad del nombre: solo en la app, nunca en logs) y notas del host (locales, típicas para bloqueos)
-- [ ] T018 Verificación final: `cd apps/api && uv run pytest -q` + ruff; `cd apps/web && npm run build`; `alembic heads` único; revisar FR-010
+- [X] T017 [P] Documentar en `docs/operations.md`: detalle de reservas al clic (privacidad del nombre: solo en la app, nunca en logs) y notas del host (locales, típicas para bloqueos)
+- [X] T018 Verificación final: `cd apps/api && uv run pytest -q` + ruff; `cd apps/web && npm run build`; `alembic heads` único; revisar FR-010
 - [ ] T019 Verificación EN VIVO tras merge (lectura/local, sin nada que revertir): re-import para poblar nombres (POST /sync/import), GET /bookings agosto con la reserva real y su huésped, clic en el calendario (panel), crear la nota real del bloqueo oct 19-21 (texto confirmado por el host) y verificar punto lima
 
 ---
