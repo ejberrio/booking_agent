@@ -216,12 +216,21 @@ async def import_remote(
                         check_out=rb.check_out,
                         status=BookingStatus.confirmed,
                         external_ref=rb.external_id,
+                        guest_name=rb.guest_name,
                     )
                 )
                 created += 1
-            elif existing_booking.channel_kind != kind:
-                existing_booking.channel_kind = kind
-                updated += 1
+            else:
+                changed = False
+                if existing_booking.channel_kind != kind:
+                    existing_booking.channel_kind = kind
+                    changed = True
+                # El nombre se corrige solo si el remoto HABLA (su silencio no borra).
+                if rb.guest_name and existing_booking.guest_name != rb.guest_name:
+                    existing_booking.guest_name = rb.guest_name
+                    changed = True
+                if changed:
+                    updated += 1
 
     run.created_count = created
     run.updated_count = updated

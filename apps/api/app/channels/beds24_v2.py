@@ -243,6 +243,9 @@ class Beds24V2Adapter:
                     # V2 reporta el canal de venta ("booking", "airbnb"); referer es
                     # el display ("Booking.com") y sirve de fallback.
                     channel=infer_channel_token(b.get("channel"), b.get("referer")),
+                    guest_name=(
+                        f"{b.get('firstName') or ''} {b.get('lastName') or ''}".strip() or None
+                    ),
                 )
             )
         return out

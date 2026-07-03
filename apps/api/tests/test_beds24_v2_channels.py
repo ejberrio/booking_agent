@@ -98,3 +98,31 @@ def test_infer_channel_token_rules():
     assert infer_channel_token("", "") is None
     assert infer_channel_token(None, None) is None
     assert infer_channel_token(123, None) == "123"  # tipos raros no rompen
+
+
+async def test_get_bookings_composes_guest_name():
+    """firstName+lastName → compuesto; parciales OK; ausentes → None (feature 016)."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if (r := _token_ok(request)) is not None:
+            return r
+        return httpx.Response(
+            200,
+            json={
+                "success": True,
+                "data": [
+                    _booking(1, firstName="John", lastName="Doe"),
+                    _booking(2, firstName="Ana"),
+                    _booking(3, lastName="Roe"),
+                    _booking(4),
+                    _booking(5, firstName="", lastName=""),
+                ],
+            },
+        )
+
+    adapter = adapter_with(handler)
+    try:
+        names = {b.external_id: b.guest_name for b in await adapter.get_bookings("337229")}
+    finally:
+        await adapter.aclose()
+    assert names == {"1": "John Doe", "2": "Ana", "3": "Roe", "4": None, "5": None}

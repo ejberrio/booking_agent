@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Date, ForeignKey, Integer, Numeric, UniqueConstraint
+from sqlalchemy import Boolean, Date, ForeignKey, Integer, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -18,6 +18,21 @@ class CalendarDay(Base, TimestampMixin):
     date: Mapped[date] = mapped_column(Date, index=True)
     units_available: Mapped[int] = mapped_column(Integer, default=0)
     is_blocked: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class CalendarNote(Base, TimestampMixin):
+    """Nota de texto libre del host sobre un día o rango (feature 016).
+
+    Memoria local del host (típico: el porqué de un bloqueo). Nunca toca el
+    Channel Manager. Los rangos pueden solaparse sin límite.
+    """
+
+    __tablename__ = "calendar_note"
+
+    unit_type_id: Mapped[int] = mapped_column(ForeignKey("unit_type.id"), index=True)
+    date_from: Mapped[date] = mapped_column(Date)
+    date_to: Mapped[date] = mapped_column(Date)
+    text: Mapped[str] = mapped_column(String(500))
 
 
 class Rate(Base, TimestampMixin):
