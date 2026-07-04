@@ -194,3 +194,47 @@ async def test_removing_channel_from_config_deactivates_it(session, monkeypatch)
 async def test_config_tolerates_garbage(monkeypatch):
     monkeypatch.setattr(settings, "channels_active", " booking , NADA, airbnb ,, airbnb ")
     assert settings.active_channel_kinds() == [ChannelKind.booking, ChannelKind.airbnb]
+
+
+# ---------------------------------------------------------------------------
+# Feature 016 — nombre del huésped en el import
+# ---------------------------------------------------------------------------
+
+
+def _rb_named(ext_id: str, guest_name: str | None) -> RemoteBooking:
+    return RemoteBooking(
+        external_id=ext_id,
+        room_external_id="697411",
+        check_in=date(2026, 8, 6),
+        check_out=date(2026, 8, 19),
+        channel="booking",
+        guest_name=guest_name,
+    )
+
+
+async def test_import_captures_guest_name(session):
+    cm = FakeCM(bookings=[_rb_named("B-1", "John Doe"), _rb_named("B-2", None)])
+    await sync_service.import_remote(session, cm, DAY, DAY)
+    by = await _bookings_by_ref(session)
+    assert by["B-1"].guest_name == "John Doe"
+    assert by["B-2"].guest_name is None
+
+
+async def test_reimport_fixes_missing_guest_name(session):
+    await sync_service.import_remote(session, FakeCM(bookings=[_rb_named("B-1", None)]), DAY, DAY)
+    run = await sync_service.import_remote(
+        session, FakeCM(bookings=[_rb_named("B-1", "Jane Roe")]), DAY, DAY
+    )
+    by = await _bookings_by_ref(session)
+    assert by["B-1"].guest_name == "Jane Roe"
+    assert run.updated_count == 1
+
+
+async def test_reimport_silence_does_not_erase_guest_name(session):
+    await sync_service.import_remote(
+        session, FakeCM(bookings=[_rb_named("B-1", "Jane Roe")]), DAY, DAY
+    )
+    run = await sync_service.import_remote(session, FakeCM(bookings=[_rb_named("B-1", None)]), DAY, DAY)
+    by = await _bookings_by_ref(session)
+    assert by["B-1"].guest_name == "Jane Roe"  # el silencio remoto no borra
+    assert run.updated_count == 0

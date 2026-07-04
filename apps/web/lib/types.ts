@@ -138,6 +138,25 @@ export interface MonthKpis {
   blocked_nights: number;
 }
 
+export interface BookingView {
+  id: number;
+  guest_name: string | null;
+  channel: string;
+  check_in: string;
+  check_out: string;
+  nights: number;
+  status: string;
+  external_ref: string | null;
+}
+
+export interface CalendarNote {
+  id: number;
+  unit_type_id: number;
+  date_from: string;
+  date_to: string;
+  text: string;
+}
+
 export interface NativeDeal {
   id: number;
   channel: "booking" | "airbnb";

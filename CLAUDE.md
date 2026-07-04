@@ -1,21 +1,22 @@
 <!-- SPECKIT START -->
-Feature activa: **015-calendar-offers** (calendario con promos + deals nativos visibles, registro
-manual NativeDeal; issue #94). Plan y artefactos: `specs/015-calendar-offers/plan.md`, `research.md`,
-`data-model.md`, `contracts/native-deals-api.md`, `quickstart.md`.
-Diseño (R1-R6): la "advertencia de doble descuento" actual NO existe en el backend (solo guía web +
-prompt) → warning NUEVO en `offer_promotion_service.preview` por cada NativeDeal activo que solape
-fechas ∩ canal (scope None = todos; no bloquea) — protege web Y agente por el mismo cuello. Modelo
-plano `native_deal` (channel enum ChannelKind reutilizado `create_type=False`, name ≤120,
-discount_pct 0-100, date_from/date_to NULLABLE = extremos abiertos, ambos NULL = "siempre activo"
-Airbnb semanal/mensual, is_active). Migración `c9d0e1f2a3b4` (down b7c8d9e0f1a2). Solape:
-`(from IS NULL OR from<=last) AND (to IS NULL OR to>=first)`. CRUD `/pricing/native-deals`
-(GET/POST/PATCH/DELETE, SIN fingerprint — registro local, cero llamadas al CM; DELETE real).
-Calendario: patrón client-side 014 — `/pricing/calendar` NO se toca; web cruza GET native-deals +
-GET /pricing/promotions existente (ya trae name/discount_pct/first-last_night/channels_scope);
-`PriceCalendar` + prop `nativeDealDates` (punto CIAN + leyenda); panel nuevo `OffersPanel` (promos
-app + deals del día); tarjeta CRUD en Ofertas; dashboard también marca. Semilla post-deploy con
-confirmación del host: Vacaciones Julio·mín 3 (booking 20% jul 3-31), semanal 5% y mensual 25%
-(airbnb, abiertos). 187 tests deben seguir verdes. Features 001-014 + #97 en `main`, PRODUCCIÓN.
+Feature activa: **016-calendar-bookings-notes** (detalle de reservas + notas del host en el
+calendario; issue #96). Plan y artefactos: `specs/016-calendar-bookings-notes/plan.md`,
+`research.md`, `data-model.md`, `contracts/bookings-notes-api.md`, `quickstart.md`.
+Diseño (R1-R6): `RemoteBooking.guest_name` campo ÚNICO neutro (V2 compone firstName+lastName del
+schema oficial — verificado en apiV2.yaml; parciales OK, vacío → None; V1 → None). `Booking` +
+columna `guest_name` String(200) nullable. Import: crear → set; existente → corrige solo si remoto
+NO vacío ≠ local (silencio remoto nunca borra; cuenta updated_count, patrón 012). Entidad nueva
+`CalendarNote` (unit_type_id FK, date_from/date_to NOT NULL from<=to, text ≤500 no vacío) en
+models/calendar.py; migración `d1e2f3a4b5c6` (down c9d0e1f2a3b4). Endpoints nuevos: `GET /bookings?
+unit_type_id&date_from&date_to` (confirmadas, solape [check_in,check_out), nights calculado, router
+bookings.py) y CRUD `/calendar-notes` (SIN fingerprint — local, criterio 015; DELETE real; router
+calendar_notes.py; registrar ambos en routes/__init__). Web patrón client-side (calendario NO se
+toca): `PriceCalendar` + prop `noteDates` (punto LIMA + leyenda); panel único nuevo `DayInfoPanel`
+(selección 1 día → sección Reservas: huésped o "sin nombre", canal, llegada→salida, noches, ref;
+cualquier selección → sección Notas: cubren el rango + crear sobre TODA la selección + editar/
+borrar). Privacidad: guest_name NUNCA en logs (middleware solo method/path/status); el tool del
+agente NO gana el campo. Noche: día de salida NO ocupa. 199 tests deben seguir verdes.
+Features 001-015 + #97 en `main`, PRODUCCIÓN (deals sembrados ids 1-3).
 <!-- SPECKIT END -->
 
 # Booking AI Agent

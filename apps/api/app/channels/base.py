@@ -71,6 +71,8 @@ class RemoteBooking:
     check_out: date
     status: str = "confirmed"
     channel: str | None = None
+    # Nombre del huésped compuesto por el adaptador. None = el proveedor no lo reporta.
+    guest_name: str | None = None
 
 
 @dataclass(frozen=True)

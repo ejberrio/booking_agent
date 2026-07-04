@@ -15,6 +15,7 @@ interface Props {
   onSelect: (from: string, to: string) => void;
   suggestionDates?: Set<string>;
   nativeDealDates?: Set<string>;
+  noteDates?: Set<string>;
 }
 
 export function PriceCalendar({
@@ -25,6 +26,7 @@ export function PriceCalendar({
   onSelect,
   suggestionDates,
   nativeDealDates,
+  noteDates,
 }: Props) {
   const byDate = useMemo(() => new Map(days.map((d) => [d.date, d])), [days]);
   const [dragStart, setDragStart] = useState<string | null>(null);
@@ -111,6 +113,9 @@ export function PriceCalendar({
                 {nativeDealDates?.has(date) ? (
                   <span title="Deal nativo" className="h-1 w-1 rounded-full bg-cyan-500" />
                 ) : null}
+                {noteDates?.has(date) ? (
+                  <span title="Nota" className="h-1 w-1 rounded-full bg-lime-500" />
+                ) : null}
                 {blocked ? (
                   <span title="Bloqueada" className="h-1 w-1 rounded-full bg-slate-400" />
                 ) : null}
@@ -140,6 +145,11 @@ export function PriceCalendar({
         {nativeDealDates && nativeDealDates.size > 0 ? (
           <span className="flex items-center gap-1">
             <span className="h-1.5 w-1.5 rounded-full bg-cyan-500" /> Deal nativo
+          </span>
+        ) : null}
+        {noteDates && noteDates.size > 0 ? (
+          <span className="flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-lime-500" /> Nota
           </span>
         ) : null}
         <span>— = sin datos</span>
