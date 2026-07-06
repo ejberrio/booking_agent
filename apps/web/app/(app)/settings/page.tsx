@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useActiveUnit } from "@/lib/active-unit";
 import { api } from "@/lib/api";
-import type { OffsetPreview } from "@/lib/types";
+import type { OffsetPreview, SecretStatus, SecretTestResult } from "@/lib/types";
 
 const CHANNEL_NAMES: Record<string, string> = { booking: "Booking.com", airbnb: "Airbnb" };
 const cop = (v: string) => `${Number(v).toLocaleString("es-CO")} COP`;
@@ -160,6 +160,137 @@ function ChannelOffsetsCard() {
   );
 }
 
+function sourceLabel(s: SecretStatus): string {
+  if (s.unreadable) return "guardado ilegible — se usa la variable de entorno";
+  if (s.source === "app") return `guardado en la app${s.updated_at ? ` · ${s.updated_at.slice(0, 10)}` : ""}`;
+  if (s.source === "env") return "por variable de entorno";
+  return "sin configurar";
+}
+
+/** Gestión write-only de secretos (feature 017): el valor nunca se muestra ni
+ *  se puede recuperar; solo estado + pista de los últimos 4 caracteres. */
+function SecretsCard() {
+  const qc = useQueryClient();
+  const secrets = useQuery({ queryKey: ["secrets"], queryFn: () => api.listSecrets() });
+  const audit = useQuery({ queryKey: ["secrets-audit"], queryFn: () => api.listSecretAudit() });
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [testResults, setTestResults] = useState<Record<string, SecretTestResult>>({});
+
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ["secrets"] });
+    qc.invalidateQueries({ queryKey: ["secrets-audit"] });
+  };
+  const onError = (e: Error) => toast.error(e.message);
+
+  const save = useMutation({
+    mutationFn: (name: string) => api.setSecret(name, values[name] ?? ""),
+    onSuccess: (_r, name) => {
+      toast.success("Secreto guardado — la rotación ya aplica");
+      setValues((v) => ({ ...v, [name]: "" })); // write-only: el campo se limpia
+      refresh();
+    },
+    onError,
+  });
+  const remove = useMutation({
+    mutationFn: (name: string) => api.deleteSecret(name),
+    onSuccess: () => {
+      toast("Valor guardado eliminado (se usa la variable de entorno si existe)");
+      refresh();
+    },
+    onError,
+  });
+  const test = useMutation({
+    mutationFn: (name: string) => api.testSecret(name),
+    onSuccess: (r, name) => setTestResults((t) => ({ ...t, [name]: r })),
+    onError,
+  });
+
+  return (
+    <Card className="space-y-3">
+      <CardTitle>Secretos</CardTitle>
+      <CardDescription>
+        API keys y tokens de los servicios. Write-only: el valor nunca se muestra; pega uno
+        nuevo para rotarlo. La rotación aplica de inmediato en la API; el escaneo diario la
+        toma en su próxima corrida.
+      </CardDescription>
+
+      {secrets.isLoading ? (
+        <Skeleton className="h-24 w-full" />
+      ) : (
+        <div className="space-y-3">
+          {(secrets.data?.secrets ?? []).map((s) => (
+            <div key={s.name} className="space-y-1.5 rounded-md border border-border p-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">{s.label}</span>
+                <Badge variant={s.configured ? "success" : "warning"}>
+                  {s.configured ? `configurado ${s.hint}` : "sin configurar"}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {s.service} · {sourceLabel(s)}
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  type="password"
+                  autoComplete="off"
+                  placeholder="Pegar valor nuevo…"
+                  value={values[s.name] ?? ""}
+                  onChange={(e) => setValues((v) => ({ ...v, [s.name]: e.target.value }))}
+                />
+                <Button
+                  onClick={() => save.mutate(s.name)}
+                  disabled={save.isPending || !(values[s.name] ?? "").trim()}
+                >
+                  Guardar
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  className="bg-muted text-foreground"
+                  onClick={() => test.mutate(s.name)}
+                  disabled={test.isPending}
+                >
+                  Probar
+                </Button>
+                {s.source === "app" && (
+                  <Button
+                    className="bg-transparent text-muted-foreground hover:bg-muted"
+                    onClick={() => remove.mutate(s.name)}
+                    disabled={remove.isPending}
+                  >
+                    Quitar
+                  </Button>
+                )}
+                {testResults[s.name] && (
+                  <span
+                    className={`text-xs ${testResults[s.name].ok ? "text-emerald-500" : "text-red-500"}`}
+                  >
+                    {testResults[s.name].ok ? "✓" : "✗"} {testResults[s.name].detail}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {(audit.data?.entries.length ?? 0) > 0 && (
+        <div>
+          <p className="text-xs font-medium">Últimos cambios</p>
+          <ul className="mt-1 space-y-0.5 text-[11px] text-muted-foreground">
+            {audit.data!.entries.slice(0, 6).map((e, i) => (
+              <li key={i}>
+                {e.changed_at.slice(0, 16).replace("T", " ")} · {e.name} ·{" "}
+                {e.action === "set" ? `guardado ${e.hint}` : "eliminado"}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 export default function SettingsPage() {
   const [unitTypeId] = useActiveUnit();
   const test = useMutation({ mutationFn: () => api.testConnection() });
@@ -185,15 +316,14 @@ export default function SettingsPage() {
 
       <ChannelOffsetsCard />
 
+      <SecretsCard />
+
       <Card className="space-y-1">
         <CardTitle>Modelo de LLM</CardTitle>
         <CardDescription>
-          Configurado en el servidor (.env): modelo general para conversación y modelo de acciones
-          para escrituras. Las claves nunca se muestran aquí.
+          Modelos configurados en el servidor (.env): general para conversación y de acciones
+          para escrituras. Las API keys se rotan en la tarjeta Secretos.
         </CardDescription>
-        <p className="text-xs text-muted-foreground">
-          Edición desde la UI: pendiente de un endpoint de configuración en el backend.
-        </p>
       </Card>
 
       <Card className="space-y-1">

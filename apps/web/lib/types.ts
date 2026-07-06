@@ -138,6 +138,29 @@ export interface MonthKpis {
   blocked_nights: number;
 }
 
+export interface SecretStatus {
+  name: string;
+  label: string;
+  service: string;
+  configured: boolean;
+  source: "app" | "env" | null;
+  hint: string;
+  updated_at: string | null;
+  unreadable: boolean;
+}
+
+export interface SecretAuditEntry {
+  name: string;
+  action: "set" | "deleted";
+  hint: string;
+  changed_at: string;
+}
+
+export interface SecretTestResult {
+  ok: boolean;
+  detail: string;
+}
+
 export interface BookingView {
   id: number;
   guest_name: string | null;

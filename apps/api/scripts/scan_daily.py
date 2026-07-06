@@ -24,6 +24,15 @@ HORIZON_DAYS = 180
 
 
 async def main() -> None:
+    # Secretos: BD cifrada > entorno (feature 017). Resiliente: si falla, entorno.
+    try:
+        from app.services import secret_service
+
+        async with SessionLocal() as session:
+            await secret_service.load_cache(session)
+    except Exception:
+        print("scan_daily: sin caché de secretos; se usan variables de entorno.")
+
     search = TavilyProvider()
     llm = default_llm()
     try:

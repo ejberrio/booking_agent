@@ -40,7 +40,9 @@ class LLM(Protocol):
 
 
 def _has_key() -> bool:
-    return bool(settings.anthropic_api_key or settings.openai_api_key)
+    from app.services.secret_service import get_secret
+
+    return bool(get_secret("anthropic_api_key") or get_secret("openai_api_key"))
 
 
 def _qualify(model: str) -> str:
@@ -57,7 +59,15 @@ class LiteLLMClient:
     ) -> LLMResponse:
         import litellm
 
-        kwargs: dict[str, Any] = {"model": _qualify(model), "messages": messages}
+        from app.services.secret_service import get_secret
+
+        qualified = _qualify(model)
+        kwargs: dict[str, Any] = {"model": qualified, "messages": messages}
+        # LiteLLM lee la key del ENTORNO del proceso: para que una rotación guardada
+        # en la app aplique de inmediato, se pasa explícita por llamada (feature 017).
+        key_name = "anthropic_api_key" if qualified.startswith("anthropic/") else "openai_api_key"
+        if api_key := get_secret(key_name):
+            kwargs["api_key"] = api_key
         if tools:
             kwargs["tools"] = tools
             kwargs["tool_choice"] = "auto"

@@ -1,22 +1,25 @@
 <!-- SPECKIT START -->
-Feature activa: **016-calendar-bookings-notes** (detalle de reservas + notas del host en el
-calendario; issue #96). Plan y artefactos: `specs/016-calendar-bookings-notes/plan.md`,
-`research.md`, `data-model.md`, `contracts/bookings-notes-api.md`, `quickstart.md`.
-Diseño (R1-R6): `RemoteBooking.guest_name` campo ÚNICO neutro (V2 compone firstName+lastName del
-schema oficial — verificado en apiV2.yaml; parciales OK, vacío → None; V1 → None). `Booking` +
-columna `guest_name` String(200) nullable. Import: crear → set; existente → corrige solo si remoto
-NO vacío ≠ local (silencio remoto nunca borra; cuenta updated_count, patrón 012). Entidad nueva
-`CalendarNote` (unit_type_id FK, date_from/date_to NOT NULL from<=to, text ≤500 no vacío) en
-models/calendar.py; migración `d1e2f3a4b5c6` (down c9d0e1f2a3b4). Endpoints nuevos: `GET /bookings?
-unit_type_id&date_from&date_to` (confirmadas, solape [check_in,check_out), nights calculado, router
-bookings.py) y CRUD `/calendar-notes` (SIN fingerprint — local, criterio 015; DELETE real; router
-calendar_notes.py; registrar ambos en routes/__init__). Web patrón client-side (calendario NO se
-toca): `PriceCalendar` + prop `noteDates` (punto LIMA + leyenda); panel único nuevo `DayInfoPanel`
-(selección 1 día → sección Reservas: huésped o "sin nombre", canal, llegada→salida, noches, ref;
-cualquier selección → sección Notas: cubren el rango + crear sobre TODA la selección + editar/
-borrar). Privacidad: guest_name NUNCA en logs (middleware solo method/path/status); el tool del
-agente NO gana el campo. Noche: día de salida NO ocupa. 199 tests deben seguir verdes.
-Features 001-015 + #97 en `main`, PRODUCCIÓN (deals sembrados ids 1-3).
+Feature activa: **017-secrets-ui** (gestión de secretos desde Configuración; issue #99, SENSIBLE).
+Plan y artefactos: `specs/017-secrets-ui/plan.md`, `research.md`, `data-model.md`,
+`contracts/secrets-api.md`, `quickstart.md`. ADR 0005 pendiente de escribir en implement.
+Diseño (R1-R6): `secret_service` con CACHÉ en memoria de módulo — `get_secret(name)` SÍNCRONO
+(consumidores incluyen get_adapter que es sync): caché(BD) > settings.env; carga en lifespan de la
+API (try/except resiliente: BD caída → caché vacía, todo por env) y al inicio de scan_daily;
+write-through en PUT/DELETE (rotación inmediata API; scan en su próxima corrida). Cifrado FERNET
+(`cryptography>=43` DEP NUEVA), clave = urlsafe_b64(sha256(SECRET_KEY)); InvalidToken → estado
+"unreadable" + fallback env (nunca rompe arranque). CRÍTICO LiteLLM: lee la key del ENTORNO → hay
+que pasar `api_key=get_secret(...)` POR LLAMADA en LiteLLMClient.chat (prefijo anthropic/ →
+anthropic_api_key, si no openai_api_key); `_has_key()` → get_secret. Tavily api_key y
+get_adapter refresh_token → get_secret. Lista CERRADA: openai_api_key, anthropic_api_key,
+search_api_key, beds24_refresh_token. Tablas `secret_entry` (name UNIQUE, value_encrypted Text,
+hint String(8) últimos 4 — vacío si valor <8 chars) y `secret_change_log` (action String(12)
+set|deleted, sin enum BD); migración `e2f3a4b5c6d7` (down d1e2f3a4b5c6). Endpoints
+`/settings/secrets` (GET estado enmascarado, PUT {value} sin eco, DELETE, POST /{name}/test —
+LLM max_tokens=1 / search 1 result / beds24 test_connection, detail FIJO categorizado, GET /audit).
+NUNCA valores en respuestas/logs/auditoría — test centinela SC-002 obligatorio. El agente NO gana
+tools de secretos. Sin re-confirmación de password (documentado en spec). Web: tarjeta en
+Configuración (write-only, campo se limpia tras guardar, Probar inline, aviso del scan).
+210 tests deben seguir verdes. Features 001-016 + #97 en `main`, PRODUCCIÓN.
 <!-- SPECKIT END -->
 
 # Booking AI Agent
