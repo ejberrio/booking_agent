@@ -19,6 +19,8 @@ import type {
   MonthKpis,
   NativeDeal,
   NativeDealInput,
+  Poi,
+  ScanConfigView,
   OffsetApplyResult,
   OffsetPreview,
   RangeSelection,
@@ -113,6 +115,17 @@ export const api = {
     req<Suggestion>(`/suggestions/${id}/apply`, { method: "POST" }),
 
   // Promociones (ofertas con descuento sobre fechas, feature 011)
+  // POIs y configuración del scan (feature 018)
+  listPois: () => req<{ pois: Poi[] }>(`/pois`),
+  createPoi: (body: { name: string; note?: string | null; date_from?: string | null; date_to?: string | null }) =>
+    req<Poi>(`/pois`, { method: "POST", body: JSON.stringify(body) }),
+  updatePoi: (id: number, body: Partial<Omit<Poi, "id">>) =>
+    req<Poi>(`/pois/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deletePoi: (id: number) => req<{ deleted: boolean }>(`/pois/${id}`, { method: "DELETE" }),
+  getScanConfig: () => req<ScanConfigView>(`/scan-config`),
+  updateScanConfig: (body: { zone?: string | null; queries_per_scan?: number; event_kinds?: string | null }) =>
+    req<ScanConfigView>(`/scan-config`, { method: "PUT", body: JSON.stringify(body) }),
+
   // Secretos (feature 017): write-only, los valores nunca vuelven
   listSecrets: () => req<{ secrets: SecretStatus[] }>(`/settings/secrets`),
   setSecret: (name: string, value: string) =>

@@ -339,3 +339,17 @@ La app refleja la realidad multi-canal del Channel Manager (Booking.com + Airbnb
 - **Auditoría**: últimos cambios (secreto, acción, pista, fecha) en la misma tarjeta — sin valores.
 - Gestionables: OpenAI, Anthropic, Tavily, refresh token de Beds24. SECRET_KEY/APP_PASSWORD/
   DATABASE_URL siguen SOLO en Railway. El agente de chat no tiene acceso a los secretos.
+
+## Motor de sugerencias v2 (Feature 018 · issue #98, ADR 0006)
+
+- **Sugerencias por rango y explicables**: cada una dice sus factores (evento con nombre/lugar/
+  fechas/fuente, ocupación, hueco, mercado con nº de muestras) y su % con signo. Las de BAJADA
+  aparecen para noches libres a ≤14 días (tope −15%, nunca bajo el mínimo de la regla).
+- **Sin duplicados**: un scan nuevo reemplaza (`superseded`) las pendientes solapadas y depura
+  vencidas. Las resueltas no se tocan.
+- **Contexto**: Configuración → "Sitios de interés" (POIs que dirigen las búsquedas; con fechas
+  clave opcionales) y "Escaneo" (zona efectiva, consultas por corrida — cuidar los créditos de
+  Tavily). La ubicación de la propiedad llega sola del re-import.
+- **Mercado**: proveedor gratis (búsquedas dirigidas, mediana de tarifas encontradas); ancla el
+  precio solo con ≥3 muestras; sin datos lo dice y no inventa. Proveedor pago enchufable
+  (candidato: PriceLabs ~USD 10-20/mes — ADR 0006).

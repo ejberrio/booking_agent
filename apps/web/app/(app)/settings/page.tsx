@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useActiveUnit } from "@/lib/active-unit";
 import { api } from "@/lib/api";
-import type { OffsetPreview, SecretStatus, SecretTestResult } from "@/lib/types";
+import type { OffsetPreview, Poi, SecretStatus, SecretTestResult } from "@/lib/types";
 
 const CHANNEL_NAMES: Record<string, string> = { booking: "Booking.com", airbnb: "Airbnb" };
 const cop = (v: string) => `${Number(v).toLocaleString("es-CO")} COP`;
@@ -291,6 +291,161 @@ function SecretsCard() {
   );
 }
 
+/** POIs que dirigen las búsquedas del scan (feature 018). Dato local. */
+function PoisCard() {
+  const qc = useQueryClient();
+  const pois = useQuery({ queryKey: ["pois"], queryFn: () => api.listPois() });
+  const empty = { name: "", note: "", from: "", to: "" };
+  const [form, setForm] = useState(empty);
+
+  const refresh = () => qc.invalidateQueries({ queryKey: ["pois"] });
+  const onError = (e: Error) => toast.error(e.message);
+
+  const create = useMutation({
+    mutationFn: () =>
+      api.createPoi({
+        name: form.name.trim(),
+        note: form.note.trim() || null,
+        date_from: form.from || null,
+        date_to: form.to || null,
+      }),
+    onSuccess: () => {
+      toast.success("Sitio añadido — el próximo scan lo usará");
+      setForm(empty);
+      refresh();
+    },
+    onError,
+  });
+  const toggle = useMutation({
+    mutationFn: (p: Poi) => api.updatePoi(p.id, { is_active: !p.is_active }),
+    onSuccess: refresh,
+    onError,
+  });
+  const remove = useMutation({
+    mutationFn: (id: number) => api.deletePoi(id),
+    onSuccess: refresh,
+    onError,
+  });
+
+  const vigencia = (p: Poi) =>
+    !p.date_from && !p.date_to
+      ? "siempre relevante"
+      : `${p.date_from ?? "…"} → ${p.date_to ?? "…"}`;
+
+  return (
+    <Card className="space-y-3">
+      <CardTitle>Sitios de interés (POIs)</CardTitle>
+      <CardDescription>
+        Lugares cercanos que dirigen las búsquedas de eventos del scan (p. ej. un escenario
+        nuevo con su fecha de inauguración).
+      </CardDescription>
+      {pois.isLoading ? (
+        <Skeleton className="h-16 w-full" />
+      ) : (
+        <div className="space-y-2">
+          {(pois.data?.pois ?? []).map((p) => (
+            <div
+              key={p.id}
+              className="flex items-center justify-between rounded-md border border-border p-2 text-sm"
+            >
+              <div className={p.is_active ? "" : "opacity-50"}>
+                <span className="font-medium">{p.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {" "}
+                  · {vigencia(p)}
+                  {p.note ? ` · ${p.note}` : ""}
+                  {p.is_active ? "" : " · inactivo"}
+                </span>
+              </div>
+              <div className="flex gap-1">
+                <Button
+                  className="bg-transparent px-2 text-muted-foreground hover:bg-muted"
+                  onClick={() => toggle.mutate(p)}
+                >
+                  {p.is_active ? "Desactivar" : "Reactivar"}
+                </Button>
+                <Button
+                  className="bg-transparent px-2 text-muted-foreground hover:bg-muted"
+                  onClick={() => remove.mutate(p.id)}
+                >
+                  Borrar
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-2">
+        <Input
+          placeholder="Nombre (p. ej. Daviarena)"
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+        />
+        <Input
+          placeholder="Nota (distancia/contexto)"
+          value={form.note}
+          onChange={(e) => setForm({ ...form, note: e.target.value })}
+        />
+        <Input type="date" value={form.from} onChange={(e) => setForm({ ...form, from: e.target.value })} />
+        <Input type="date" value={form.to} onChange={(e) => setForm({ ...form, to: e.target.value })} />
+      </div>
+      <Button onClick={() => create.mutate()} disabled={create.isPending || !form.name.trim()}>
+        Añadir sitio
+      </Button>
+    </Card>
+  );
+}
+
+/** Configuración del escaneo diario (feature 018). */
+function ScanConfigCard() {
+  const qc = useQueryClient();
+  const cfg = useQuery({ queryKey: ["scan-config"], queryFn: () => api.getScanConfig() });
+  const [zone, setZone] = useState<string | null>(null);
+  const [queries, setQueries] = useState<string | null>(null);
+
+  const save = useMutation({
+    mutationFn: () =>
+      api.updateScanConfig({
+        ...(zone !== null ? { zone: zone.trim() || null } : {}),
+        ...(queries !== null ? { queries_per_scan: Number(queries) } : {}),
+      }),
+    onSuccess: () => {
+      toast.success("Configuración del scan guardada");
+      setZone(null);
+      setQueries(null);
+      qc.invalidateQueries({ queryKey: ["scan-config"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Card className="space-y-2">
+      <CardTitle>Escaneo de eventos y mercado</CardTitle>
+      <CardDescription>
+        Zona efectiva: <strong>{cfg.data?.effective_zone ?? "…"}</strong> · consultas por
+        corrida: <strong>{cfg.data?.queries_per_scan ?? "…"}</strong> (el proveedor gratis
+        tiene ~1000 créditos/mes).
+      </CardDescription>
+      <div className="grid grid-cols-2 gap-2">
+        <Input
+          placeholder="Zona (vacío = ciudad + dirección)"
+          value={zone ?? cfg.data?.zone ?? ""}
+          onChange={(e) => setZone(e.target.value)}
+        />
+        <Input
+          type="number"
+          placeholder="Consultas por corrida"
+          value={queries ?? String(cfg.data?.queries_per_scan ?? "")}
+          onChange={(e) => setQueries(e.target.value)}
+        />
+      </div>
+      <Button onClick={() => save.mutate()} disabled={save.isPending || (zone === null && queries === null)}>
+        Guardar
+      </Button>
+    </Card>
+  );
+}
+
 export default function SettingsPage() {
   const [unitTypeId] = useActiveUnit();
   const test = useMutation({ mutationFn: () => api.testConnection() });
@@ -315,6 +470,10 @@ export default function SettingsPage() {
       </Card>
 
       <ChannelOffsetsCard />
+
+      <PoisCard />
+
+      <ScanConfigCard />
 
       <SecretsCard />
 

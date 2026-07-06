@@ -63,16 +63,16 @@ Monorepo `apps/api/` y `apps/web/`, según plan.md.
 
 ## Phase 6: Web (US1/US3)
 
-- [ ] T018 [P] [US1] `apps/web/lib/types.ts`: `Suggestion.rationale` gana `factors?`/`market?` tipados; `Poi`, `ScanConfig`; `apps/web/lib/api.ts`: CRUD pois + get/update scan-config
-- [ ] T019 [US1] `apps/web/components/suggestions/suggestion-card.tsx` y `apps/web/components/calendar/suggestion-panel.tsx`: si `rationale.factors` existe → chips por factor (± % con signo; evento con nombre/lugar y enlace a source_url; mercado con muestras); fallback a `rationale.text` (v1)
-- [ ] T020 [US3] `apps/web/app/(app)/settings/page.tsx`: tarjeta "Sitios de interés (POIs)" (CRUD, patrón deals de la 015) y tarjeta "Escaneo" (zona efectiva, consultas por corrida, tipos de evento)
+- [X] T018 [P] [US1] `apps/web/lib/types.ts`: `Suggestion.rationale` gana `factors?`/`market?` tipados; `Poi`, `ScanConfig`; `apps/web/lib/api.ts`: CRUD pois + get/update scan-config
+- [X] T019 [US1] `apps/web/components/suggestions/suggestion-card.tsx` y `apps/web/components/calendar/suggestion-panel.tsx`: si `rationale.factors` existe → chips por factor (± % con signo; evento con nombre/lugar y enlace a source_url; mercado con muestras); fallback a `rationale.text` (v1)
+- [X] T020 [US3] `apps/web/app/(app)/settings/page.tsx`: tarjeta "Sitios de interés (POIs)" (CRUD, patrón deals de la 015) y tarjeta "Escaneo" (zona efectiva, consultas por corrida, tipos de evento)
 
 ---
 
 ## Phase 7: Polish & Cross-Cutting
 
-- [ ] T021 [P] `docs/adr/0006-suggestion-engine-v2.md` (señales/límites decididos por el host, agrupación, supersede, puerto de mercado + research AirDNA/PriceLabs con el porqué del candidato) y sección en `docs/operations.md` (POIs, scan config, cómo leer el racional)
-- [ ] T022 Verificación final: `uv run pytest -q` + ruff; `npm run build`; `alembic heads` único; FR-008 (flujo 014 intacto)
+- [X] T021 [P] `docs/adr/0006-suggestion-engine-v2.md` (señales/límites decididos por el host, agrupación, supersede, puerto de mercado + research AirDNA/PriceLabs con el porqué del candidato) y sección en `docs/operations.md` (POIs, scan config, cómo leer el racional)
+- [X] T022 Verificación final: `uv run pytest -q` + ruff; `npm run build`; `alembic heads` único; FR-008 (flujo 014 intacto)
 - [ ] T023 Verificación EN VIVO tras merge: re-import (ubicación real persistida); semilla POIs Daviarena (2026-09-01→2026-11-30, "muy cerca del apartamento") + CC Mayorca ("al frente"); disparar scan y revisar: pendientes viejas superseded, sugerencias nuevas POR RANGO con factores/evento/fuente, mercado con muestras o ausencia honesta; UI (lista, panel, chat); NO aplicar sugerencias sin decisión del host
 
 ---
