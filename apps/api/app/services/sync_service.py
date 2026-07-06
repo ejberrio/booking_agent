@@ -202,14 +202,18 @@ async def import_remote(
                 await _upsert_calendar(session, unit.id, rate.date, rate.available)
 
         # Reservas: por propiedad, asignadas a su unidad, con su canal REAL de
-        # origen. Si ya existe con canal incorrecto, re-importar la corrige
-        # (fix de históricos, feature 012). El status NO se sincroniza aquí
-        # (gap pre-existente, issue #91).
+        # origen. El remoto es fuente de verdad: re-importar corrige canal
+        # (feature 012), nombre (016) y ESTADO/FECHAS (issue #91 — una
+        # cancelación o modificación en el canal se refleja aquí; la
+        # disponibilidad liberada llega sola por el calendario del CM).
         for rb in await adapter.get_bookings(rp.external_id):
             unit = units_by_room.get(rb.room_external_id)
             if unit is None:
                 continue
             kind = _map_channel(rb.channel)
+            status = (
+                BookingStatus.cancelled if rb.status == "cancelled" else BookingStatus.confirmed
+            )
             res = await session.execute(
                 select(Booking).where(Booking.external_ref == rb.external_id)
             )
@@ -221,7 +225,7 @@ async def import_remote(
                         channel_kind=kind,
                         check_in=rb.check_in,
                         check_out=rb.check_out,
-                        status=BookingStatus.confirmed,
+                        status=status,
                         external_ref=rb.external_id,
                         guest_name=rb.guest_name,
                     )
@@ -231,6 +235,16 @@ async def import_remote(
                 changed = False
                 if existing_booking.channel_kind != kind:
                     existing_booking.channel_kind = kind
+                    changed = True
+                if existing_booking.status != status:
+                    existing_booking.status = status
+                    changed = True
+                if (existing_booking.check_in, existing_booking.check_out) != (
+                    rb.check_in,
+                    rb.check_out,
+                ):
+                    existing_booking.check_in = rb.check_in
+                    existing_booking.check_out = rb.check_out
                     changed = True
                 # El nombre se corrige solo si el remoto HABLA (su silencio no borra).
                 if rb.guest_name and existing_booking.guest_name != rb.guest_name:
