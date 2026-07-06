@@ -246,3 +246,19 @@ async def test_endpoint_approve_retirado(client, session, fake_cm):
     unit, sug = await _seed(session)
     res = await client.post(f"/suggestions/{sug.id}/approve")
     assert res.status_code in (404, 405)
+
+
+async def test_superseded_no_se_aplica_ni_rechaza(session):
+    unit, sug = await _seed(session, status=SuggestionStatus.superseded)
+    cm = FakeCM()
+    with pytest.raises(SuggestionStateError, match="superseded"):
+        await intelligence_service.apply_suggestion(session, cm, sug.id)
+    assert cm.published == []
+    with pytest.raises(ValueError, match="superseded"):
+        await suggestion_service.reject(session, sug.id)
+
+
+async def test_superseded_fuera_de_pendientes(client, session, fake_cm):
+    unit, sug = await _seed(session, status=SuggestionStatus.superseded)
+    res = await client.get("/suggestions", params={"pending": "true"})
+    assert res.json() == []

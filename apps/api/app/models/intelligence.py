@@ -19,6 +19,9 @@ class MarketReference(Base, TimestampMixin):
     source: Mapped[str] = mapped_column(String(60), default="baseline")
     valid_from: Mapped[date | None] = mapped_column(Date, nullable=True)
     valid_to: Mapped[date | None] = mapped_column(Date, nullable=True)
+    # Feature 018: ocupación de la zona (si el proveedor la da) y nº de muestras.
+    occupancy_pct: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
+    sample_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
 class IntelligenceRun(Base, TimestampMixin):
@@ -32,3 +35,16 @@ class IntelligenceRun(Base, TimestampMixin):
     events_found: Mapped[int] = mapped_column(Integer, default=0)
     suggestions_created: Mapped[int] = mapped_column(Integer, default=0)
     detail: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class ScanConfig(Base, TimestampMixin):
+    """Configuración del escaneo (fila única; feature 018).
+
+    zone NULL = usar city + address de la propiedad; event_kinds NULL = todos.
+    """
+
+    __tablename__ = "scan_config"
+
+    zone: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    queries_per_scan: Mapped[int] = mapped_column(Integer, default=12)
+    event_kinds: Mapped[str | None] = mapped_column(String(200), nullable=True)

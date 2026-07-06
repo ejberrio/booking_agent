@@ -45,6 +45,10 @@ class RemoteProperty:
     name: str
     currency: str = "COP"
     rooms: list[RemoteRoom] = field(default_factory=list)
+    # Ubicación reportada por el proveedor (feature 018). None = no la reporta.
+    address: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 @dataclass(frozen=True)

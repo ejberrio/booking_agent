@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import Date, Enum, ForeignKey, Numeric, String
+from sqlalchemy import Boolean, Date, Enum, ForeignKey, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -42,3 +42,18 @@ class PriceSuggestion(Base, TimestampMixin):
     # Enlace al cambio aplicado (id de price_change_log). Sin FK para evitar
     # dependencia circular price_suggestion <-> price_change_log.
     applied_change_id: Mapped[int | None] = mapped_column(nullable=True)
+
+
+class PointOfInterest(Base, TimestampMixin):
+    """Sitio relevante cercano a la propiedad (feature 018). Dirige las búsquedas del scan.
+
+    date_from/date_to opcionales = fechas clave (p. ej. inauguración); NULL = siempre.
+    """
+
+    __tablename__ = "point_of_interest"
+
+    name: Mapped[str] = mapped_column(String(200))
+    note: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    date_from: Mapped[date | None] = mapped_column(Date, nullable=True)
+    date_to: Mapped[date | None] = mapped_column(Date, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)

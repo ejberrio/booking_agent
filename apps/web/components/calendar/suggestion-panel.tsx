@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Rationale } from "@/components/suggestions/rationale";
 import { api } from "@/lib/api";
 import { formatCOP } from "@/lib/format";
 import type { Suggestion } from "@/lib/types";
@@ -69,7 +70,7 @@ export function SuggestionPanel({ date, suggestions }: Props) {
             <p className="text-[10px] text-muted-foreground">
               {s.date_from === s.date_to ? s.date_from : `${s.date_from} → ${s.date_to}`}
             </p>
-            {s.rationale?.text && <p className="text-xs">{s.rationale.text}</p>}
+            <Rationale rationale={s.rationale} />
             <div className="flex gap-2 pt-1">
               <Button onClick={() => apply.mutate(s.id)} disabled={busy}>
                 Aprobar y aplicar

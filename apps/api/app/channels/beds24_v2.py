@@ -172,6 +172,9 @@ class Beds24V2Adapter:
                     name=p.get("name", ""),
                     currency=p.get("currency", "COP"),
                     rooms=rooms,
+                    address=p.get("address") or None,
+                    latitude=p.get("latitude"),
+                    longitude=p.get("longitude"),
                 )
             )
         return out

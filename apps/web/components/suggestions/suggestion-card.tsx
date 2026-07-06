@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Rationale } from "@/components/suggestions/rationale";
 import { formatCOP } from "@/lib/format";
 import type { Suggestion } from "@/lib/types";
 
@@ -37,7 +38,7 @@ export function SuggestionCard({ suggestion: s, onReject, onApply, busy }: Props
         </Badge>
       </div>
       <p className="text-xs text-muted-foreground">{range}</p>
-      {s.rationale?.text && <p className="text-xs">{s.rationale.text}</p>}
+      <Rationale rationale={s.rationale} />
       {s.confidence && (
         <p className="text-[10px] text-muted-foreground">
           Confianza: {Math.round(Number(s.confidence) * 100)}%

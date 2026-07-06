@@ -99,6 +99,18 @@ export interface PromotionApplyResult {
   issue: string | null;
 }
 
+export interface SuggestionFactor {
+  kind: "event" | "occupancy" | "gap" | "market";
+  label: string;
+  pct?: number | null;
+  event?: {
+    name: string;
+    location?: string | null;
+    dates?: string | null;
+    source_url?: string | null;
+  };
+}
+
 export interface Suggestion {
   id: number;
   unit_type_id: number | null;
@@ -106,10 +118,31 @@ export interface Suggestion {
   date_to: string;
   suggested_price: string;
   current_price?: string | null;
-  rationale: { text?: string; event_relevance?: string | null } | null;
+  rationale: {
+    text?: string;
+    event_relevance?: string | null;
+    factors?: SuggestionFactor[]; // v2 (feature 018)
+    market?: { adr: string; samples: number; source: string };
+  } | null;
   confidence: string | null;
   status: string;
   applied_from?: string; // solo en la respuesta de apply (recorte de días pasados)
+}
+
+export interface Poi {
+  id: number;
+  name: string;
+  note: string | null;
+  date_from: string | null;
+  date_to: string | null;
+  is_active: boolean;
+}
+
+export interface ScanConfigView {
+  zone: string | null;
+  effective_zone: string;
+  queries_per_scan: number;
+  event_kinds: string | null;
 }
 
 export interface ChatReply {

@@ -83,16 +83,23 @@ async def _get_connection(session: AsyncSession) -> ChannelManagerConnection:
     return conn
 
 
-async def _upsert_property(session: AsyncSession, ext_id: str, name: str, currency: str) -> Property:
-    res = await session.execute(select(Property).where(Property.external_ref == ext_id))
+async def _upsert_property(session: AsyncSession, rp) -> Property:
+    res = await session.execute(select(Property).where(Property.external_ref == rp.external_id))
     prop = res.scalar_one_or_none()
     if prop is None:
-        prop = Property(name=name, currency=currency, external_ref=ext_id)
+        prop = Property(name=rp.name, currency=rp.currency, external_ref=rp.external_id)
         session.add(prop)
         await session.flush()
     else:
-        prop.name = name
-        prop.currency = currency
+        prop.name = rp.name
+        prop.currency = rp.currency
+    # Ubicación (feature 018): el remoto corrige cuando habla; su silencio no borra.
+    if getattr(rp, "address", None):
+        prop.address = rp.address
+    if getattr(rp, "latitude", None) is not None:
+        prop.latitude = rp.latitude
+    if getattr(rp, "longitude", None) is not None:
+        prop.longitude = rp.longitude
     # Canales conectados: desde configuración, no hardcoded (feature 012).
     await _upsert_channels(session, prop)
     await session.flush()
@@ -166,7 +173,7 @@ async def import_remote(
     created = updated = issues = 0
     props = await adapter.get_properties()
     for rp in props:
-        prop = await _upsert_property(session, rp.external_id, rp.name, rp.currency)
+        prop = await _upsert_property(session, rp)
         units_by_room: dict[str, UnitType] = {}
         for room in rp.rooms:
             unit = await _upsert_unit(session, prop, room.external_id, room.name, room.units_count)

@@ -24,6 +24,7 @@ class SuggestionStatus(str, enum.Enum):
     approved = "approved"
     rejected = "rejected"
     applied = "applied"
+    superseded = "superseded"  # reemplazada por un scan posterior (terminal, feature 018)
 
 
 class PromotionType(str, enum.Enum):

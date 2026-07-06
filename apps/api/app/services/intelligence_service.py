@@ -21,6 +21,67 @@ from app.services import (
 )
 
 
+async def get_or_create_scan_config(session: AsyncSession):
+    """Fila única de configuración del scan (feature 018), autocreada con defaults."""
+    from app.models.intelligence import ScanConfig
+
+    cfg = (await session.execute(select(ScanConfig))).scalars().first()
+    if cfg is None:
+        cfg = ScanConfig()
+        session.add(cfg)
+        await session.flush()
+    return cfg
+
+
+async def effective_zone(session: AsyncSession, cfg) -> str:
+    """Zona de búsqueda: override de config, o city+address de la propiedad."""
+    from app.models.property import Property
+
+    if cfg.zone:
+        return cfg.zone
+    prop = (await session.execute(select(Property))).scalars().first()
+    if prop is None:
+        return "Medellín"
+    return ", ".join(p for p in (prop.city, prop.address) if p)
+
+
+async def build_scan_queries(session: AsyncSession, today: date) -> tuple[list[str], dict]:
+    """Consultas dirigidas del scan: zona + POIs activos/vigentes + tipos de evento.
+
+    Respeta el presupuesto (queries_per_scan) y reporta qué se usó (detail del run).
+    """
+    from app.models.market import PointOfInterest
+
+    cfg = await get_or_create_scan_config(session)
+    zone = await effective_zone(session, cfg)
+    kinds = cfg.event_kinds or "conciertos ferias convenciones festivales"
+
+    queries = [
+        f"eventos {kinds} {zone} este mes y próximos meses",
+        f"eventos importantes agenda {zone}",
+    ]
+    pois = [
+        p
+        for p in (await session.execute(select(PointOfInterest))).scalars()
+        if p.is_active and (p.date_to is None or p.date_to >= today)
+    ]
+    for poi in pois:
+        when = ""
+        if poi.date_from:
+            when = f" {poi.date_from.isoformat()[:7]}"
+        queries.append(f"eventos {kinds} {poi.name} {zone}{when}")
+
+    budget = cfg.queries_per_scan
+    detail = {
+        "zone": zone,
+        "pois": [p.name for p in pois],
+        "queries_built": len(queries),
+        "budget": budget,
+        "truncated": len(queries) > budget,
+    }
+    return queries[:budget], detail
+
+
 async def scan_events(session: AsyncSession, search, llm, *, queries: list[str]) -> int:
     found = 0
     for query in queries:
@@ -45,14 +106,23 @@ async def scan(
     llm,
     market,
     *,
-    queries: list[str],
     unit_type_id: int,
     date_from: date,
     date_to: date,
+    queries: list[str] | None = None,
 ) -> IntelligenceRun:
+    """Corrida completa: eventos (consultas dirigidas) + mercado + sugerencias v2.
+
+    `queries=None` = construirlas desde la configuración del scan (zona + POIs).
+    `market` es un MarketDataProvider (o None = sin señal de mercado, honesto).
+    """
     run = IntelligenceRun(status=SyncStatus.running)
     session.add(run)
     await session.flush()
+
+    detail: dict = {}
+    if queries is None:
+        queries, detail = await build_scan_queries(session, date_from)
 
     run.events_found = await scan_events(session, search, llm, queries=queries)
     suggestions = await suggestion_engine.generate_suggestions(
@@ -61,6 +131,10 @@ async def scan(
     run.suggestions_created = len(suggestions)
     run.status = SyncStatus.success
     run.finished_at = _now()
+    if detail:
+        import json
+
+        run.detail = json.dumps(detail, ensure_ascii=False)
     await session.flush()
     return run
 
