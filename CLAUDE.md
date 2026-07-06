@@ -1,25 +1,26 @@
 <!-- SPECKIT START -->
-Feature activa: **017-secrets-ui** (gestión de secretos desde Configuración; issue #99, SENSIBLE).
-Plan y artefactos: `specs/017-secrets-ui/plan.md`, `research.md`, `data-model.md`,
-`contracts/secrets-api.md`, `quickstart.md`. ADR 0005 pendiente de escribir en implement.
-Diseño (R1-R6): `secret_service` con CACHÉ en memoria de módulo — `get_secret(name)` SÍNCRONO
-(consumidores incluyen get_adapter que es sync): caché(BD) > settings.env; carga en lifespan de la
-API (try/except resiliente: BD caída → caché vacía, todo por env) y al inicio de scan_daily;
-write-through en PUT/DELETE (rotación inmediata API; scan en su próxima corrida). Cifrado FERNET
-(`cryptography>=43` DEP NUEVA), clave = urlsafe_b64(sha256(SECRET_KEY)); InvalidToken → estado
-"unreadable" + fallback env (nunca rompe arranque). CRÍTICO LiteLLM: lee la key del ENTORNO → hay
-que pasar `api_key=get_secret(...)` POR LLAMADA en LiteLLMClient.chat (prefijo anthropic/ →
-anthropic_api_key, si no openai_api_key); `_has_key()` → get_secret. Tavily api_key y
-get_adapter refresh_token → get_secret. Lista CERRADA: openai_api_key, anthropic_api_key,
-search_api_key, beds24_refresh_token. Tablas `secret_entry` (name UNIQUE, value_encrypted Text,
-hint String(8) últimos 4 — vacío si valor <8 chars) y `secret_change_log` (action String(12)
-set|deleted, sin enum BD); migración `e2f3a4b5c6d7` (down d1e2f3a4b5c6). Endpoints
-`/settings/secrets` (GET estado enmascarado, PUT {value} sin eco, DELETE, POST /{name}/test —
-LLM max_tokens=1 / search 1 result / beds24 test_connection, detail FIJO categorizado, GET /audit).
-NUNCA valores en respuestas/logs/auditoría — test centinela SC-002 obligatorio. El agente NO gana
-tools de secretos. Sin re-confirmación de password (documentado en spec). Web: tarjeta en
-Configuración (write-only, campo se limpia tras guardar, Probar inline, aviso del scan).
-210 tests deben seguir verdes. Features 001-016 + #97 en `main`, PRODUCCIÓN.
+Feature activa: **018-suggestion-engine-v2** (motor de sugerencias v2; issue #98, LA GRANDE).
+Plan: `specs/018-suggestion-engine-v2/{plan,research,data-model,quickstart}.md` +
+`contracts/engine-v2-api.md`. Clarify del host: agrupación POR EVENTO/RANGO; tope bajista −15%
+(piso min_price); POIs semilla Daviarena (sep-nov 2026) + CC Mayorca; ventana hueco 14 días.
+Diseño: Property + address/lat/lon (schema Beds24 los trae en GET /properties; RemoteProperty
+extendido; import upsert); POI table (name, note, fechas nullable, is_active) + ScanConfig fila
+única (zone, queries_per_scan=12, event_kinds); MarketReference + occupancy_pct/sample_size;
+SuggestionStatus + `superseded` (PG ADD VALUE en autocommit_block; migración f3a4b5c6d7e8).
+rationale JSONB retrocompatible: {text, factors[{kind: event|occupancy|gap|market, label, pct,
+event?{name,location,dates,source_url}}], market{adr,samples,source}}. Motor: señales simétricas
+(alcistas actuales + hueco ≤14d descuento progresivo, valle, mercado-ancla), agrupación por
+(señal × rango contiguo × mismo precio base — cortar si el base cambia), reservas excluidas,
+supersede al persistir (proposed solapadas → superseded; vencidas housekeeping; equivalentes no
+se crean; primer scan depura las ~130). Puerto MarketDataProvider.get_snapshot(zone, month) →
+MarketSnapshot|None; TavilyMarketProvider gratis (tarifas por LLM → MEDIANA + sample_size;
+<3 muestras = confianza baja; 0 = None honesto); pago NO se construye (AirDNA API solo enterprise;
+candidato real PriceLabs ~USD10/mes Colombia — ADR 0006). Rutas nuevas /pois CRUD +
+GET/PUT /scan-config. Web: tarjetas POIs+Escaneo en Configuración; card/panel muestran factors
+si existen (fallback text v1). apply/reject de superseded → 409 existente. 221 tests verdes.
+Features 001-017 en `main`, PRODUCCIÓN (secretos verificados en prod, rotación real pendiente
+del host T018).
+Previa: 017-secrets-ui MERGEADA (PR #104, EN PROD; detalles en docs/adr/0005 y operations.md).
 <!-- SPECKIT END -->
 
 # Booking AI Agent

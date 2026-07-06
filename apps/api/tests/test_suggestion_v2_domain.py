@@ -1,0 +1,97 @@
+"""Feature 018: heurística v2 pura — señales simétricas, límites y desglose."""
+
+from datetime import date
+from decimal import Decimal
+
+from app.domain.suggestion import EventSignal, suggest_price_v2
+from app.market.provider import MarketSnapshot
+from app.models.enums import Relevance
+
+D = Decimal
+MONTH = date(2026, 9, 1)
+
+
+def _event(rel=Relevance.high, name="Concierto inaugural", location="Daviarena"):
+    return EventSignal(
+        relevance=rel, name=name, location=location, dates="2026-09-12",
+        source_url="https://ejemplo.com/evento",
+    )
+
+
+def _snapshot(adr, samples=5):
+    return MarketSnapshot(
+        zone="Sabaneta", month=MONTH, adr=D(adr), occupancy_pct=None,
+        sample_size=samples, source="tavily",
+    )
+
+
+def test_evento_sube_con_desglose():
+    out = suggest_price_v2(D("300000"), event=_event())
+    assert out.price == D("390000")  # +30%
+    ev = next(f for f in out.factors if f.kind == "event")
+    assert ev.event["name"] == "Concierto inaugural"
+    assert ev.event["location"] == "Daviarena"
+    assert ev.event["source_url"] == "https://ejemplo.com/evento"
+    assert "Concierto inaugural" in out.text
+
+
+def test_evento_mas_ocupacion():
+    out = suggest_price_v2(D("100000"), event=_event(Relevance.medium), occupancy_high=True)
+    assert out.price == D("125000")  # +15% +10%
+    assert {f.kind for f in out.factors} == {"event", "occupancy"}
+
+
+def test_hueco_progresivo_y_tope():
+    # Más cerca ⇒ mayor descuento; tope −15%
+    p14 = suggest_price_v2(D("100000"), gap_days_ahead=14).price
+    p9 = suggest_price_v2(D("100000"), gap_days_ahead=9).price
+    p3 = suggest_price_v2(D("100000"), gap_days_ahead=3).price
+    p0 = suggest_price_v2(D("100000"), gap_days_ahead=0).price
+    assert p14 > p9 > p3 >= p0
+    assert p0 == D("85000")  # tope −15%
+    gap = next(f for f in suggest_price_v2(D("100000"), gap_days_ahead=9).factors if f.kind == "gap")
+    assert gap.pct < 0
+
+
+def test_piso_min_price_gana_al_descuento():
+    out = suggest_price_v2(D("100000"), gap_days_ahead=0, min_price=D("95000"))
+    assert out.price == D("95000")
+
+
+def test_techo_max_price():
+    out = suggest_price_v2(D("100000"), event=_event(), occupancy_high=True, max_price=D("110000"))
+    assert out.price == D("110000")
+
+
+def test_mercado_ancla_con_muestras():
+    out = suggest_price_v2(D("300000"), event=_event(Relevance.medium), market=_snapshot("310000"))
+    # +15% = 345000; ancla: (345000+310000)/2 = 327500
+    assert out.price == D("327500")
+    assert any(f.kind == "market" and "5 tarifas" in f.label for f in out.factors)
+
+
+def test_mercado_pocas_muestras_no_ancla():
+    out = suggest_price_v2(
+        D("300000"), event=_event(Relevance.medium), market=_snapshot("310000", samples=2)
+    )
+    assert out.price == D("345000")  # sin ancla
+    assert any(f.kind == "market" and "confianza baja" in f.label for f in out.factors)
+
+
+def test_sin_mercado_sin_factor_market():
+    out = suggest_price_v2(D("300000"), event=_event())
+    assert all(f.kind != "market" for f in out.factors)
+
+
+def test_mercado_solo_no_dispara():
+    assert suggest_price_v2(D("300000"), market=_snapshot("250000")) is None
+
+
+def test_sin_senales_none():
+    assert suggest_price_v2(D("300000")) is None
+
+
+def test_confidence_por_senales():
+    one = suggest_price_v2(D("100000"), event=_event())
+    two = suggest_price_v2(D("100000"), event=_event(), occupancy_high=True)
+    assert two.confidence > one.confidence

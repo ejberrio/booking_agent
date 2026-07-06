@@ -5,6 +5,7 @@ from app.api.routes import (
     calendar_notes,
     chat,
     health,
+    pois,
     pricing,
     secrets,
     status,
@@ -22,3 +23,4 @@ api_router.include_router(suggestions.router, prefix="/suggestions", tags=["sugg
 api_router.include_router(bookings.router, prefix="/bookings", tags=["bookings"])
 api_router.include_router(calendar_notes.router, prefix="/calendar-notes", tags=["calendar-notes"])
 api_router.include_router(secrets.router, prefix="/settings/secrets", tags=["secrets"])
+api_router.include_router(pois.router, tags=["pois"])  # /pois y /scan-config

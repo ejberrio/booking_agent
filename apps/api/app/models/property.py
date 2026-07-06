@@ -16,6 +16,10 @@ class Property(Base, TimestampMixin):
     name: Mapped[str] = mapped_column(String(200))
     city: Mapped[str] = mapped_column(String(120), default="Medellín")
     currency: Mapped[str] = mapped_column(String(3), default="COP")
+    # Ubicación reportada por el Channel Manager (feature 018); el import la corrige.
+    address: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    latitude: Mapped[Decimal | None] = mapped_column(Numeric(9, 6), nullable=True)
+    longitude: Mapped[Decimal | None] = mapped_column(Numeric(9, 6), nullable=True)
     external_ref: Mapped[str | None] = mapped_column(String(120), nullable=True)
     status: Mapped[PropertyStatus] = mapped_column(
         Enum(PropertyStatus), default=PropertyStatus.active

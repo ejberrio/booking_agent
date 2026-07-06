@@ -81,32 +81,34 @@ async def _count(session, model) -> int:
 
 
 async def test_generate_suggestion_for_event_without_market(session):
-    prop, unit = await setup(session, occ0=True, event=True)
+    prop, unit = await setup(session, event=True)
     sugs = await suggestion_engine.generate_suggestions(
-        session, unit_type_id=unit.id, date_from=DAY, date_to=DAY, market=None
+        session, unit_type_id=unit.id, date_from=DAY, date_to=DAY, market=None, today=DAY
     )
     assert len(sugs) == 1
     assert sugs[0].suggested_price > D("180000")
-    assert "evento" in sugs[0].rationale["text"]
+    # v2: racional estructurado con el evento nombrado (feature 018)
+    assert "Feria de las Flores" in sugs[0].rationale["text"]
+    assert sugs[0].rationale["factors"][0]["event"]["name"] == "Feria de las Flores"
 
 
 async def test_no_reproposal_of_equivalent(session):
-    prop, unit = await setup(session, occ0=True, event=True)
+    prop, unit = await setup(session, event=True)
     await suggestion_engine.generate_suggestions(
-        session, unit_type_id=unit.id, date_from=DAY, date_to=DAY, market=None
+        session, unit_type_id=unit.id, date_from=DAY, date_to=DAY, market=None, today=DAY
     )
     again = await suggestion_engine.generate_suggestions(
-        session, unit_type_id=unit.id, date_from=DAY, date_to=DAY, market=None
+        session, unit_type_id=unit.id, date_from=DAY, date_to=DAY, market=None, today=DAY
     )
     assert again == []
     assert await _count(session, PriceSuggestion) == 1
 
 
 async def test_apply_suggestion_origin_and_publishes(session):
-    prop, unit = await setup(session, occ0=True, event=True)
+    prop, unit = await setup(session, event=True)
     sug = (
         await suggestion_engine.generate_suggestions(
-            session, unit_type_id=unit.id, date_from=DAY, date_to=DAY, market=None
+            session, unit_type_id=unit.id, date_from=DAY, date_to=DAY, market=None, today=DAY
         )
     )[0]
     cm = FakeCM()

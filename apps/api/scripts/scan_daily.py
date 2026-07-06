@@ -11,15 +11,10 @@ from sqlalchemy import select
 
 from app.db.session import SessionLocal
 from app.llm.client import default_llm
-from app.market.reference import BaselineMarket
 from app.models.property import UnitType
 from app.search.tavily import TavilyProvider
 from app.services import intelligence_service
 
-QUERIES = [
-    "eventos en Medellín este mes conciertos ferias convenciones",
-    "festivales y eventos importantes Medellín próximos meses",
-]
 HORIZON_DAYS = 180
 
 
@@ -42,12 +37,14 @@ async def main() -> None:
                 print("scan_daily: no hay unidades; nada que hacer.")
                 return
             today = date.today()
+            from app.market.tavily_market import TavilyMarketProvider
+
+            market = TavilyMarketProvider(search, llm, session=session) if llm else None
             run = await intelligence_service.scan(
                 session,
                 search,
                 llm,
-                BaselineMarket(session),
-                queries=QUERIES,
+                market,
                 unit_type_id=unit.id,
                 date_from=today,
                 date_to=today + timedelta(days=HORIZON_DAYS),
