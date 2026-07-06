@@ -136,16 +136,41 @@ async def test_reimport_keeps_channel_when_already_correct(session):
     assert run2.created_count == 0
 
 
-async def test_cancelled_remote_booking_keeps_its_channel(session):
-    # Fuera de alcance el sync de status (issue #91): aquí solo se garantiza que
-    # una reserva cuyo estado cambió en el canal conserva su canal en re-import.
+async def test_cancelacion_remota_se_sincroniza(session):
+    # Issue #91: una cancelación en el canal se refleja en re-import (y conserva el canal).
     await sync_service.import_remote(session, FakeCM(bookings=[_rb("c1", "airbnb")]), DAY, DAY)
-    await sync_service.import_remote(
+    run = await sync_service.import_remote(
         session, FakeCM(bookings=[_rb("c1", "airbnb", status="cancelled")]), DAY, DAY
     )
     by_ref = await _bookings_by_ref(session)
     assert by_ref["c1"].channel_kind == ChannelKind.airbnb
-    assert by_ref["c1"].status == BookingStatus.confirmed  # status NO se toca (issue #91)
+    assert by_ref["c1"].status == BookingStatus.cancelled
+    assert run.updated_count == 1
+
+
+async def test_creacion_ya_cancelada_y_reconfirmacion(session):
+    # Issue #91: crear con el estado real; cancelada→confirmada también se corrige.
+    await sync_service.import_remote(
+        session, FakeCM(bookings=[_rb("c2", "booking", status="cancelled")]), DAY, DAY
+    )
+    by_ref = await _bookings_by_ref(session)
+    assert by_ref["c2"].status == BookingStatus.cancelled
+    await sync_service.import_remote(session, FakeCM(bookings=[_rb("c2", "booking")]), DAY, DAY)
+    by_ref = await _bookings_by_ref(session)
+    assert by_ref["c2"].status == BookingStatus.confirmed
+
+
+async def test_modificacion_de_fechas_se_sincroniza(session):
+    # Issue #91: una reserva movida en el canal actualiza sus fechas locales.
+    await sync_service.import_remote(session, FakeCM(bookings=[_rb("c3", "booking")]), DAY, DAY)
+    movida = RemoteBooking(
+        external_id="c3", room_external_id="697411",
+        check_in=date(2026, 8, 10), check_out=date(2026, 8, 21), channel="booking",
+    )
+    run = await sync_service.import_remote(session, FakeCM(bookings=[movida]), DAY, DAY)
+    by_ref = await _bookings_by_ref(session)
+    assert (by_ref["c3"].check_in, by_ref["c3"].check_out) == (date(2026, 8, 10), date(2026, 8, 21))
+    assert run.updated_count == 1
 
 
 # ---------------------------------------------------------------------------
