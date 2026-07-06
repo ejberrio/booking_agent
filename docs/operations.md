@@ -326,3 +326,16 @@ La app refleja la realidad multi-canal del Channel Manager (Booking.com + Airbnb
   (típico: el porqué de un bloqueo — "reserva personal de…"). Punto lima en los
   días cubiertos; editar/borrar desde el panel. Dato 100% local: nunca toca el
   Channel Manager. Máx 500 caracteres; los rangos pueden solaparse.
+
+## Secretos desde la interfaz (Feature 017 · issue #99, ADR 0005)
+
+- **Rotar**: Configuración → Secretos → pegar el valor nuevo → Guardar → Probar. Aplica de
+  inmediato en la API (sin redeploy); el scan diario la toma en su próxima corrida. La UI es
+  write-only: el valor nunca se muestra (solo "configurado · …últimos4 · origen").
+- **Precedencia**: guardado en la app (BD, cifrado Fernet con clave derivada de SECRET_KEY) >
+  variable de entorno de Railway. "Quitar" vuelve al valor de entorno.
+- **Si se rota SECRET_KEY en Railway**: lo guardado queda "ilegible" (estado honesto, se usa el
+  entorno como fallback); re-guardar cada secreto repara. La app nunca deja de arrancar por esto.
+- **Auditoría**: últimos cambios (secreto, acción, pista, fecha) en la misma tarjeta — sin valores.
+- Gestionables: OpenAI, Anthropic, Tavily, refresh token de Beds24. SECRET_KEY/APP_PASSWORD/
+  DATABASE_URL siguen SOLO en Railway. El agente de chat no tiene acceso a los secretos.

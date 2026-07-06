@@ -12,6 +12,9 @@ import type {
   PromotionPreview,
   BookingView,
   CalendarNote,
+  SecretAuditEntry,
+  SecretStatus,
+  SecretTestResult,
   ChannelOffset,
   MonthKpis,
   NativeDeal,
@@ -110,6 +113,19 @@ export const api = {
     req<Suggestion>(`/suggestions/${id}/apply`, { method: "POST" }),
 
   // Promociones (ofertas con descuento sobre fechas, feature 011)
+  // Secretos (feature 017): write-only, los valores nunca vuelven
+  listSecrets: () => req<{ secrets: SecretStatus[] }>(`/settings/secrets`),
+  setSecret: (name: string, value: string) =>
+    req<SecretStatus>(`/settings/secrets/${name}`, {
+      method: "PUT",
+      body: JSON.stringify({ value }),
+    }),
+  deleteSecret: (name: string) =>
+    req<SecretStatus>(`/settings/secrets/${name}`, { method: "DELETE" }),
+  testSecret: (name: string) =>
+    req<SecretTestResult>(`/settings/secrets/${name}/test`, { method: "POST" }),
+  listSecretAudit: () => req<{ entries: SecretAuditEntry[] }>(`/settings/secrets/audit`),
+
   // Reservas (lectura) y notas del host (feature 016)
   listBookings: (unitTypeId: number, from: string, to: string) =>
     req<{ bookings: BookingView[] }>(

@@ -6,6 +6,7 @@ from app.api.routes import (
     chat,
     health,
     pricing,
+    secrets,
     status,
     suggestions,
     sync,
@@ -20,3 +21,4 @@ api_router.include_router(pricing.router, prefix="/pricing", tags=["pricing"])
 api_router.include_router(suggestions.router, prefix="/suggestions", tags=["suggestions"])
 api_router.include_router(bookings.router, prefix="/bookings", tags=["bookings"])
 api_router.include_router(calendar_notes.router, prefix="/calendar-notes", tags=["calendar-notes"])
+api_router.include_router(secrets.router, prefix="/settings/secrets", tags=["secrets"])

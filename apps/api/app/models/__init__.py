@@ -9,6 +9,7 @@ from app.models.calendar import CalendarDay, CalendarNote, Rate
 from app.models.market import Event, PriceSuggestion
 from app.models.pricing import NativeDeal, PricingRule, Promotion
 from app.models.property import Channel, Property, UnitType
+from app.models.secret import SecretChangeLog, SecretEntry
 from app.models.sync import ChannelManagerConnection, SyncIssue, SyncRun
 
 __all__ = [
@@ -36,4 +37,6 @@ __all__ = [
     "AgentAction",
     "MarketReference",
     "IntelligenceRun",
+    "SecretEntry",
+    "SecretChangeLog",
 ]

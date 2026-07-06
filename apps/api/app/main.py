@@ -1,5 +1,6 @@
 import logging
 import time
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,9 +15,28 @@ init_sentry(settings.sentry_dsn, settings.environment, release="0.1.1")
 
 _request_log = logging.getLogger("api.request")
 
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # Carga la caché de secretos (BD cifrada > entorno). Resiliente: si la BD no
+    # responde o la tabla aún no existe, todo cae a variables de entorno.
+    try:
+        from app.db.session import SessionLocal
+        from app.services import secret_service
+
+        async with SessionLocal() as session:
+            await secret_service.load_cache(session)
+    except Exception:
+        logging.getLogger("api.startup").warning(
+            "no se pudo cargar la caché de secretos; se usan variables de entorno"
+        )
+    yield
+
+
 app = FastAPI(
     title="Booking AI Agent API",
     version="0.1.2",
+    lifespan=lifespan,
     description=(
         "Agente de IA para gestion de precios, disponibilidad y promociones en "
         "Booking.com y Airbnb via Channel Manager."

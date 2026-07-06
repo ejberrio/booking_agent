@@ -10,7 +10,9 @@ from app.search.base import SearchResult
 
 class TavilyProvider:
     def __init__(self, *, api_key: str | None = None, client: httpx.AsyncClient | None = None):
-        self.api_key = api_key or settings.search_api_key or ""
+        from app.services.secret_service import get_secret
+
+        self.api_key = api_key or get_secret("search_api_key") or ""
         self._owns = client is None
         self._client = client or httpx.AsyncClient(timeout=30.0)
         self._cache: dict[str, list[SearchResult]] = {}

@@ -15,10 +15,14 @@ router = APIRouter()
 
 
 def get_adapter():
+    from app.services.secret_service import get_secret
+
     # V2 (token) es obligatoria para escribir precios; V1 solo lee. Se elige por config.
+    # El refresh token se resuelve por secret_service (BD cifrada > entorno, feature 017):
+    # el adaptador se construye por petición, así una rotación aplica de inmediato.
     if settings.beds24_api_version == "v2":
         return Beds24V2Adapter(
-            refresh_token=settings.beds24_refresh_token,
+            refresh_token=get_secret("beds24_refresh_token"),
             prop_id=settings.beds24_prop_id,
             room_id=settings.beds24_room_id,
             base_url=settings.beds24_v2_base_url,
