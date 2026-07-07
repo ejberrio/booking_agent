@@ -232,3 +232,23 @@ async def test_preview_sin_deals_identico(session):
         discount_pct=D("10"),
     )
     assert [w for w in prev.warnings if "deal nativo" in w] == []  # FR-010
+
+
+async def test_preview_no_pisa_el_pct_de_la_promo(session):
+    """Regresión: el bucle de warnings reutilizaba `pct` y devolvía el % del DEAL
+    (siempre el último, p. ej. 25 del mensual) en lugar del % de la promoción."""
+    from app.services import offer_promotion_service
+
+    unit = await _seed_promo_ctx(session)
+    await _deal(session, name="Semanal", channel=ChannelKind.airbnb, df=None, dt=None)
+    prev = await offer_promotion_service.preview(
+        session,
+        PromoFakeCM(),
+        unit_type_id=unit.id,
+        first_night=JUL10,
+        last_night=JUL15,
+        name="Promo",
+        discount_pct=D("10"),
+    )
+    assert any("deal nativo" in w for w in prev.warnings)  # el warning sigue
+    assert prev.discount_pct == D("10")  # y el % de la promo NO se pisa
