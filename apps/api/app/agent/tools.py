@@ -8,7 +8,7 @@ los servicios de la feature 003, con origen=chat.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -117,6 +117,15 @@ READ_TOOLS = [
             },
             "required": ["date_from", "date_to"],
         },
+        False,
+    ),
+    ToolSpec(
+        "sync_calendar",
+        "Sincroniza AHORA con el Channel Manager: importa reservas nuevas, cancelaciones, "
+        "cambios de fechas, precios y disponibilidad. Úsala cuando el host diga que algo "
+        "cambió en Booking/Airbnb (p. ej. una cancelación) y aún no se refleje en la app. "
+        "Es solo lectura del canal (no publica nada).",
+        {"type": "object", "properties": {}},
         False,
     ),
 ]
@@ -326,6 +335,24 @@ async def exec_read(session: AsyncSession, name: str, args: dict) -> Any:
                 }
             )
         return out
+
+    if name == "sync_calendar":
+        from app.services import sync_service
+
+        adapter = get_adapter()
+        try:
+            today = date.today()
+            run = await sync_service.import_remote(
+                session, adapter, today, today + timedelta(days=365)
+            )
+            return {
+                "status": run.status.value,
+                "created": run.created_count,
+                "updated": run.updated_count,
+                "issues": run.issue_count,
+            }
+        finally:
+            await adapter.aclose()
 
     if name == "get_bookings":
         from sqlalchemy import select

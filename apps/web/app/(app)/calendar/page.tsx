@@ -1,7 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { useState } from "react";
 import { PriceCalendar } from "@/components/calendar/price-calendar";
 import { RangeEditor } from "@/components/calendar/range-editor";
@@ -23,6 +24,7 @@ function dealCoversDay(deal: NativeDeal, day: string): boolean {
 
 export default function CalendarPage() {
   const [unitTypeId] = useActiveUnit();
+  const qc = useQueryClient();
   const now = new Date();
   const [ym, setYm] = useState({ year: now.getFullYear(), month: now.getMonth() });
   const [selection, setSelection] = useState<{ from: string; to: string } | null>(null);
@@ -97,6 +99,19 @@ export default function CalendarPage() {
   const allNotes = notes.data?.notes ?? [];
   const notesCovering = (fromD: string, toD: string) =>
     allNotes.filter((n) => n.date_from <= toD && n.date_to >= fromD);
+  // Sincronización manual con el Channel Manager (cancelaciones, reservas nuevas…).
+  const syncNow = useMutation({
+    mutationFn: () => api.importRemote(365),
+    onSuccess: (r) => {
+      toast.success(
+        `Sincronizado: ${r.created} nuevo(s), ${r.updated} actualizado(s)` +
+          (r.issues ? ` · ${r.issues} incidencia(s)` : ""),
+      );
+      qc.invalidateQueries();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const noteDates = new Set<string>();
   if (allNotes.length) {
     const { from: mFrom, to: mTo } = monthRange(ym.year, ym.month);
@@ -139,6 +154,15 @@ export default function CalendarPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Calendario de precios</h1>
         <div className="flex items-center gap-2">
+          <Button
+            className="bg-muted text-foreground"
+            onClick={() => syncNow.mutate()}
+            disabled={syncNow.isPending}
+            title="Trae ahora reservas, cancelaciones y disponibilidad del Channel Manager"
+          >
+            <RefreshCw size={16} className={syncNow.isPending ? "animate-spin" : ""} />
+            <span className="ml-1 hidden sm:inline">Sincronizar</span>
+          </Button>
           <Button className="bg-muted text-foreground" onClick={() => move(-1)}>
             <ChevronLeft size={16} />
           </Button>

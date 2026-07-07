@@ -209,7 +209,7 @@ export const api = {
   // Sync
   testConnection: () => req<ConnectionStatus>(`/sync/test`, { method: "POST" }),
   importRemote: (days = 365) =>
-    req<{ run_id: number; status: string; created: number; issues: number }>(`/sync/import`, {
+    req<{ run_id: number; status: string; created: number; updated: number; issues: number }>(`/sync/import`, {
       method: "POST",
       body: JSON.stringify({ days }),
     }),
