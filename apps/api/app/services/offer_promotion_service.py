@@ -258,11 +258,13 @@ async def preview(
     for deal in await native_deal_service.find_overlapping(
         session, first_night, last_night, channels_scope
     ):
-        pct = f"{deal.discount_pct}".rstrip("0").rstrip(".")
+        # OJO: nombre propio (no `pct`) — reutilizar `pct` pisaba el % de la
+        # promoción en la respuesta del preview y en el discount_value persistido.
+        deal_pct = f"{deal.discount_pct}".rstrip("0").rstrip(".")
         display = _CHANNEL_DISPLAY.get(deal.channel.value, deal.channel.value)
         warnings.append(
             f"Puede duplicar descuento con el deal nativo '{deal.name}' "
-            f"({display}, {pct}%). Revísalo antes de confirmar."
+            f"({display}, {deal_pct}%). Revísalo antes de confirmar."
         )
 
     return PromotionPreview(
