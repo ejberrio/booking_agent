@@ -126,3 +126,24 @@ async def test_get_bookings_composes_guest_name():
     finally:
         await adapter.aclose()
     assert names == {"1": "John Doe", "2": "Ana", "3": "Roe", "4": None, "5": None}
+
+
+async def test_get_bookings_pide_tambien_canceladas():
+    """Issue #91: el default de V2 excluye 'cancelled' — hay que pedirlo explícito."""
+    seen: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if (r := _token_ok(request)) is not None:
+            return r
+        seen["status"] = request.url.params.get_list("status")
+        return httpx.Response(200, json={"success": True, "data": [
+            _booking(1, status="cancelled", channel="booking"),
+        ]})
+
+    adapter = adapter_with(handler)
+    try:
+        bookings = await adapter.get_bookings("337229")
+    finally:
+        await adapter.aclose()
+    assert "cancelled" in seen["status"] and "confirmed" in seen["status"]
+    assert bookings[0].status == "cancelled"

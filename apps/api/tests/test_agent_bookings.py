@@ -71,3 +71,34 @@ def test_get_bookings_schema_declares_channel_enum():
     channel = spec.parameters["properties"]["channel"]
     assert channel["enum"] == ["booking", "airbnb", "direct"]
     assert "channel" not in spec.parameters["required"]
+
+
+async def test_sync_calendar_tool(session, monkeypatch):
+    """El chat puede disparar la sincronización entrante (cancelaciones, etc.)."""
+    import app.agent.tools as tools_mod
+    from app.channels.base import RemoteBooking, RemoteProperty, RemoteRate, RemoteRoom
+
+    class FakeCM:
+        async def get_properties(self):
+            return [RemoteProperty("337229", "Apto", "COP", [RemoteRoom("697411", "3BR", 1)])]
+
+        async def get_rates(self, room, df, dt):
+            return [RemoteRate("697411", date(2026, 8, 6), 300000, 1)]
+
+        async def get_bookings(self, prop, since=None):
+            return [
+                RemoteBooking(
+                    external_id="bk-x", room_external_id="697411",
+                    check_in=date(2026, 8, 6), check_out=date(2026, 8, 9),
+                    status="cancelled", channel="booking",
+                )
+            ]
+
+        async def aclose(self):
+            return None
+
+    monkeypatch.setattr(tools_mod, "get_adapter", lambda: FakeCM())
+    assert any(t.name == "sync_calendar" for t in READ_TOOLS)
+    out = await exec_read(session, "sync_calendar", {})
+    assert out["status"] == "success"
+    assert out["created"] >= 1  # la cancelada se crea con su estado real (fix #91)

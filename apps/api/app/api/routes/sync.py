@@ -69,6 +69,7 @@ async def import_remote(req: ImportRequest, session: AsyncSession = Depends(get_
             "run_id": run.id,
             "status": run.status.value,
             "created": run.created_count,
+            "updated": run.updated_count,
             "issues": run.issue_count,
         }
     finally:

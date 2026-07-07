@@ -224,7 +224,13 @@ class Beds24V2Adapter:
         self, property_external_id: str, since: date | None = None
     ) -> list[RemoteBooking]:
         # V2: {"data":[{"id","roomId","arrival","departure","status"}]}; departure = checkout.
-        params: dict[str, Any] = {"propertyId": property_external_id}
+        # El default de V2 EXCLUYE "cancelled" → pedirlo explícito (issue #91: sin
+        # esto, una cancelación en el canal nunca llega y la reserva local queda
+        # confirmada para siempre, bloqueando incluso el re-bloqueo de esas noches).
+        params: dict[str, Any] = {
+            "propertyId": property_external_id,
+            "status": ["confirmed", "request", "new", "black", "inquiry", "cancelled"],
+        }
         if since is not None:
             params["arrivalFrom"] = since.isoformat()
         data = await self._request("GET", "bookings", params=params)
