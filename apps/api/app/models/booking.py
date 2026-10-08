@@ -20,6 +20,7 @@ class Booking(Base, TimestampMixin):
     status: Mapped[BookingStatus] = mapped_column(
         Enum(BookingStatus), default=BookingStatus.confirmed
     )
-    external_ref: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    # Único (feature 020): un aviso y el cron simultáneos no pueden duplicar una reserva.
+    external_ref: Mapped[str | None] = mapped_column(String(120), nullable=True, unique=True)
     # Dato personal: solo se muestra dentro de la app (single-tenant); nunca en logs.
     guest_name: Mapped[str | None] = mapped_column(String(200), nullable=True)

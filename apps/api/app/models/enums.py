@@ -120,3 +120,12 @@ class AgentActionStatus(str, enum.Enum):
     applied = "applied"
     cancelled = "cancelled"
     stale = "stale"
+
+
+class WebhookResult(str, enum.Enum):
+    """Resultado de un aviso entrante (feature 020)."""
+
+    accepted = "accepted"
+    ignored = "ignored"
+    rejected = "rejected"
+    failed = "failed"
