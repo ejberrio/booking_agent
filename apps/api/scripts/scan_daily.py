@@ -1,4 +1,8 @@
-"""Escaneo diario de inteligencia (eventos + mercado → sugerencias) para cron.
+"""Corrida diaria para cron: sincroniza con Beds24 y escanea inteligencia
+(eventos + mercado → sugerencias).
+
+La sincronización trae reservas/cancelaciones y, además, mantiene vivo el refresh
+token de Beds24 (vence si pasa 30 días sin usarse).
 
 Uso (crontab):
     0 5 * * *  cd /ruta/apps/api && uv run python -m scripts.scan_daily
@@ -16,6 +20,30 @@ from app.search.tavily import TavilyProvider
 from app.services import intelligence_service
 
 HORIZON_DAYS = 180
+SYNC_DAYS = 365
+
+
+async def _sync_channel() -> None:
+    """Import entrante desde Beds24. Resiliente: si falla, el escaneo sigue."""
+    from app.api.routes.sync import get_adapter
+    from app.services import sync_service
+
+    adapter = get_adapter()
+    try:
+        async with SessionLocal() as session:
+            today = date.today()
+            run = await sync_service.import_remote(
+                session, adapter, today, today + timedelta(days=SYNC_DAYS)
+            )
+            await session.commit()
+            print(
+                f"scan_daily: sync #{run.id} {run.status.value} creadas={run.created_count} "
+                f"actualizadas={run.updated_count} incidencias={run.issue_count}"
+            )
+    except Exception as exc:  # solo el tipo: nunca mensajes que puedan llevar secretos
+        print(f"scan_daily: sync con Beds24 falló ({type(exc).__name__}); se continúa.")
+    finally:
+        await adapter.aclose()
 
 
 async def main() -> None:
@@ -27,6 +55,8 @@ async def main() -> None:
             await secret_service.load_cache(session)
     except Exception:
         print("scan_daily: sin caché de secretos; se usan variables de entorno.")
+
+    await _sync_channel()
 
     search = TavilyProvider()
     llm = default_llm()

@@ -109,5 +109,6 @@ Con los servicios conectados a `main`, **cada push a `main` redepliega** automá
 
 - Solo la `web` es pública; la `api` no es alcanzable desde internet.
 - El login (cookie `session`) protege también `/api/proxy/*` vía el `middleware` de Next.
-- El token V2 de Beds24 se renueva solo; basta `BEDS24_REFRESH_TOKEN` en `api` y `scan`.
+- El token V2 de Beds24 se renueva solo mientras se use (vence tras 30 días sin uso; el cron diario
+  lo usa al sincronizar). Para reconectar: código de invitación → Ajustes → Secretos → Canjear.
 - Ningún secreto vive en el repositorio ni se escribe en logs.

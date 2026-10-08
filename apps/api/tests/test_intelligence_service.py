@@ -22,7 +22,7 @@ from app.search.base import SearchResult
 from app.services import intelligence_service, pricing_service, suggestion_engine
 
 D = Decimal
-DAY = date(2026, 8, 5)
+DAY = date(2037, 8, 5)
 
 
 class FakeSearch:
@@ -69,7 +69,7 @@ async def setup(session, *, occ0=False, event=False):
             Event(
                 name="Feria de las Flores", start_date=DAY, end_date=DAY,
                 kind=EventKind.festival, relevance=Relevance.high,
-                dedup_key="feria|2026-08-05|medellin",
+                dedup_key="feria|2037-08-05|medellin",
             )
         )
     await session.flush()
@@ -130,7 +130,7 @@ async def test_apply_suggestion_origin_and_publishes(session):
 async def test_scan_records_run_and_dedups(session):
     prop, unit = await setup(session)
     content = (
-        '[{"name":"Feria","start_date":"2026-08-05","end_date":null,"kind":"festival",'
+        '[{"name":"Feria","start_date":"2037-08-05","end_date":null,"kind":"festival",'
         '"relevance":"high","location":"Medellín"},'
         '{"name":"SinFecha","start_date":null,"kind":"other","relevance":"low"}]'
     )

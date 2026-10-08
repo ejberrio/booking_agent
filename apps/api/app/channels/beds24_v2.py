@@ -44,6 +44,35 @@ def _days(date_from: date, date_to: date) -> list[date]:
     return [date_from + timedelta(days=i) for i in range((date_to - date_from).days + 1)]
 
 
+async def exchange_invite_code(
+    code: str,
+    *,
+    base_url: str = "https://api.beds24.com/v2",
+    client: httpx.AsyncClient | None = None,
+) -> str:
+    """Canjea un código de invitación de Beds24 por un refresh token nuevo.
+
+    Mensajes de error FIJOS: nunca interpolan el código ni la respuesta cruda.
+    """
+    owns = client is None
+    http = client or httpx.AsyncClient(timeout=30.0)
+    try:
+        resp = await http.get(
+            f"{base_url.rstrip('/')}/authentication/setup",
+            headers={"code": code.strip(), "deviceName": "booking-agent"},
+        )
+        data = resp.json()
+    except (httpx.HTTPError, ValueError) as exc:
+        raise ChannelError("Beds24 no respondió al canjear el código") from exc
+    finally:
+        if owns:
+            await http.aclose()
+    token = data.get("refreshToken") if isinstance(data, dict) else None
+    if resp.status_code != 200 or not token:
+        raise AuthError("código de invitación rechazado por Beds24")
+    return str(token)
+
+
 class Beds24V2Adapter:
     def __init__(
         self,

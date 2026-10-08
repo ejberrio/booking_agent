@@ -199,6 +199,22 @@ function SecretsCard() {
     },
     onError,
   });
+  // Beds24: el host pega el código de invitación y el servidor lo canjea por el
+  // refresh token (que nunca llega al navegador).
+  const [inviteCode, setInviteCode] = useState("");
+  const redeem = useMutation({
+    mutationFn: () => api.redeemBeds24Invite(inviteCode),
+    onSuccess: () => {
+      toast.success("Código canjeado — Beds24 reconectado");
+      setInviteCode("");
+      setTestResults((t) => ({
+        ...t,
+        beds24_refresh_token: { ok: true, detail: "token nuevo guardado — pulsa Probar" },
+      }));
+      refresh();
+    },
+    onError,
+  });
   const test = useMutation({
     mutationFn: (name: string) => api.testSecret(name),
     onSuccess: (r, name) => setTestResults((t) => ({ ...t, [name]: r })),
@@ -244,6 +260,29 @@ function SecretsCard() {
                   Guardar
                 </Button>
               </div>
+              {s.name === "beds24_refresh_token" && (
+                <div className="space-y-1">
+                  <div className="flex gap-2">
+                    <Input
+                      type="password"
+                      autoComplete="off"
+                      placeholder="…o pegar código de invitación de Beds24"
+                      value={inviteCode}
+                      onChange={(e) => setInviteCode(e.target.value)}
+                    />
+                    <Button
+                      onClick={() => redeem.mutate()}
+                      disabled={redeem.isPending || !inviteCode.trim()}
+                    >
+                      Canjear
+                    </Button>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Beds24 → Settings → Account → Account Access → API → generar código de
+                    invitación (con permisos de lectura y escritura).
+                  </p>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <Button
                   className="bg-muted text-foreground"

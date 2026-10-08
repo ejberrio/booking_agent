@@ -18,10 +18,10 @@ pytestmark = pytest.mark.anyio
 
 D = Decimal
 JUL3, JUL10, JUL15, JUL31 = (
-    date(2026, 7, 3),
-    date(2026, 7, 10),
-    date(2026, 7, 15),
-    date(2026, 7, 31),
+    date(2037, 7, 3),
+    date(2037, 7, 10),
+    date(2037, 7, 15),
+    date(2037, 7, 31),
 )
 
 
@@ -48,8 +48,8 @@ async def test_crud_completo(client, session):
             "channel": "booking",
             "name": "Vacaciones Julio · mín 3",
             "discount_pct": 20,
-            "date_from": "2026-07-03",
-            "date_to": "2026-07-31",
+            "date_from": "2037-07-03",
+            "date_to": "2037-07-31",
         },
     )
     assert res.status_code == 200
@@ -94,8 +94,8 @@ async def test_crud_completo(client, session):
             "channel": "booking",
             "name": "X",
             "discount_pct": 10,
-            "date_from": "2026-07-31",
-            "date_to": "2026-07-03",
+            "date_from": "2037-07-31",
+            "date_to": "2037-07-03",
         },
     ],
 )
@@ -122,15 +122,15 @@ async def _deal(session, *, channel=ChannelKind.booking, df=JUL3, dt=JUL31, acti
 async def test_solape_cerrado_y_sin_solape(session):
     await _deal(session)
     assert len(await svc.find_overlapping(session, JUL10, JUL15, None)) == 1
-    assert await svc.find_overlapping(session, date(2026, 8, 1), date(2026, 8, 5), None) == []
+    assert await svc.find_overlapping(session, date(2037, 8, 1), date(2037, 8, 5), None) == []
 
 
 async def test_solape_siempre_activo_y_medio_abiertos(session):
     await _deal(session, df=None, dt=None, name="Siempre")
     await _deal(session, df=None, dt=JUL15, name="HastaJul15")
     await _deal(session, df=JUL15, dt=None, name="DesdeJul15")
-    nombres = {d.name for d in await svc.find_overlapping(session, date(2027, 1, 1), date(2027, 1, 5), None)}
-    assert nombres == {"Siempre", "DesdeJul15"}  # HastaJul15 no llega a 2027
+    nombres = {d.name for d in await svc.find_overlapping(session, date(2038, 1, 1), date(2038, 1, 5), None)}
+    assert nombres == {"Siempre", "DesdeJul15"}  # HastaJul15 no llega a 2038
     nombres2 = {d.name for d in await svc.find_overlapping(session, JUL3, JUL10, None)}
     assert nombres2 == {"Siempre", "HastaJul15"}
 
@@ -210,8 +210,8 @@ async def test_preview_sin_falsas_alarmas(session):
         session,
         PromoFakeCM(),
         unit_type_id=unit.id,
-        first_night=date(2026, 9, 1),
-        last_night=date(2026, 9, 5),
+        first_night=date(2037, 9, 1),
+        last_night=date(2037, 9, 5),
         name="Promo",
         discount_pct=D("10"),
     )
