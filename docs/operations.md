@@ -359,6 +359,10 @@ La app refleja la realidad multi-canal del Channel Manager (Booking.com + Airbnb
   precio solo con ≥3 muestras; sin datos lo dice y no inventa. Proveedor pago enchufable
   (candidato: PriceLabs ~USD 10-20/mes — ADR 0006).
 
+- **Peso del mercado** (decisión del host, 2026-10-08): el ancla de mercado pesa **50%** en fechas
+  sin evento y **25%** en fechas con evento (75% tu precio con el alza del evento). Solo ancla si el
+  precio de mercado está entre 0,5× y 2× tu tarifa; fuera de esa banda se informa como descartado.
+
 ## Sugerencias accionables: bloques y aplicación en lote (Feature 019)
 
 - **Solo noches vendibles**: la pestaña Sugerencias oculta las noches con reserva confirmada,

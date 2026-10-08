@@ -2,7 +2,8 @@
 
 Señales alcistas (evento, ocupación alta de la ventana) y BAJISTAS (hueco libre
 próximo — descuento progresivo: más cerca ⇒ mayor). El mercado actúa como ANCLA
-(promedio) solo con muestras suficientes; nunca se inventa. Límites SIEMPRE:
+(promedio ponderado: 50%, o 25% en fechas de evento) solo con muestras suficientes;
+nunca se inventa. Límites SIEMPRE:
 piso min_price, techo max_price y tope bajista −15% (decisión del host).
 """
 
@@ -24,6 +25,10 @@ GAP_WINDOW_DAYS = 14  # ventana de "hueco próximo" (host)
 # comparable (p. ej. habitaciones sueltas, USD o por persona) y no se usa como ancla.
 # Dentro de la banda SÍ puede bajar el precio (competencia más barata).
 MARKET_PLAUSIBLE = (D("0.5"), D("2.0"))
+# Peso del mercado al anclar: 50% por defecto; 25% en fechas de EVENTO para que el
+# evento pese más sin ignorar al mercado (decisión del host, 2026-10-08).
+MARKET_WEIGHT = D("0.5")
+MARKET_WEIGHT_EVENT = D("0.25")
 _CONFIDENCE = {1: D("0.5"), 2: D("0.7"), 3: D("0.9")}
 
 
@@ -129,11 +134,15 @@ def suggest_price_v2(
             )
         elif not market.low_confidence:
             market_ok = True
-            target = ((target + market.adr) / D("2")).quantize(D("1"))
+            weight = MARKET_WEIGHT_EVENT if event is not None else MARKET_WEIGHT
+            target = (target * (D("1") - weight) + market.adr * weight).quantize(D("1"))
             factors.append(
                 Factor(
                     kind="market",
-                    label=f"mercado de la zona ~{market.adr:.0f} ({market.sample_size} tarifas, {market.source})",
+                    label=(
+                        f"mercado de la zona ~{market.adr:.0f} ({market.sample_size} tarifas, "
+                        f"{market.source}; pesa {int(weight * 100)}%)"
+                    ),
                 )
             )
         else:

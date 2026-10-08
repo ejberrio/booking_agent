@@ -65,8 +65,9 @@ def test_techo_max_price():
 
 def test_mercado_ancla_con_muestras():
     out = suggest_price_v2(D("300000"), event=_event(Relevance.medium), market=_snapshot("310000"))
-    # +15% = 345000; ancla: (345000+310000)/2 = 327500
-    assert out.price == D("327500")
+    # +15% = 345000; con evento el mercado pesa 25%: 0,75·345000 + 0,25·310000 = 336250
+    assert out.price == D("336250")
+    assert any(f.kind == "market" and "pesa 25%" in f.label for f in out.factors)
     assert any(f.kind == "market" and "5 tarifas" in f.label for f in out.factors)
 
 
@@ -116,3 +117,17 @@ def test_mercado_demasiado_caro_tambien_se_descarta():
     out = suggest_price_v2(D("300000"), event=_event(Relevance.medium), market=_snapshot("900000"))
     assert out.price == D("345000")
     assert any(f.kind == "market" and "descartado" in f.label for f in out.factors)
+
+
+def test_sin_evento_el_mercado_pesa_50():
+    # hueco a 10 días (−7%): 300000 → 279000; ancla 50/50 con 250000 = 264500
+    out = suggest_price_v2(D("300000"), gap_days_ahead=10, market=_snapshot("250000"))
+    assert out.price == D("264500")
+    assert any(f.kind == "market" and "pesa 50%" in f.label for f in out.factors)
+
+
+def test_evento_fuerte_con_mercado_barato_caso_chayanne():
+    # Caso real (nov 2026): tarifa 370000, evento +30% (481000), mercado 192000.
+    # Antes (50/50) bajaba a 336500; con 25% sube a 0,75·481000 + 0,25·192000 = 408750.
+    out = suggest_price_v2(D("370000"), event=_event(), market=_snapshot("192000"))
+    assert out.price == D("408750")
