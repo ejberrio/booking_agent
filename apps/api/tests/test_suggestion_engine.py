@@ -188,3 +188,40 @@ async def test_sin_mercado_sin_factor(session):
     s = next(x for x in sugs if x.date_from == E1)
     assert "market" not in s.rationale
     assert all(f["kind"] != "market" for f in s.rationale["factors"])
+
+
+async def test_pendiente_sin_respaldo_se_reemplaza(session):
+    # Sugerencia vieja (motor anterior) sin señal en el scan actual → superseded.
+    prop, unit = await _seed(session)
+    vieja = PriceSuggestion(
+        property_id=prop.id, unit_type_id=unit.id,
+        date_from=TODAY + timedelta(days=20), date_to=TODAY + timedelta(days=22),
+        suggested_price=D("330000"), status=SuggestionStatus.proposed,
+    )
+    rechazada = PriceSuggestion(
+        property_id=prop.id, unit_type_id=unit.id,
+        date_from=TODAY + timedelta(days=23), date_to=TODAY + timedelta(days=23),
+        suggested_price=D("330000"), status=SuggestionStatus.rejected,
+    )
+    session.add_all([vieja, rechazada])
+    await session.flush()
+    await _generate(session, unit)
+    await session.refresh(vieja)
+    await session.refresh(rechazada)
+    assert vieja.status is SuggestionStatus.superseded
+    assert rechazada.status is SuggestionStatus.rejected  # resueltas intactas
+
+
+async def test_noche_reservada_despues_retira_la_pendiente(session):
+    prop, unit = await _seed(session)
+    session.add(_event())
+    await session.flush()
+    first = await _generate(session, unit)
+    s = next(x for x in first if x.date_from == E1)
+    # llega una reserva para todo el rango del evento
+    for d in (E1, E1 + timedelta(days=1), E3):
+        session.add(CalendarDay(unit_type_id=unit.id, date=d, units_available=0))
+    await session.flush()
+    await _generate(session, unit)
+    await session.refresh(s)
+    assert s.status is SuggestionStatus.superseded

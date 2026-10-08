@@ -4,7 +4,8 @@ Una sugerencia cubre el RANGO de un evento o los días contiguos con la misma se
 y el mismo precio base (se corta si el base cambia). Las noches ocupadas (reserva o
 bloqueo) se excluyen. Al persistir un rango nuevo, las pendientes solapadas quedan
 `superseded` (nunca dos pendientes para la misma noche); las vencidas se depuran al
-inicio de cada corrida.
+inicio de cada corrida y, al final, las pendientes del horizonte que el scan ya no
+respalda (p. ej. la noche se reservó o la señal desapareció) también.
 """
 
 from __future__ import annotations
@@ -62,9 +63,33 @@ async def _supersede_overlapping(
     return res.rowcount or 0
 
 
+async def _supersede_not_regenerated(
+    session: AsyncSession, unit_type_id: int, date_from: date, date_to: date, keep: set[int]
+) -> int:
+    """Pendientes del horizonte que este scan ya no respalda (señal desaparecida, noche
+    ocupada, motor anterior…) → `superseded`. Las resueltas no se tocan."""
+    stmt = (
+        update(PriceSuggestion)
+        .where(
+            PriceSuggestion.unit_type_id == unit_type_id,
+            PriceSuggestion.status == SuggestionStatus.proposed,
+            PriceSuggestion.date_from <= date_to,
+            PriceSuggestion.date_to >= date_from,
+        )
+        .values(status=SuggestionStatus.superseded)
+    )
+    if keep:
+        stmt = stmt.where(PriceSuggestion.id.not_in(keep))
+    res = await session.execute(stmt)
+    await session.flush()
+    return res.rowcount or 0
+
+
 async def _exists_equivalent(
     session: AsyncSession, unit_type_id: int, date_from: date, date_to: date, price: Decimal
-) -> bool:
+) -> int | None:
+    """Id de una sugerencia equivalente (mismo rango y precio) en cualquier estado
+    no reemplazado, o None. Evita re-proponer lo ya pendiente/aplicado/rechazado."""
     res = await session.execute(
         select(PriceSuggestion.id).where(
             PriceSuggestion.unit_type_id == unit_type_id,
@@ -81,7 +106,7 @@ async def _exists_equivalent(
             ),
         )
     )
-    return res.scalars().first() is not None
+    return res.scalars().first()
 
 
 # --------- señales por día ---------
@@ -215,6 +240,7 @@ async def generate_suggestions(
         day += timedelta(days=1)
 
     created: list[PriceSuggestion] = []
+    keep: set[int] = set()
     i = 0
     while i < len(per_day):
         start_day, key, out, snap = per_day[i]
@@ -227,7 +253,10 @@ async def generate_suggestions(
             j += 1
         end_day = per_day[j][0]
 
-        if not await _exists_equivalent(session, unit_type_id, start_day, end_day, out.price):
+        equivalent = await _exists_equivalent(session, unit_type_id, start_day, end_day, out.price)
+        if equivalent is not None:
+            keep.add(equivalent)
+        else:
             await _supersede_overlapping(session, unit_type_id, start_day, end_day)
             sug = PriceSuggestion(
                 property_id=prop.id,
@@ -244,4 +273,8 @@ async def generate_suggestions(
         i = j + 1
 
     await session.flush()
+    keep.update(s.id for s in created)
+    await _supersede_not_regenerated(
+        session, unit_type_id, max(date_from, today), date_to, keep
+    )
     return created
