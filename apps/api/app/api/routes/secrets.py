@@ -146,6 +146,7 @@ async def _test_search() -> dict:
 
 async def _test_beds24() -> dict:
     from app.api.routes.sync import get_adapter
+    from app.channels.errors import AuthError
 
     adapter = get_adapter()
     try:
@@ -154,6 +155,11 @@ async def _test_beds24() -> dict:
             n = len(info.properties or [])
             return {"ok": True, "detail": f"{_OK} ({n} propiedad{'es' if n != 1 else ''})"}
         return {"ok": False, "detail": _BAD_CREDENTIAL}
+    except AuthError:
+        return {
+            "ok": False,
+            "detail": "Beds24 rechazó el token: genera un código de invitación y usa Canjear",
+        }
     except Exception:
         return {"ok": False, "detail": _UNAVAILABLE}
     finally:

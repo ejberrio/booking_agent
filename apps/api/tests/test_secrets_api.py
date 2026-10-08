@@ -134,3 +134,19 @@ async def test_canje_codigo_invitacion_beds24_sin_fugas(client, monkeypatch):
     assert bad.status_code == 422 and "INVITE-BAD" not in bad.text
     empty = await client.post("/settings/secrets/beds24_refresh_token/invite", json={"code": " "})
     assert empty.status_code == 422
+
+
+async def test_probar_beds24_token_rechazado_mensaje_claro(monkeypatch):
+    import app.api.routes.sync as sync_routes
+    from app.channels.errors import AuthError
+
+    class Rejected:
+        async def test_connection(self):
+            raise AuthError("no se pudo obtener token V2: Token not valid")
+
+        async def aclose(self):
+            pass
+
+    monkeypatch.setattr(sync_routes, "get_adapter", lambda: Rejected())
+    r = await secrets_routes._test_beds24()
+    assert r["ok"] is False and "Canjear" in r["detail"]
