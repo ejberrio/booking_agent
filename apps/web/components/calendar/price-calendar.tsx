@@ -16,6 +16,8 @@ interface Props {
   suggestionDates?: Set<string>;
   nativeDealDates?: Set<string>;
   noteDates?: Set<string>;
+  /** Noches con reserva confirmada (de /bookings); prima sobre el inventario. */
+  bookedDates?: Set<string>;
 }
 
 export function PriceCalendar({
@@ -27,6 +29,7 @@ export function PriceCalendar({
   suggestionDates,
   nativeDealDates,
   noteDates,
+  bookedDates,
 }: Props) {
   const byDate = useMemo(() => new Map(days.map((d) => [d.date, d])), [days]);
   const [dragStart, setDragStart] = useState<string | null>(null);
@@ -79,10 +82,15 @@ export function PriceCalendar({
           const ratio = eff !== null && max > min ? (eff - min) / (max - min) : 0;
           const selected = inRange(date);
           const blocked = d?.is_blocked === true;
-          const reserved = !!d && d.available === 0 && !blocked;
+          // Reservada si hay una reserva confirmada esa noche (fuente: reservas, también
+          // para días pasados) o si el canal reporta 0 unidades sin bloqueo manual.
+          const reserved =
+            !blocked && (bookedDates?.has(date) === true || (!!d && d.available === 0));
           const bg = blocked
             ? "rgba(100,116,139,0.30)" // bloqueada: gris
-            : eff !== null
+            : reserved
+              ? "rgba(239,68,68,0.18)" // reservada: rojo suave
+              : eff !== null
               ? `rgba(37,99,235,${0.12 + ratio * 0.5})`
               : undefined;
           return (
@@ -119,17 +127,17 @@ export function PriceCalendar({
                 {blocked ? (
                   <span title="Bloqueada" className="h-1 w-1 rounded-full bg-slate-400" />
                 ) : null}
-                {reserved ? (
-                  <span title="Reservada" className="h-1 w-1 rounded-full bg-red-500" />
-                ) : null}
               </span>
+              {reserved ? (
+                <span title="Reservada" className="mt-0.5 h-1 w-full rounded-full bg-red-500" />
+              ) : null}
             </button>
           );
         })}
       </div>
       <div className="mt-2 flex flex-wrap gap-3 text-[10px] text-muted-foreground">
         <span className="flex items-center gap-1">
-          <span className="h-1.5 w-1.5 rounded-full bg-red-500" /> Reservada
+          <span className="h-1.5 w-3 rounded-full bg-red-500" /> Reservada
         </span>
         <span className="flex items-center gap-1">
           <span className="h-1.5 w-1.5 rounded-full bg-slate-400" /> Bloqueada

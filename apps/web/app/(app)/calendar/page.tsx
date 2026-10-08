@@ -112,6 +112,16 @@ export default function CalendarPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Noches reservadas del mes visible (el día de salida no ocupa).
+  const bookedDates = new Set<string>();
+  for (const b of bookings.data?.bookings ?? []) {
+    for (let d = new Date(`${b.check_in}T00:00:00Z`); ; d.setUTCDate(d.getUTCDate() + 1)) {
+      const key = ymd(d);
+      if (key >= b.check_out) break;
+      bookedDates.add(key);
+    }
+  }
+
   const noteDates = new Set<string>();
   if (allNotes.length) {
     const { from: mFrom, to: mTo } = monthRange(ym.year, ym.month);
@@ -196,6 +206,7 @@ export default function CalendarPage() {
               suggestionDates={suggestionDates}
               nativeDealDates={nativeDealDates}
               noteDates={noteDates}
+              bookedDates={bookedDates}
             />
           </Card>
           <div className="space-y-4">
