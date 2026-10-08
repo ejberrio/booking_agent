@@ -87,11 +87,11 @@ async def _supersede_not_regenerated(
 
 async def _exists_equivalent(
     session: AsyncSession, unit_type_id: int, date_from: date, date_to: date, price: Decimal
-) -> int | None:
-    """Id de una sugerencia equivalente (mismo rango y precio) en cualquier estado
-    no reemplazado, o None. Evita re-proponer lo ya pendiente/aplicado/rechazado."""
+) -> PriceSuggestion | None:
+    """Sugerencia equivalente (mismo rango y precio) en cualquier estado no
+    reemplazado, o None. Evita re-proponer lo ya pendiente/aplicado/rechazado."""
     res = await session.execute(
-        select(PriceSuggestion.id).where(
+        select(PriceSuggestion).where(
             PriceSuggestion.unit_type_id == unit_type_id,
             PriceSuggestion.date_from == date_from,
             PriceSuggestion.date_to == date_to,
@@ -106,7 +106,10 @@ async def _exists_equivalent(
             ),
         )
     )
-    return res.scalars().first()
+    found = list(res.scalars())
+    # Preferir la pendiente: es la que se conserva y refresca (019 · US4).
+    pending = [s for s in found if s.status in (SuggestionStatus.proposed, SuggestionStatus.approved)]
+    return (pending or found or [None])[0]
 
 
 # --------- señales por día ---------
@@ -255,7 +258,11 @@ async def generate_suggestions(
 
         equivalent = await _exists_equivalent(session, unit_type_id, start_day, end_day, out.price)
         if equivalent is not None:
-            keep.add(equivalent)
+            keep.add(equivalent.id)
+            if equivalent.status in (SuggestionStatus.proposed, SuggestionStatus.approved):
+                # Misma identidad y estado, explicación del último scan (019 · US4).
+                equivalent.rationale = _rationale(out, snap)
+                equivalent.confidence = out.confidence
         else:
             await _supersede_overlapping(session, unit_type_id, start_day, end_day)
             sug = PriceSuggestion(
