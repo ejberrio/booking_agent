@@ -154,6 +154,7 @@ def _rationale(out, market: MarketSnapshot | None) -> dict:
                 "label": f.label,
                 "pct": float(f.pct) if f.pct is not None else None,
                 **({"event": f.event} if f.event else {}),
+                **(f.data or {}),
             }
             for f in out.factors
         ],

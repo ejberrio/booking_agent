@@ -7,6 +7,7 @@ from app.api.routes import (
     health,
     hooks,
     pois,
+    preferences,
     pricing,
     secrets,
     status,
@@ -26,3 +27,4 @@ api_router.include_router(calendar_notes.router, prefix="/calendar-notes", tags=
 api_router.include_router(secrets.router, prefix="/settings/secrets", tags=["secrets"])
 api_router.include_router(pois.router, tags=["pois"])  # /pois y /scan-config
 api_router.include_router(hooks.router, prefix="/hooks", tags=["hooks"])  # feature 020
+api_router.include_router(preferences.router, prefix="/preferences", tags=["preferences"])  # 021

@@ -8,12 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { BookingView, CalendarNote } from "@/lib/types";
 import { api } from "@/lib/api";
-
-const CHANNEL_NAMES: Record<string, string> = {
-  booking: "Booking.com",
-  airbnb: "Airbnb",
-  direct: "Directo",
-};
+import { useI18n } from "@/lib/i18n";
 
 interface Props {
   unitTypeId: number;
@@ -25,6 +20,12 @@ interface Props {
 /** Detalle del día/rango seleccionado (feature 016): reservas (solo lectura) y
  *  notas del host (memoria local — nunca tocan el Channel Manager). */
 export function DayInfoPanel({ unitTypeId, selection, bookings, notes }: Props) {
+  const { m } = useI18n();
+  const CHANNEL_NAMES: Record<string, string> = {
+    booking: "Booking.com",
+    airbnb: "Airbnb",
+    direct: m.calendar.channelDirect,
+  };
   const qc = useQueryClient();
   const refresh = () => qc.invalidateQueries({ queryKey: ["calendar-notes"] });
   const onError = (e: Error) => toast.error(e.message);
@@ -42,7 +43,7 @@ export function DayInfoPanel({ unitTypeId, selection, bookings, notes }: Props) 
         text: draft,
       }),
     onSuccess: () => {
-      toast.success("Nota guardada");
+      toast.success(m.calendar.noteSaved);
       setDraft("");
       refresh();
     },
@@ -59,7 +60,7 @@ export function DayInfoPanel({ unitTypeId, selection, bookings, notes }: Props) 
   const remove = useMutation({
     mutationFn: (id: number) => api.deleteCalendarNote(id),
     onSuccess: () => {
-      toast("Nota borrada");
+      toast(m.calendar.noteDeleted);
       refresh();
     },
     onError,
@@ -73,24 +74,23 @@ export function DayInfoPanel({ unitTypeId, selection, bookings, notes }: Props) 
       {singleDay && bookings.length > 0 && (
         <div className="mb-3">
           <p className="mb-2 text-xs font-medium">
-            {bookings.length === 1 ? "Reserva" : `${bookings.length} reservas`} · {selection.from}
+            {m.calendar.bookingsHeader(bookings.length)} · {selection.from}
           </p>
           <div className="space-y-2">
             {bookings.map((b) => (
               <div key={b.id} className="space-y-0.5 rounded-md border border-border p-2 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="font-medium">
-                    {b.guest_name ?? <span className="text-muted-foreground">sin nombre</span>}
+                    {b.guest_name ?? <span className="text-muted-foreground">{m.calendar.noGuestName}</span>}
                   </span>
                   <Badge variant="muted">{CHANNEL_NAMES[b.channel] ?? b.channel}</Badge>
                 </div>
                 <p className="text-muted-foreground">
-                  {b.check_in} → {b.check_out} · {b.nights}{" "}
-                  {b.nights === 1 ? "noche" : "noches"}
+                  {b.check_in} → {b.check_out} · {m.common.nights(b.nights)}
                 </p>
                 <p className="text-[10px] text-muted-foreground">
-                  {b.status}
-                  {b.external_ref ? ` · ref ${b.external_ref}` : ""}
+                  {m.calendar.bookingStatus[b.status] ?? b.status}
+                  {b.external_ref ? ` · ${m.calendar.ref} ${b.external_ref}` : ""}
                 </p>
               </div>
             ))}
@@ -98,7 +98,7 @@ export function DayInfoPanel({ unitTypeId, selection, bookings, notes }: Props) 
         </div>
       )}
 
-      <p className="mb-2 text-xs font-medium">Notas · {rangeLabel}</p>
+      <p className="mb-2 text-xs font-medium">{m.calendar.notesHeader} · {rangeLabel}</p>
       {notes.length > 0 && (
         <div className="mb-2 space-y-2">
           {notes.map((n) => (
@@ -114,13 +114,13 @@ export function DayInfoPanel({ unitTypeId, selection, bookings, notes }: Props) 
                   />
                   <div className="flex gap-2">
                     <Button onClick={() => update.mutate(n.id)} disabled={update.isPending}>
-                      Guardar
+                      {m.common.save}
                     </Button>
                     <Button
                       className="bg-muted text-foreground"
                       onClick={() => setEditingId(null)}
                     >
-                      Cancelar
+                      {m.common.cancel}
                     </Button>
                   </div>
                 </>
@@ -138,14 +138,14 @@ export function DayInfoPanel({ unitTypeId, selection, bookings, notes }: Props) 
                         setEditText(n.text);
                       }}
                     >
-                      Editar
+                      {m.common.edit}
                     </Button>
                     <Button
                       className="bg-transparent px-2 text-muted-foreground hover:bg-muted"
                       onClick={() => remove.mutate(n.id)}
                       disabled={remove.isPending}
                     >
-                      Borrar
+                      {m.calendar.deleteNote}
                     </Button>
                   </div>
                 </>
@@ -158,7 +158,7 @@ export function DayInfoPanel({ unitTypeId, selection, bookings, notes }: Props) 
         className="w-full rounded-md border border-border bg-background p-2 text-xs"
         rows={2}
         maxLength={500}
-        placeholder={`Añadir nota para ${rangeLabel} (p. ej. "reserva personal de…")`}
+        placeholder={m.calendar.notePlaceholder(rangeLabel)}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
       />
@@ -167,7 +167,7 @@ export function DayInfoPanel({ unitTypeId, selection, bookings, notes }: Props) 
         onClick={() => create.mutate()}
         disabled={create.isPending || !draft.trim()}
       >
-        Guardar nota
+        {m.calendar.saveNote}
       </Button>
     </Card>
   );

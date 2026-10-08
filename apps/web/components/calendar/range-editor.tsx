@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
 import { formatCOP } from "@/lib/format";
+import { useI18n } from "@/lib/i18n";
+import { trServer } from "@/lib/i18n/server-messages";
 import type { AvailabilityAction, AvailabilityPreview, ChangePreview } from "@/lib/types";
 
 interface Props {
@@ -18,6 +20,7 @@ interface Props {
 }
 
 export function RangeEditor({ unitTypeId, selection, onApplied }: Props) {
+  const { m } = useI18n();
   const [price, setPrice] = useState("");
   const [preview, setPreview] = useState<ChangePreview | null>(null);
   const [busy, setBusy] = useState(false);
@@ -37,7 +40,7 @@ export function RangeEditor({ unitTypeId, selection, onApplied }: Props) {
       });
       setPreview(p);
     } catch {
-      toast.error("No se pudo previsualizar");
+      toast.error(m.calendar.previewError);
     } finally {
       setBusy(false);
     }
@@ -54,16 +57,16 @@ export function RangeEditor({ unitTypeId, selection, onApplied }: Props) {
         fingerprint: preview.fingerprint,
       });
       if (res.stale) {
-        toast.warning("El estado cambió; vuelve a previsualizar");
+        toast.warning(m.calendar.stale);
         await doPreview();
         return;
       }
-      toast.success(`Aplicado a ${res.applied_days.length} día(s)`);
+      toast.success(m.calendar.appliedDays(res.applied_days.length));
       setPreview(null);
       setPrice("");
       onApplied();
     } catch {
-      toast.error("No se pudo aplicar");
+      toast.error(m.calendar.applyError);
     } finally {
       setBusy(false);
     }
@@ -81,7 +84,7 @@ export function RangeEditor({ unitTypeId, selection, onApplied }: Props) {
       });
       setAvailPreview(p);
     } catch {
-      toast.error("No se pudo previsualizar");
+      toast.error(m.calendar.previewError);
     } finally {
       setBusy(false);
     }
@@ -98,16 +101,16 @@ export function RangeEditor({ unitTypeId, selection, onApplied }: Props) {
         fingerprint: availPreview.fingerprint,
       });
       if (res.stale) {
-        toast.warning("El estado cambió; vuelve a previsualizar");
+        toast.warning(m.calendar.stale);
         await doAvailPreview(availAction);
         return;
       }
-      const verbo = availAction === "block" ? "Bloqueadas" : "Reabiertas";
-      toast.success(`${verbo} ${res.applied.length} noche(s)`);
+      const n = res.applied.length;
+      toast.success(availAction === "block" ? m.calendar.blockedNights(n) : m.calendar.reopenedNights(n));
       setAvailPreview(null);
       onApplied();
     } catch {
-      toast.error("No se pudo aplicar");
+      toast.error(m.calendar.applyError);
     } finally {
       setBusy(false);
     }
@@ -115,39 +118,39 @@ export function RangeEditor({ unitTypeId, selection, onApplied }: Props) {
 
   return (
     <Card>
-      <Label>Editar rango</Label>
+      <Label>{m.calendar.editRange}</Label>
       <p className="mb-2 mt-1 text-xs text-muted-foreground">
-        {selection ? `${selection.from} → ${selection.to}` : "Selecciona días en el calendario"}
+        {selection ? `${selection.from} → ${selection.to}` : m.calendar.selectDays}
       </p>
 
       <div className="flex gap-2">
         <Input
           type="number"
-          placeholder="Precio (COP)"
+          placeholder={m.calendar.pricePlaceholder}
           value={price}
           onChange={(e) => setPrice(e.target.value)}
           disabled={!selection}
         />
         <Button onClick={doPreview} disabled={!selection || !price || busy}>
-          Precio
+          {m.calendar.priceButton}
         </Button>
       </div>
 
-      <p className="mb-1 mt-4 text-xs font-medium">Disponibilidad</p>
+      <p className="mb-1 mt-4 text-xs font-medium">{m.calendar.availability}</p>
       <div className="flex gap-2">
         <Button
           className="bg-muted text-foreground"
           onClick={() => doAvailPreview("block")}
           disabled={!selection || busy}
         >
-          Bloquear
+          {m.calendar.block}
         </Button>
         <Button
           className="bg-muted text-foreground"
           onClick={() => doAvailPreview("open")}
           disabled={!selection || busy}
         >
-          Abrir
+          {m.calendar.open}
         </Button>
       </div>
 
@@ -155,10 +158,9 @@ export function RangeEditor({ unitTypeId, selection, onApplied }: Props) {
       <Dialog open={preview !== null} onClose={() => setPreview(null)}>
         {preview && (
           <div>
-            <h3 className="text-sm font-semibold">Previsualización del precio</h3>
+            <h3 className="text-sm font-semibold">{m.calendar.pricePreviewTitle}</h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              {preview.valid_count} día(s) a aplicar
-              {preview.invalid_count ? `, ${preview.invalid_count} fuera de límites` : ""}.
+              {m.calendar.pricePreviewSummary(preview.valid_count, preview.invalid_count)}
             </p>
             <div className="mt-3 max-h-64 space-y-1 overflow-y-auto text-xs">
               {preview.items.map((it) => (
@@ -169,7 +171,7 @@ export function RangeEditor({ unitTypeId, selection, onApplied }: Props) {
                   <span>{it.date}</span>
                   <span className={it.valid ? "" : "text-red-500"}>
                     {formatCOP(it.old_price)} → {formatCOP(it.new_price)}
-                    {it.valid ? "" : " (inválido)"}
+                    {it.valid ? "" : m.calendar.invalid}
                   </span>
                 </div>
               ))}
@@ -180,10 +182,10 @@ export function RangeEditor({ unitTypeId, selection, onApplied }: Props) {
                 onClick={() => setPreview(null)}
                 disabled={busy}
               >
-                Cancelar
+                {m.common.cancel}
               </Button>
               <Button onClick={doApply} disabled={busy || preview.valid_count === 0}>
-                Confirmar
+                {m.common.confirm}
               </Button>
             </div>
           </div>
@@ -195,11 +197,14 @@ export function RangeEditor({ unitTypeId, selection, onApplied }: Props) {
         {availPreview && (
           <div>
             <h3 className="text-sm font-semibold">
-              {availAction === "block" ? "Bloquear" : "Abrir"} disponibilidad
+              {availAction === "block"
+                ? m.calendar.blockAvailabilityTitle
+                : m.calendar.openAvailabilityTitle}
             </h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              {availPreview.affected_count} noche(s) a {availAction === "block" ? "bloquear" : "abrir"}
-              {availPreview.skipped_count ? `, ${availPreview.skipped_count} omitida(s)` : ""}.
+              {availAction === "block"
+                ? m.calendar.blockSummary(availPreview.affected_count, availPreview.skipped_count)
+                : m.calendar.openSummary(availPreview.affected_count, availPreview.skipped_count)}
             </p>
             <div className="mt-3 max-h-64 space-y-1 overflow-y-auto text-xs">
               {availPreview.items.map((it) => (
@@ -211,9 +216,9 @@ export function RangeEditor({ unitTypeId, selection, onApplied }: Props) {
                   <span className={it.valid ? "" : "text-muted-foreground"}>
                     {it.valid
                       ? availAction === "block"
-                        ? "bloquear"
-                        : "abrir"
-                      : `omitida (${it.skip_reason})`}
+                        ? m.calendar.itemBlock
+                        : m.calendar.itemOpen
+                      : m.calendar.itemSkipped(trServer(it.skip_reason))}
                   </span>
                 </div>
               ))}
@@ -224,10 +229,10 @@ export function RangeEditor({ unitTypeId, selection, onApplied }: Props) {
                 onClick={() => setAvailPreview(null)}
                 disabled={busy}
               >
-                Cancelar
+                {m.common.cancel}
               </Button>
               <Button onClick={doAvailApply} disabled={busy || availPreview.affected_count === 0}>
-                Confirmar
+                {m.common.confirm}
               </Button>
             </div>
           </div>

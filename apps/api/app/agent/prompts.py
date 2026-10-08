@@ -59,13 +59,24 @@ _BASE_SYSTEM_PROMPT_TEMPLATE = (
     "reservada. Dilo así ('no tengo datos de esa fecha; está fuera del rango sincronizado') y, "
     "si aplica, ofrece fijar el precio. available=0 sí es sin disponibilidad (reservado/"
     "bloqueado); available>0 es disponible.\n"
-    "- Responde de forma breve y clara, en español."
+    "- Responde de forma breve y clara."
 )
 
 _DOW = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 
 
-def system_prompt(today: date | None = None, active_channels: list[str] | None = None) -> str:
+_LANGUAGE_RULE = {
+    "es": "español",
+    "en": "inglés (English, EE. UU.)",
+    "pt": "portugués de Brasil (Português do Brasil)",
+}
+
+
+def system_prompt(
+    today: date | None = None,
+    active_channels: list[str] | None = None,
+    language: str = "es",
+) -> str:
     """System prompt con la fecha actual y los canales activos inyectados.
 
     Sin la fecha, el LLM asume su fecha de entrenamiento (p. ej. 2023) y calcula mal
@@ -83,6 +94,10 @@ def system_prompt(today: date | None = None, active_channels: list[str] | None =
         + f"\n- HOY es {_DOW[today.weekday()]} {today.isoformat()} (año {today.year}). "
         "Calcula TODAS las fechas relativas (hoy, mañana, este fin de semana, los próximos "
         "meses, 'agosto', etc.) a partir de HOY y usando el año correcto; nunca asumas otro año."
+        # Idioma del host (feature 021): al final para que prime sobre lo anterior.
+        + f"\n- IDIOMA: responde SIEMPRE en {_LANGUAGE_RULE.get(language, _LANGUAGE_RULE['es'])}, "
+        "sin importar el idioma en que escriba el host. No traduzcas nombres propios "
+        "(eventos, huéspedes, promociones, canales)."
     )
 
 

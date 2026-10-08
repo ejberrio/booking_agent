@@ -14,7 +14,8 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useActiveUnit } from "@/lib/active-unit";
 import { api } from "@/lib/api";
-import { monthLabel, monthRange, ymd } from "@/lib/format";
+import { formatNumber, monthLabel, monthRange, ymd } from "@/lib/format";
+import { useI18n } from "@/lib/i18n";
 import type { NativeDeal, Suggestion } from "@/lib/types";
 
 function dealCoversDay(deal: NativeDeal, day: string): boolean {
@@ -23,6 +24,7 @@ function dealCoversDay(deal: NativeDeal, day: string): boolean {
 }
 
 export default function CalendarPage() {
+  const { m } = useI18n();
   const [unitTypeId] = useActiveUnit();
   const qc = useQueryClient();
   const now = new Date();
@@ -103,10 +105,7 @@ export default function CalendarPage() {
   const syncNow = useMutation({
     mutationFn: () => api.importRemote(365),
     onSuccess: (r) => {
-      toast.success(
-        `Sincronizado: ${r.created} nuevo(s), ${r.updated} actualizado(s)` +
-          (r.issues ? ` · ${r.issues} incidencia(s)` : ""),
-      );
+      toast.success(m.calendar.synced(r.created, r.updated, r.issues));
       qc.invalidateQueries();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -162,21 +161,21 @@ export default function CalendarPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Calendario de precios</h1>
+        <h1 className="text-xl font-semibold">{m.calendar.title}</h1>
         <div className="flex items-center gap-2">
           <Button
             className="bg-muted text-foreground"
             onClick={() => syncNow.mutate()}
             disabled={syncNow.isPending}
-            title="Trae ahora reservas, cancelaciones y disponibilidad del Channel Manager"
+            title={m.calendar.syncTitle}
           >
             <RefreshCw size={16} className={syncNow.isPending ? "animate-spin" : ""} />
-            <span className="ml-1 hidden sm:inline">Sincronizar</span>
+            <span className="ml-1 hidden sm:inline">{m.calendar.sync}</span>
           </Button>
           <Button className="bg-muted text-foreground" onClick={() => move(-1)}>
             <ChevronLeft size={16} />
           </Button>
-          <span className="w-36 text-center text-sm capitalize">
+          <span className="w-36 text-center text-sm">
             {monthLabel(ym.year, ym.month)}
           </span>
           <Button className="bg-muted text-foreground" onClick={() => move(1)}>
@@ -187,9 +186,9 @@ export default function CalendarPage() {
 
       {isError ? (
         <Card>
-          <p className="text-sm text-red-500">No se pudo cargar el calendario.</p>
+          <p className="text-sm text-red-500">{m.calendar.loadError}</p>
           <Button className="mt-2" onClick={() => refetch()}>
-            Reintentar
+            {m.common.retry}
           </Button>
         </Card>
       ) : isLoading ? (
@@ -238,17 +237,17 @@ export default function CalendarPage() {
             <RangeEditor unitTypeId={unitTypeId} selection={selection} onApplied={() => refetch()} />
             {channelPrices && (
               <Card>
-                <p className="text-xs font-medium">Precio por canal · {selection?.from}</p>
+                <p className="text-xs font-medium">{m.calendar.channelPrice} · {selection?.from}</p>
                 <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
                   {channelPrices.map((c) => (
                     <li key={c.name}>
-                      {c.name}: <strong className="text-foreground">{c.value.toLocaleString("es-CO")} COP</strong>
+                      {c.name}: <strong className="text-foreground">{formatNumber(c.value)} COP</strong>
                       {c.note && <span>{c.note}</span>}
                     </li>
                   ))}
                 </ul>
                 <p className="mt-1 text-[10px] text-muted-foreground">
-                  Airbnb lo muestra en la moneda del huésped (margen cambiario propio).
+                  {m.calendar.airbnbCurrencyNote}
                 </p>
               </Card>
             )}

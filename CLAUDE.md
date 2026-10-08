@@ -1,16 +1,15 @@
 <!-- SPECKIT START -->
-Feature activa: **020-beds24-webhooks** (reservas en tiempo real; issue #117).
-Plan: `specs/020-beds24-webhooks/{plan,research,data-model,quickstart}.md` + `contracts/webhooks-api.md`.
-Beds24 Booking Webhook V2 (Settings → Properties → Access): POST JSON {timeStamp, booking{id, propertyId,
-arrival, departure, …PII y tokens de pago}}, reintenta si respuesta ≥ 400, campo Custom Header.
-Diseño: entrada pública web `POST /api/hooks/beds24` (sin sesión, ≤256 KB, sin logs) → API privada
-`POST /hooks/beds24`; clave `X-StayLever-Key` vs secreto `beds24_webhook_key` (hmac.compare_digest;
-generada por la app y mostrada UNA vez en `POST /hooks/beds24/key`); el cuerpo es solo PISTA
-(id/propertyId/arrival/departure, nunca se persiste): se re-sincroniza el rango (± estancia previa) con
-`import_remote` → Beds24 es la verdad, idempotente y sin datos inyectables. 200 accepted/ignored/failed
-(failed no se reintenta: el cron corrige), 401 rechazado, 503 sin clave. Bitácora `webhook_event` sin
-PII (purga > 30 días); estado en Ajustes (unconfigured/never/active/idle >7 días). Migración
-`a4b5c6d7e8f9`. Sin escrituras al canal; bloqueos manuales intactos.
+Feature activa: **021-language-selector** (es/en/pt; issue #124).
+Plan: `specs/021-language-selector/{plan,research,data-model,quickstart}.md` + `contracts/preferences-api.md`.
+Diseño: i18n propia sin librerías — `apps/web/lib/i18n/{es,en,pt}.ts` (es = referencia; en/pt tipados
+`Messages = typeof es` → texto faltante rompe tsc/build), `I18nProvider`/`useI18n()` {lang, setLang, t, fmt}
+con Intl es-CO/en-US/pt-BR y moneda COP. Preferencia: cookie `lang` (login sin sesión) + `app_preference`
+(fila única, migración `b5c6d7e8f9a0`) vía GET/PUT /preferences (todos los dispositivos). Mensajes del
+servidor siguen en español; la web los traduce con `lib/i18n/server-messages.ts` (exactos + patrones),
+sin match → español. Factores de sugerencias con campos estructurados aditivos (relevance, days, adr,
+samples, weight, state) → la web arma la frase por idioma; nombres de eventos intactos. Chat:
+`language` en el request → instrucción al final del system prompt. Contenido del host/terceros nunca
+se traduce. Sin cambios de comportamiento.
 <!-- SPECKIT END -->
 
 # Booking AI Agent

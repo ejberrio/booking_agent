@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Rationale } from "@/components/suggestions/rationale";
 import { api } from "@/lib/api";
 import { formatCOP } from "@/lib/format";
+import { useI18n } from "@/lib/i18n";
 import type { Suggestion } from "@/lib/types";
 
 interface Props {
@@ -18,6 +19,7 @@ interface Props {
 /** Detalle y resolución de las sugerencias vigentes del día seleccionado (feature 014).
  *  El detalle mostrado es la previsualización informada; el clic es la confirmación. */
 export function SuggestionPanel({ date, suggestions }: Props) {
+  const { m } = useI18n();
   const qc = useQueryClient();
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["suggestions"] });
@@ -28,9 +30,9 @@ export function SuggestionPanel({ date, suggestions }: Props) {
     mutationFn: (id: number) => api.applySuggestion(id),
     onSuccess: (s) => {
       if (s.applied_from && s.applied_from > s.date_from) {
-        toast.success(`Sugerencia aplicada desde ${s.applied_from} (las noches pasadas no se tocan)`);
+        toast.success(m.calendar.appliedFrom(s.applied_from));
       } else {
-        toast.success("Sugerencia aplicada y publicada");
+        toast.success(m.calendar.appliedPublished);
       }
     },
     onError: (e: Error) => toast.error(e.message),
@@ -38,7 +40,7 @@ export function SuggestionPanel({ date, suggestions }: Props) {
   });
   const reject = useMutation({
     mutationFn: (id: number) => api.rejectSuggestion(id),
-    onSuccess: () => toast("Sugerencia rechazada"),
+    onSuccess: () => toast(m.calendar.rejected),
     onError: (e: Error) => toast.error(e.message),
     onSettled: refresh,
   });
@@ -47,7 +49,7 @@ export function SuggestionPanel({ date, suggestions }: Props) {
   return (
     <Card>
       <p className="mb-2 text-xs font-medium">
-        {suggestions.length === 1 ? "Sugerencia" : `${suggestions.length} sugerencias`} · {date}
+        {m.calendar.suggestionsHeader(suggestions.length)} · {date}
       </p>
       <div className="space-y-3">
         {suggestions.map((s) => (
@@ -73,14 +75,14 @@ export function SuggestionPanel({ date, suggestions }: Props) {
             <Rationale rationale={s.rationale} />
             <div className="flex gap-2 pt-1">
               <Button onClick={() => apply.mutate(s.id)} disabled={busy}>
-                Aprobar y aplicar
+                {m.calendar.approveApply}
               </Button>
               <Button
                 className="bg-muted text-foreground"
                 onClick={() => reject.mutate(s.id)}
                 disabled={busy}
               >
-                Rechazar
+                {m.calendar.reject}
               </Button>
             </div>
           </div>

@@ -109,6 +109,14 @@ export interface SuggestionFactor {
     dates?: string | null;
     source_url?: string | null;
   };
+  // Campos estructurados (feature 021) para componer la frase en el idioma elegido.
+  relevance?: "high" | "medium" | "low";
+  days?: number;
+  adr?: string;
+  samples?: number;
+  source?: string;
+  state?: "used" | "low_confidence" | "discarded";
+  weight?: number;
 }
 
 export interface Suggestion {

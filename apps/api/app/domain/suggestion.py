@@ -46,9 +46,12 @@ class EventSignal:
 @dataclass(frozen=True)
 class Factor:
     kind: str  # "event" | "occupancy" | "gap" | "market"
-    label: str
+    label: str  # resumen en español (referencia y respaldo para datos viejos)
     pct: Decimal | None = None
     event: dict | None = None
+    # Campos estructurados (feature 021) para componer la frase en cualquier idioma:
+    # event → relevance · gap → days · market → adr, samples, source, state, weight.
+    data: dict | None = None
 
 
 @dataclass(frozen=True)
@@ -94,6 +97,7 @@ def suggest_price_v2(
                 kind="event",
                 label=f"{event.name} ({event.relevance.value}, +{int(up * 100)}%)",
                 pct=up * 100,
+                data={"relevance": event.relevance.value},
                 event={
                     "name": event.name,
                     "location": event.location,
@@ -113,6 +117,7 @@ def suggest_price_v2(
                 kind="gap",
                 label=f"libre a {gap_days_ahead} día{'s' if gap_days_ahead != 1 else ''} (−{int(down * 100)}%)",
                 pct=-(down * 100),
+                data={"days": gap_days_ahead},
             )
         )
 
@@ -130,6 +135,7 @@ def suggest_price_v2(
                         f"mercado ~{market.adr:.0f} descartado: no es comparable con tu "
                         "tarifa (fuera del rango creíble)"
                     ),
+                    data={"adr": str(market.adr), "samples": market.sample_size, "source": market.source, "state": "discarded"},
                 )
             )
         elif not market.low_confidence:
@@ -143,6 +149,7 @@ def suggest_price_v2(
                         f"mercado de la zona ~{market.adr:.0f} ({market.sample_size} tarifas, "
                         f"{market.source}; pesa {int(weight * 100)}%)"
                     ),
+                    data={"adr": str(market.adr), "samples": market.sample_size, "source": market.source, "state": "used", "weight": float(weight)},
                 )
             )
         else:
@@ -153,6 +160,7 @@ def suggest_price_v2(
                         f"mercado ~{market.adr:.0f} pero con solo {market.sample_size} "
                         "tarifa(s): confianza baja, no se usa como ancla"
                     ),
+                    data={"adr": str(market.adr), "samples": market.sample_size, "source": market.source, "state": "low_confidence"},
                 )
             )
 

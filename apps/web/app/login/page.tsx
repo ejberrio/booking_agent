@@ -6,12 +6,15 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { LanguageSwitcher } from "@/components/i18n/language-switcher";
+import { useI18n } from "@/lib/i18n";
 
 export default function LoginPage() {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { m } = useI18n();
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -27,28 +30,30 @@ export default function LoginPage() {
       router.push("/");
       router.refresh();
     } else {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "No se pudo iniciar sesión");
+      setError(res.status === 401 ? m.shell.login.wrongPassword : m.shell.login.failed);
     }
   }
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4">
       <Card className="w-full max-w-sm">
-        <Logo size={44} className="mb-3" />
+        <div className="mb-3 flex items-start justify-between">
+          <Logo size={44} />
+          <LanguageSwitcher />
+        </div>
         <CardTitle className="text-lg">StayLever</CardTitle>
-        <CardDescription>Ingresa la contraseña del host para continuar.</CardDescription>
+        <CardDescription>{m.shell.login.subtitle}</CardDescription>
         <form onSubmit={onSubmit} className="mt-4 space-y-3">
           <Input
             type="password"
-            placeholder="Contraseña"
+            placeholder={m.shell.login.password}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoFocus
           />
           {error && <p className="text-xs text-red-500">{error}</p>}
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Entrando…" : "Entrar"}
+            {loading ? m.shell.login.submitting : m.shell.login.submit}
           </Button>
         </form>
       </Card>
