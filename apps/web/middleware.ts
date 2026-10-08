@@ -5,8 +5,13 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 const PUBLIC = ["/login", "/api/login"];
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  if (PUBLIC.some((p) => pathname.startsWith(p))) {
+  const { pathname, search } = request.nextUrl;
+  // Dominio canónico sin "www": redirección permanente conservando ruta y query.
+  const host = request.headers.get("host") ?? "";
+  if (host.startsWith("www.")) {
+    return NextResponse.redirect(`https://${host.slice(4)}${pathname}${search}`, 308);
+  }
+  if (PUBLIC.some((p) => pathname.startsWith(p)) || pathname === "/icon.svg") {
     return NextResponse.next();
   }
   // La cookie debe llevar una firma válida y vigente: su mera presencia no basta.
@@ -21,5 +26,5 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   // Protege todo excepto assets estáticos.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
