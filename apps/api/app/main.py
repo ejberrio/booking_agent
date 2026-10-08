@@ -34,7 +34,7 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(
-    title="Booking AI Agent API",
+    title="StayLever API",
     version="0.1.2",
     lifespan=lifespan,
     description=(

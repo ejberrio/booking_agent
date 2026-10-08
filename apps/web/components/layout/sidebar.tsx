@@ -55,7 +55,7 @@ export function Sidebar() {
         <div className="mb-4 flex items-center justify-between px-2">
           <span className="flex items-center gap-2 text-sm font-semibold">
             <Logo size={24} />
-            Booking AI
+            StayLever
           </span>
           <ThemeToggle />
         </div>

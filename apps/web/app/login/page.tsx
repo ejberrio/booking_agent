@@ -36,7 +36,7 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center px-4">
       <Card className="w-full max-w-sm">
         <Logo size={44} className="mb-3" />
-        <CardTitle className="text-lg">Booking AI Agent</CardTitle>
+        <CardTitle className="text-lg">StayLever</CardTitle>
         <CardDescription>Ingresa la contraseña del host para continuar.</CardDescription>
         <form onSubmit={onSubmit} className="mt-4 space-y-3">
           <Input
