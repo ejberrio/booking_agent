@@ -135,6 +135,11 @@ export const api = {
     }),
   deleteSecret: (name: string) =>
     req<SecretStatus>(`/settings/secrets/${name}`, { method: "DELETE" }),
+  redeemBeds24Invite: (code: string) =>
+    req<SecretStatus>(`/settings/secrets/beds24_refresh_token/invite`, {
+      method: "POST",
+      body: JSON.stringify({ code }),
+    }),
   testSecret: (name: string) =>
     req<SecretTestResult>(`/settings/secrets/${name}/test`, { method: "POST" }),
   listSecretAudit: () => req<{ entries: SecretAuditEntry[] }>(`/settings/secrets/audit`),

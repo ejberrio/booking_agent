@@ -205,3 +205,25 @@ async def test_set_availability_verifies():
     res = await adapter.set_availability_range("697411", DAY, DAY, 0)
     assert res.ok is True and res.verified is True
     await adapter.aclose()
+
+
+async def test_exchange_invite_code_ok_y_rechazo():
+    from app.channels.beds24_v2 import exchange_invite_code
+
+    seen: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["path"] = request.url.path
+        seen["code"] = request.headers.get("code")
+        if request.headers.get("code") == "GOOD":
+            return httpx.Response(200, json={"token": "t", "refreshToken": "REFRESH-NEW"})
+        return httpx.Response(400, json={"success": False, "error": "Invalid code GOOD?"})
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    assert await exchange_invite_code(" GOOD ", client=client) == "REFRESH-NEW"
+    assert seen == {"path": "/v2/authentication/setup", "code": "GOOD"}
+
+    with pytest.raises(AuthError) as exc:
+        await exchange_invite_code("BAD-CODE", client=client)
+    assert "BAD-CODE" not in str(exc.value)  # mensaje fijo, sin eco del código
+    await client.aclose()

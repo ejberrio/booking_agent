@@ -49,6 +49,39 @@ async def set_secret(
         raise HTTPException(status_code=422, detail=str(exc)) from None
 
 
+class InviteCodeRequest(BaseModel):
+    code: str
+
+
+@router.post("/beds24_refresh_token/invite")
+async def redeem_beds24_invite(
+    req: InviteCodeRequest, session: AsyncSession = Depends(get_session)
+):
+    """Canjea un código de invitación de Beds24 y guarda el refresh token resultante.
+
+    El host solo pega el código (Beds24 → Settings → Account → Account Access → API);
+    el token nunca sale del servidor.
+    """
+    from app.channels.beds24_v2 import exchange_invite_code
+    from app.channels.errors import AuthError, ChannelError
+    from app.core.config import settings
+
+    if not req.code.strip():
+        raise HTTPException(status_code=422, detail="El código no puede estar vacío")
+    try:
+        token = await exchange_invite_code(req.code, base_url=settings.beds24_v2_base_url)
+    except AuthError:
+        raise HTTPException(
+            status_code=422,
+            detail="Beds24 rechazó el código (¿vencido o ya usado?). Genera uno nuevo.",
+        ) from None
+    except ChannelError:
+        raise HTTPException(status_code=503, detail=_UNAVAILABLE) from None
+    await secret_service.set_secret(session, "beds24_refresh_token", token)
+    await session.commit()
+    return await _one_status(session, "beds24_refresh_token")
+
+
 @router.delete("/{name}")
 async def delete_secret(name: str, session: AsyncSession = Depends(get_session)):
     try:

@@ -107,3 +107,30 @@ async def test_probar_sin_credencial(client, session, monkeypatch):
     monkeypatch.setattr(settings, "openai_api_key", None)
     res = await client.post("/settings/secrets/openai_api_key/test")
     assert res.json() == {"ok": False, "detail": "sin credencial configurada"}
+
+
+async def test_canje_codigo_invitacion_beds24_sin_fugas(client, monkeypatch):
+    import app.channels.beds24_v2 as v2
+    from app.channels.errors import AuthError
+
+    async def fake_exchange(code, **_kw):
+        if code == "INVITE-OK":
+            return SENTINEL
+        raise AuthError("código de invitación rechazado por Beds24")
+
+    monkeypatch.setattr(v2, "exchange_invite_code", fake_exchange)
+
+    res = await client.post(
+        "/settings/secrets/beds24_refresh_token/invite", json={"code": "INVITE-OK"}
+    )
+    assert res.status_code == 200
+    assert SENTINEL not in res.text and "INVITE-OK" not in res.text
+    assert res.json()["source"] == "app"
+    assert svc.get_secret("beds24_refresh_token") == SENTINEL  # rotación inmediata
+
+    bad = await client.post(
+        "/settings/secrets/beds24_refresh_token/invite", json={"code": "INVITE-BAD"}
+    )
+    assert bad.status_code == 422 and "INVITE-BAD" not in bad.text
+    empty = await client.post("/settings/secrets/beds24_refresh_token/invite", json={"code": " "})
+    assert empty.status_code == 422
