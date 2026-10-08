@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 
 const PUBLIC = ["/login", "/api/login"];
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   if (PUBLIC.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
-  const session = request.cookies.get("session")?.value;
-  if (!session) {
+  // La cookie debe llevar una firma válida y vigente: su mera presencia no basta.
+  const token = request.cookies.get(SESSION_COOKIE)?.value;
+  if (!(await verifySessionToken(token, process.env.APP_PASSWORD))) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

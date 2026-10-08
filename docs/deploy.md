@@ -108,7 +108,9 @@ Con los servicios conectados a `main`, **cada push a `main` redepliega** automá
 ## 7. Notas de seguridad
 
 - Solo la `web` es pública; la `api` no es alcanzable desde internet.
-- El login (cookie `session`) protege también `/api/proxy/*` vía el `middleware` de Next.
+- El login emite una cookie `session` firmada (HMAC con clave derivada de `APP_PASSWORD`, 7 días);
+  el `middleware` de Next valida firma y vigencia en todo, incluido `/api/proxy/*`. Cambiar
+  `APP_PASSWORD` cierra todas las sesiones.
 - El token V2 de Beds24 se renueva solo mientras se use (vence tras 30 días sin uso; el cron diario
   lo usa al sincronizar). Para reconectar: código de invitación → Ajustes → Secretos → Canjear.
 - Ningún secreto vive en el repositorio ni se escribe en logs.
