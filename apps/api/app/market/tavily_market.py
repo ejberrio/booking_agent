@@ -28,9 +28,10 @@ _MONTHS_ES = [
 
 _EXTRACT_PROMPT = (
     "De los siguientes resultados de búsqueda, extrae PRECIOS POR NOCHE en COP de "
-    "apartamentos/alojamientos de la zona indicada. Devuelve SOLO un array JSON de "
-    "números (COP por noche, sin separadores). Omite precios por mes, por persona "
-    "en tours, o claramente de otra zona. Si no hay precios claros: []."
+    "APARTAMENTOS COMPLETOS de la zona indicada. Devuelve SOLO un array JSON de "
+    "números (COP por noche, sin separadores). Omite habitaciones privadas, camas en "
+    "hostal, precios por mes, por persona, en USD u otra moneda, o claramente de otra "
+    "zona. Si no hay precios claros: []."
 )
 
 
@@ -46,7 +47,7 @@ class TavilyMarketProvider:
         if self._llm is None:
             return None
         label = f"{_MONTHS_ES[month.month - 1]} {month.year}"
-        query = f"precio por noche apartamento alquiler {zone} {label} airbnb booking"
+        query = f"precio por noche apartamento completo alquiler {zone} {label} airbnb booking"
         results = await self._search.search(query, max_results=5)
         prices = await self._extract_prices(zone, results)
         if not prices:

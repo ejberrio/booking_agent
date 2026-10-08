@@ -95,3 +95,24 @@ def test_confidence_por_senales():
     one = suggest_price_v2(D("100000"), event=_event())
     two = suggest_price_v2(D("100000"), event=_event(), occupancy_high=True)
     assert two.confidence > one.confidence
+
+
+def test_mercado_no_comparable_se_descarta_y_no_hunde_el_evento():
+    # Caso real (oct 2026): evento +30% sobre 270.000 con "mercado" ~52.000 (habitaciones/USD).
+    out = suggest_price_v2(D("270000"), event=_event(), market=_snapshot("52000"))
+    assert out.price == D("351000")  # +30% intacto, sin ancla absurda
+    assert any(f.kind == "market" and "descartado" in f.label for f in out.factors)
+    assert out.confidence == D("0.5")  # el mercado descartado no suma confianza
+
+
+def test_mercado_mas_barato_pero_creible_si_baja_el_precio():
+    # Competencia de verdad más barata: el ancla debe poder bajar (no solo subir).
+    out = suggest_price_v2(D("300000"), gap_days_ahead=10, market=_snapshot("220000"))
+    assert out.price < D("300000")
+    assert any(f.kind == "market" and "tarifas" in f.label for f in out.factors)
+
+
+def test_mercado_demasiado_caro_tambien_se_descarta():
+    out = suggest_price_v2(D("300000"), event=_event(Relevance.medium), market=_snapshot("900000"))
+    assert out.price == D("345000")
+    assert any(f.kind == "market" and "descartado" in f.label for f in out.factors)

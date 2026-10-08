@@ -20,6 +20,10 @@ EVENT_UPLIFT = {Relevance.high: D("0.30"), Relevance.medium: D("0.15"), Relevanc
 OCCUPANCY_UPLIFT = D("0.10")
 MAX_DISCOUNT = D("0.15")  # tope bajista por sugerencia (host, clarify 2026-07-04)
 GAP_WINDOW_DAYS = 14  # ventana de "hueco próximo" (host)
+# Banda de credibilidad del mercado frente al precio base: fuera de ella el ADR no es
+# comparable (p. ej. habitaciones sueltas, USD o por persona) y no se usa como ancla.
+# Dentro de la banda SÍ puede bajar el precio (competencia más barata).
+MARKET_PLAUSIBLE = (D("0.5"), D("2.0"))
 _CONFIDENCE = {1: D("0.5"), 2: D("0.7"), 3: D("0.9")}
 
 
@@ -110,8 +114,21 @@ def suggest_price_v2(
     target = (base * (D("1") + factor_pct)).quantize(D("1"))
 
     # Ancla de mercado: solo con muestras suficientes; con pocas, informa sin anclar.
+    market_ok = False
     if market is not None and market.adr is not None:
-        if not market.low_confidence:
+        lo, hi = base * MARKET_PLAUSIBLE[0], base * MARKET_PLAUSIBLE[1]
+        if not (lo <= market.adr <= hi):
+            factors.append(
+                Factor(
+                    kind="market",
+                    label=(
+                        f"mercado ~{market.adr:.0f} descartado: no es comparable con tu "
+                        "tarifa (fuera del rango creíble)"
+                    ),
+                )
+            )
+        elif not market.low_confidence:
+            market_ok = True
             target = ((target + market.adr) / D("2")).quantize(D("1"))
             factors.append(
                 Factor(
@@ -143,7 +160,7 @@ def suggest_price_v2(
         return None  # sin cambio significativo
 
     primary = sum([event is not None, occupancy_high, gap_days_ahead is not None])
-    anchored = 1 if (market is not None and market.adr is not None and not market.low_confidence) else 0
+    anchored = 1 if market_ok else 0
     confidence = _CONFIDENCE.get(min(3, primary + anchored), D("0.5"))
     text = "; ".join(f.label for f in factors)
     return SuggestionOutputV2(price=target, text=text, confidence=confidence, factors=factors)
