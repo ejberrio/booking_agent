@@ -166,8 +166,20 @@ async def _test_beds24() -> dict:
         await adapter.aclose()
 
 
+async def _test_webhook(session: AsyncSession) -> dict:
+    """La clave de avisos no se "prueba" contra un proveedor: se informa su actividad."""
+    from app.services import webhook_service
+
+    st = await webhook_service.status(session)
+    if not st["configured"]:
+        return {"ok": False, "detail": "sin configurar"}
+    if st["last_accepted_at"]:
+        return {"ok": True, "detail": f"último aviso: {st['last_accepted_at'][:16].replace('T', ' ')} UTC"}
+    return {"ok": True, "detail": "clave guardada; sin avisos aún"}
+
+
 @router.post("/{name}/test")
-async def test_secret(name: str):
+async def test_secret(name: str, session: AsyncSession = Depends(get_session)):
     meta = SECRET_NAMES.get(name)
     if meta is None:
         raise HTTPException(status_code=404, detail="Secreto no gestionable")
@@ -176,4 +188,6 @@ async def test_secret(name: str):
         return await _test_llm(name)
     if kind == "search":
         return await _test_search()
+    if kind == "webhook":
+        return await _test_webhook(session)
     return await _test_beds24()

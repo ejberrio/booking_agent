@@ -381,3 +381,21 @@ La app refleja la realidad multi-canal del Channel Manager (Booking.com + Airbnb
   queda una incidencia `suggestion-batch:<fechas>` y sus sugerencias siguen pendientes.
 - API: `GET /suggestions/blocks`, `POST /suggestions/batch/preview`, `POST /suggestions/batch/apply`
   (contrato en `specs/019-actionable-suggestions/contracts/`).
+
+## Reservas en tiempo real: avisos de Beds24 (Feature 020 · issue #117)
+
+- **Qué hace**: Beds24 (Booking Webhook V2) avisa a `https://staylever.com/api/hooks/beds24` cuando una
+  reserva se crea, cambia de fechas/estado o se cancela; StayLever re-sincroniza ese rango desde Beds24
+  (el aviso es solo una pista; Beds24 es la verdad) y el calendario/Sugerencias se actualizan en ~1 min.
+  Nunca publica precios ni disponibilidad, ni toca bloqueos manuales. El cron diario sigue de respaldo.
+- **Configurar (una vez)**: Ajustes → *Avisos en tiempo real* → "Generar clave" → copiar la línea
+  `X-StayLever-Key: …` (se muestra UNA vez). Beds24 → Settings → Properties → Access → *Booking Webhook*:
+  Version 2, URL `https://staylever.com/api/hooks/beds24`, Custom Header = la línea → Save.
+- **Estados**: sin configurar · esperando el primer aviso · funcionando · sin actividad (7+ días sin
+  avisos aceptados: revisar la configuración en Beds24 si sí hubo cambios de reservas).
+- **Respuestas**: 200 aceptado/ignorado/fallido (fallido = Beds24 no respondió al re-sincronizar; el cron
+  corrige), 401 clave incorrecta (rechazado), 503 sin clave (función apagada), 413 cuerpo > 256 KB.
+- **Rotar la clave**: "Generar clave nueva" invalida la anterior al instante → actualizar el Custom
+  Header en Beds24 en el mismo momento.
+- **Privacidad**: el cuerpo del aviso (trae datos del huésped y tokens de pago) nunca se guarda ni se
+  registra; la bitácora `webhook_event` solo guarda resultado, id de reserva y motivo fijo (30 días).

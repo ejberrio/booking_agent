@@ -11,8 +11,10 @@ from app.models.pricing import NativeDeal, PricingRule, Promotion
 from app.models.property import Channel, Property, UnitType
 from app.models.secret import SecretChangeLog, SecretEntry
 from app.models.sync import ChannelManagerConnection, SyncIssue, SyncRun
+from app.models.webhook import WebhookEvent
 
 __all__ = [
+    "WebhookEvent",
     "Property",
     "Channel",
     "UnitType",

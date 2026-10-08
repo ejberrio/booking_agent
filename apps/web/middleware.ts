@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 
-const PUBLIC = ["/login", "/api/login"];
+const PUBLIC = ["/login", "/api/login", "/api/hooks/"]; // hooks: avisos de Beds24 (auth por clave propia)
 
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;

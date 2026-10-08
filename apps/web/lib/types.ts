@@ -321,3 +321,13 @@ export interface OffsetApplyResult {
   offset_pct: number;
   issue: string | null;
 }
+
+// --- Reservas en tiempo real (feature 020) ---
+export interface WebhookStatus {
+  configured: boolean;
+  status: "unconfigured" | "never" | "active" | "idle";
+  last_accepted_at: string | null;
+  counts_7d: { accepted: number; ignored: number; rejected: number; failed: number };
+  endpoint_url: string;
+  header_name: string;
+}

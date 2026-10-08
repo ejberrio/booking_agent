@@ -41,6 +41,13 @@ SECRET_NAMES: dict[str, dict[str, str]] = {
         "service": "Todo el canal (precios, reservas, disponibilidad)",
         "test": "beds24",
     },
+    # Feature 020: la genera la app (Ajustes → Avisos en tiempo real) y se pega en
+    # Beds24 como Custom Header. Sin variable de entorno: ausente = avisos apagados.
+    "beds24_webhook_key": {
+        "label": "Clave de avisos de Beds24",
+        "service": "Reservas en tiempo real (avisos de Beds24)",
+        "test": "webhook",
+    },
 }
 
 _cache: dict[str, str] = {}
@@ -65,7 +72,7 @@ def get_secret(name: str) -> str | None:
     """Valor vigente: caché (BD, cargada al arrancar y write-through) > entorno."""
     if name in _cache:
         return _cache[name]
-    return getattr(settings, name, None)
+    return getattr(settings, name, None)  # None si no hay variable (p. ej. beds24_webhook_key)
 
 
 async def load_cache(session: AsyncSession) -> None:

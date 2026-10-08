@@ -13,6 +13,7 @@ import type {
   BookingView,
   BatchPreview,
   BatchResult,
+  WebhookStatus,
   SuggestionBlock,
   CalendarNote,
   SecretAuditEntry,
@@ -226,6 +227,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+
+  // Reservas en tiempo real (feature 020): estado y clave (la línea se ve UNA vez)
+  getWebhookStatus: () => req<WebhookStatus>(`/hooks/beds24/status`),
+  generateWebhookKey: () =>
+    req<{ header_line: string; hint: string }>(`/hooks/beds24/key`, { method: "POST" }),
 
   // Sync
   testConnection: () => req<ConnectionStatus>(`/sync/test`, { method: "POST" }),

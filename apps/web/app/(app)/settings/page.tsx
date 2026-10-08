@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useActiveUnit } from "@/lib/active-unit";
 import { api } from "@/lib/api";
-import type { OffsetPreview, Poi, SecretStatus, SecretTestResult } from "@/lib/types";
+import type { OffsetPreview, Poi, SecretStatus, SecretTestResult, WebhookStatus } from "@/lib/types";
 
 const CHANNEL_NAMES: Record<string, string> = { booking: "Booking.com", airbnb: "Airbnb" };
 const cop = (v: string) => `${Number(v).toLocaleString("es-CO")} COP`;
@@ -487,6 +487,135 @@ function ScanConfigCard() {
   );
 }
 
+const WEBHOOK_STATE: Record<
+  WebhookStatus["status"],
+  { label: string; variant: "success" | "warning" | "muted" }
+> = {
+  unconfigured: { label: "sin configurar", variant: "muted" },
+  never: { label: "esperando el primer aviso", variant: "warning" },
+  active: { label: "funcionando", variant: "success" },
+  idle: { label: "sin actividad (7+ días)", variant: "warning" },
+};
+
+function CopyRow({ value, secret }: { value: string; secret?: boolean }) {
+  return (
+    <div className="flex items-center gap-2">
+      <code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-1 text-xs">
+        {value}
+      </code>
+      <Button
+        className="h-7 bg-muted px-2 text-xs text-foreground"
+        onClick={() =>
+          navigator.clipboard
+            .writeText(value)
+            .then(() => toast.success(secret ? "Línea copiada" : "Copiado"))
+            .catch(() => toast.error("No se pudo copiar; selecciónalo a mano"))
+        }
+      >
+        Copiar
+      </Button>
+    </div>
+  );
+}
+
+/** Reservas en tiempo real (feature 020): estado de los avisos de Beds24, clave y guía. */
+function WebhooksCard() {
+  const qc = useQueryClient();
+  const status = useQuery({
+    queryKey: ["webhook-status"],
+    queryFn: () => api.getWebhookStatus(),
+    refetchInterval: 60_000,
+  });
+  // La línea con la clave solo vive en memoria de esta pantalla: no se vuelve a mostrar.
+  const [line, setLine] = useState<string | null>(null);
+  const generate = useMutation({
+    mutationFn: () => api.generateWebhookKey(),
+    onSuccess: (r) => {
+      setLine(r.header_line);
+      qc.invalidateQueries({ queryKey: ["webhook-status"] });
+      qc.invalidateQueries({ queryKey: ["secrets"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const st = status.data;
+  const state = st ? WEBHOOK_STATE[st.status] : null;
+
+  const onGenerate = () => {
+    if (
+      st?.configured &&
+      !window.confirm("Ya hay una clave. Si generas otra, la anterior dejará de funcionar. ¿Continuar?")
+    ) {
+      return;
+    }
+    generate.mutate();
+  };
+
+  return (
+    <Card className="space-y-3">
+      <div className="flex items-center justify-between">
+        <CardTitle>Avisos en tiempo real</CardTitle>
+        {state && <Badge variant={state.variant}>{state.label}</Badge>}
+      </div>
+      <CardDescription>
+        Beds24 avisa a StayLever cuando entra, cambia o se cancela una reserva, y el calendario
+        se actualiza solo en ~1 minuto. La sincronización diaria sigue como respaldo.
+      </CardDescription>
+
+      {status.isLoading ? (
+        <Skeleton className="h-16 w-full" />
+      ) : st ? (
+        <>
+          {st.configured && (
+            <p className="text-xs text-muted-foreground">
+              Último aviso:{" "}
+              {st.last_accepted_at
+                ? new Date(st.last_accepted_at).toLocaleString("es-CO")
+                : "todavía ninguno"}{" "}
+              · 7 días: {st.counts_7d.accepted} aceptados, {st.counts_7d.rejected} rechazados,{" "}
+              {st.counts_7d.failed} con error
+            </p>
+          )}
+
+          {line ? (
+            <div className="space-y-1.5 rounded-md border border-amber-500/40 p-2">
+              <p className="text-xs font-medium">
+                Copia esta línea ahora: no se volverá a mostrar.
+              </p>
+              <CopyRow value={line} secret />
+            </div>
+          ) : (
+            <Button onClick={onGenerate} disabled={generate.isPending}>
+              {st.configured ? "Generar clave nueva" : "Generar clave"}
+            </Button>
+          )}
+
+          <ol className="list-decimal space-y-1.5 pl-5 text-xs text-muted-foreground">
+            <li>Genera la clave aquí y copia la línea que aparece.</li>
+            <li>
+              En Beds24 abre <strong>Settings → Properties → Access</strong>, sección{" "}
+              <strong>Booking Webhook</strong>.
+            </li>
+            <li>
+              <strong>Webhook Version</strong>: 2.
+            </li>
+            <li>
+              <strong>URL</strong>:
+              <CopyRow value={st.endpoint_url} />
+            </li>
+            <li>
+              <strong>Custom Header</strong>: pega la línea copiada (empieza por{" "}
+              <code>{st.header_name}:</code>). Pulsa <strong>Save</strong>.
+            </li>
+            <li>Con el próximo cambio de una reserva, aquí verás &quot;funcionando&quot;.</li>
+          </ol>
+        </>
+      ) : (
+        <p className="text-sm text-red-500">No se pudo cargar el estado de los avisos.</p>
+      )}
+    </Card>
+  );
+}
+
 export default function SettingsPage() {
   const [unitTypeId] = useActiveUnit();
   const test = useMutation({ mutationFn: () => api.testConnection() });
@@ -509,6 +638,8 @@ export default function SettingsPage() {
           )}
         </div>
       </Card>
+
+      <WebhooksCard />
 
       <ChannelOffsetsCard />
 

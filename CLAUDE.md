@@ -1,16 +1,16 @@
 <!-- SPECKIT START -->
-Feature activa: **019-actionable-suggestions** (sugerencias accionables).
-Plan: `specs/019-actionable-suggestions/{plan,research,data-model,quickstart}.md` +
-`contracts/suggestions-batch-api.md`. Decisiones del host (2026-10-08): bloques POR EVENTO/PERIODO;
-SELECCIÓN MÚLTIPLE con una vista previa + una confirmación; mantener sugerencias a la baja.
-Diseño: noches vendibles derivadas al consultar (futuras, sin reserva confirmada, sin bloqueo,
-sin inventario 0) → la pestaña oculta ocupadas y reaparecen al cancelar; `app/domain/suggestion_blocks.py`
-PURO (event:<nombre> une días no contiguos; period:<kind> solo contiguos); `services/suggestion_batch.py`
-con preview (huella sha256 de ids + fecha|sugerencia|antes|después|válida|motivo) y apply por tramos
-contiguos de igual precio en SAVEPOINT (fallo de publicación → rollback del tramo + SyncIssue, la
-sugerencia sigue pendiente; applied solo con ≥1 aplicada y 0 fallidas). Engine: la equivalente
-pendiente refresca rationale/confidence. SIN migraciones. Calendario y apply individual (014) intactos.
-Fuera de alcance: editar precio, rechazar en bloque, aplicar todo, webhooks (#117).
+Feature activa: **020-beds24-webhooks** (reservas en tiempo real; issue #117).
+Plan: `specs/020-beds24-webhooks/{plan,research,data-model,quickstart}.md` + `contracts/webhooks-api.md`.
+Beds24 Booking Webhook V2 (Settings → Properties → Access): POST JSON {timeStamp, booking{id, propertyId,
+arrival, departure, …PII y tokens de pago}}, reintenta si respuesta ≥ 400, campo Custom Header.
+Diseño: entrada pública web `POST /api/hooks/beds24` (sin sesión, ≤256 KB, sin logs) → API privada
+`POST /hooks/beds24`; clave `X-StayLever-Key` vs secreto `beds24_webhook_key` (hmac.compare_digest;
+generada por la app y mostrada UNA vez en `POST /hooks/beds24/key`); el cuerpo es solo PISTA
+(id/propertyId/arrival/departure, nunca se persiste): se re-sincroniza el rango (± estancia previa) con
+`import_remote` → Beds24 es la verdad, idempotente y sin datos inyectables. 200 accepted/ignored/failed
+(failed no se reintenta: el cron corrige), 401 rechazado, 503 sin clave. Bitácora `webhook_event` sin
+PII (purga > 30 días); estado en Ajustes (unconfigured/never/active/idle >7 días). Migración
+`a4b5c6d7e8f9`. Sin escrituras al canal; bloqueos manuales intactos.
 <!-- SPECKIT END -->
 
 # Booking AI Agent
