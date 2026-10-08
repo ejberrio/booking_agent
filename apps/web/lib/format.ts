@@ -26,3 +26,29 @@ export function monthLabel(year: number, month: number): string {
     new Date(year, month, 1),
   );
 }
+
+const SHORT_MONTHS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+
+/** "2026-11-14" → "14 nov" (sin depender de la zona horaria del navegador). */
+export function shortDate(iso: string): string {
+  const [, m, d] = iso.split("-").map(Number);
+  return `${d} ${SHORT_MONTHS[m - 1]}`;
+}
+
+/** Rango compacto: "14–16 nov", "30 nov – 2 dic" o "14 nov". */
+export function shortRange(from: string, to: string): string {
+  if (from === to) return shortDate(from);
+  const [, mf, df] = from.split("-").map(Number);
+  const [, mt, dt] = to.split("-").map(Number);
+  return mf === mt ? `${df}–${dt} ${SHORT_MONTHS[mt - 1]}` : `${shortDate(from)} – ${shortDate(to)}`;
+}
+
+/** Variación porcentual redondeada con signo ("+30%", "−11%"), o "" si no aplica. */
+export function pctChange(from: string | null, to: string): string {
+  if (!from) return "";
+  const a = Number(from);
+  const b = Number(to);
+  if (!a || Number.isNaN(a) || Number.isNaN(b) || a === b) return "";
+  const p = Math.round(((b - a) / a) * 100);
+  return p > 0 ? `+${p}%` : `−${Math.abs(p)}%`;
+}

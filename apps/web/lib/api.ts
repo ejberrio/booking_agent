@@ -11,6 +11,9 @@ import type {
   PromotionApplyResult,
   PromotionPreview,
   BookingView,
+  BatchPreview,
+  BatchResult,
+  SuggestionBlock,
   CalendarNote,
   SecretAuditEntry,
   SecretStatus,
@@ -109,6 +112,19 @@ export const api = {
   listSuggestions: (status?: string) =>
     req<Suggestion[]>(`/suggestions${status ? `?status=${status}` : ""}`),
   listPendingSuggestions: () => req<Suggestion[]>(`/suggestions?pending=true`),
+  // Feature 019: bloques vendibles y aplicación en lote (una vista previa + una confirmación)
+  listSuggestionBlocks: () =>
+    req<{ blocks: SuggestionBlock[]; hidden_occupied: number }>(`/suggestions/blocks`),
+  previewSuggestionBatch: (suggestion_ids: number[]) =>
+    req<BatchPreview>(`/suggestions/batch/preview`, {
+      method: "POST",
+      body: JSON.stringify({ suggestion_ids }),
+    }),
+  applySuggestionBatch: (suggestion_ids: number[], fingerprint: string) =>
+    req<BatchResult>(`/suggestions/batch/apply`, {
+      method: "POST",
+      body: JSON.stringify({ suggestion_ids, fingerprint }),
+    }),
   rejectSuggestion: (id: number) =>
     req<Suggestion>(`/suggestions/${id}/reject`, { method: "POST" }),
   applySuggestion: (id: number) =>

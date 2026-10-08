@@ -225,3 +225,33 @@ async def test_noche_reservada_despues_retira_la_pendiente(session):
     await _generate(session, unit)
     await session.refresh(s)
     assert s.status is SuggestionStatus.superseded
+
+
+async def test_equivalente_pendiente_refresca_racional_resueltas_intactas(session):
+    prop, unit = await _seed(session)
+    session.add(_event())
+    await session.flush()
+    aplicada = PriceSuggestion(
+        property_id=prop.id, unit_type_id=unit.id, date_from=E1, date_to=E3,
+        suggested_price=D("390000"), status=SuggestionStatus.applied,
+        rationale={"text": "histórico"},
+    )
+    session.add(aplicada)
+    await session.flush()
+    s = PriceSuggestion(  # pendiente equivalente creada DESPUÉS (id mayor)
+        property_id=prop.id, unit_type_id=unit.id, date_from=E1, date_to=E3,
+        suggested_price=D("390000"), status=SuggestionStatus.proposed,
+        rationale={"text": "mercado de la zona ~83000 (viejo)", "factors": []},
+        confidence=D("0.1"),
+    )
+    session.add(s)
+    await session.flush()
+
+    again = await _generate(session, unit)
+    assert [x for x in again if x.date_from == E1] == []  # sin duplicar
+    await session.refresh(s)
+    await session.refresh(aplicada)
+    assert s.status is SuggestionStatus.proposed
+    assert "83000" not in s.rationale["text"] and s.rationale["factors"]
+    assert s.confidence != D("0.1")
+    assert aplicada.rationale == {"text": "histórico"}

@@ -358,3 +358,22 @@ La app refleja la realidad multi-canal del Channel Manager (Booking.com + Airbnb
 - **Mercado**: proveedor gratis (búsquedas dirigidas, mediana de tarifas encontradas); ancla el
   precio solo con ≥3 muestras; sin datos lo dice y no inventa. Proveedor pago enchufable
   (candidato: PriceLabs ~USD 10-20/mes — ADR 0006).
+
+## Sugerencias accionables: bloques y aplicación en lote (Feature 019)
+
+- **Solo noches vendibles**: la pestaña Sugerencias oculta las noches con reserva confirmada,
+  bloqueadas o con inventario 0 (el día de salida sí es vendible). Se calcula al consultar:
+  si una reserva se cancela y la app sincroniza (cron, botón o chat), la sugerencia reaparece
+  sin esperar al escaneo. El calendario sigue mostrando todos los marcadores.
+- **Bloques**: por evento (une todas las fechas del mismo evento) o por periodo (días seguidos
+  con la misma razón: "Libre próximo", "Ocupación alta"). Las bajadas se muestran igual que las
+  subidas (decisión del host).
+- **Lote**: marcar bloques o sugerencias → "Previsualizar" → una sola vista previa (noche, origen,
+  antes → después, omisiones con motivo) → "Confirmar y publicar". "Aplicar solo esta" usa el
+  mismo diálogo con una sola sugerencia.
+- **Seguridad del lote**: si entre la vista previa y la confirmación cambió un precio, una reserva o
+  el estado de una sugerencia → 409 "revísala de nuevo" y no se escribe nada. Se aplica por tramos
+  (días seguidos con igual precio): si el canal falla en un tramo, ese tramo se revierte localmente,
+  queda una incidencia `suggestion-batch:<fechas>` y sus sugerencias siguen pendientes.
+- API: `GET /suggestions/blocks`, `POST /suggestions/batch/preview`, `POST /suggestions/batch/apply`
+  (contrato en `specs/019-actionable-suggestions/contracts/`).

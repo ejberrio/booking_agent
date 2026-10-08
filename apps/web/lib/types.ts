@@ -194,6 +194,57 @@ export interface SecretTestResult {
   detail: string;
 }
 
+// --- Sugerencias accionables (feature 019) ---
+export interface SellableNight {
+  date: string;
+  suggestion_id: number;
+  current_price: string | null;
+  suggested_price: string;
+}
+
+export interface SuggestionView extends Suggestion {
+  total_nights: number;
+  sellable_count: number;
+  occupied_count: number;
+}
+
+export interface SuggestionBlock {
+  key: string;
+  kind: "event" | "period";
+  title: string;
+  date_from: string;
+  date_to: string;
+  direction: "up" | "down" | "mixed";
+  suggestion_ids: number[];
+  nights: SellableNight[];
+  suggestions: SuggestionView[];
+}
+
+export interface BatchPreviewItem {
+  date: string;
+  suggestion_id: number;
+  old_price: string | null;
+  new_price: string;
+  valid: boolean;
+  reason: string | null;
+}
+
+export interface BatchPreview {
+  suggestion_ids: number[];
+  items: BatchPreviewItem[];
+  valid_count: number;
+  skipped_count: number;
+  fingerprint: string;
+}
+
+export interface BatchResult {
+  nights: { date: string; suggestion_id: number; status: "applied" | "skipped" | "failed"; reason: string | null }[];
+  applied_count: number;
+  skipped_count: number;
+  failed_count: number;
+  suggestions: Record<string, "applied" | "pending" | "unchanged">;
+}
+
 export interface BookingView {
   id: number;
   guest_name: string | null;
