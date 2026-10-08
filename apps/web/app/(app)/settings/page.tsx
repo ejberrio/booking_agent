@@ -160,6 +160,18 @@ function ChannelOffsetsCard() {
   );
 }
 
+/** Dónde se obtiene cada secreto (mismo estilo que la guía del refresh token de Beds24). */
+const SECRET_HELP: Record<string, string> = {
+  openai_api_key:
+    "platform.openai.com → Settings → API keys → \"Create new secret key\" (permisos: All). Empieza por \"sk-\" y solo se muestra una vez: cópiala y pégala aquí. Requiere saldo en Settings → Billing.",
+  anthropic_api_key:
+    "console.anthropic.com → Settings → API Keys → \"Create Key\". Empieza por \"sk-ant-\" y solo se muestra una vez. Requiere créditos en Settings → Billing. Opcional: solo se usa si eliges Anthropic como proveedor del chat.",
+  search_api_key:
+    "app.tavily.com → Overview → API Keys → copia la clave (o crea una con \"+\"). Empieza por \"tvly-\". El plan gratis (1.000 créditos/mes) alcanza para el escaneo diario.",
+  beds24_webhook_key:
+    "Se genera arriba, en la tarjeta \"Avisos en tiempo real\" → \"Generar clave\", y se pega en Beds24 (Booking Webhook → Custom Header). No hace falta pegarla aquí; para rotarla, genera una nueva allí.",
+};
+
 function sourceLabel(s: SecretStatus): string {
   if (s.unreadable) return "guardado ilegible — se usa la variable de entorno";
   if (s.source === "app") return `guardado en la app${s.updated_at ? ` · ${s.updated_at.slice(0, 10)}` : ""}`;
@@ -260,6 +272,9 @@ function SecretsCard() {
                   Guardar
                 </Button>
               </div>
+              {SECRET_HELP[s.name] && (
+                <p className="text-[11px] text-muted-foreground">{SECRET_HELP[s.name]}</p>
+              )}
               {s.name === "beds24_refresh_token" && (
                 <div className="space-y-1">
                   <div className="flex gap-2">
