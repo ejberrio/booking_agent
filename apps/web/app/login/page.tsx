@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Logo } from "@/components/brand/logo";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
@@ -34,6 +35,7 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center px-4">
       <Card className="w-full max-w-sm">
+        <Logo size={44} className="mb-3" />
         <CardTitle className="text-lg">Booking AI Agent</CardTitle>
         <CardDescription>Ingresa la contraseña del host para continuar.</CardDescription>
         <form onSubmit={onSubmit} className="mt-4 space-y-3">

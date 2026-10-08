@@ -1,5 +1,6 @@
 "use client";
 
+import { Logo } from "@/components/brand/logo";
 import {
   BadgePercent,
   CalendarDays,
@@ -52,7 +53,10 @@ export function Sidebar() {
         )}
       >
         <div className="mb-4 flex items-center justify-between px-2">
-          <span className="text-sm font-semibold">Booking AI</span>
+          <span className="flex items-center gap-2 text-sm font-semibold">
+            <Logo size={24} />
+            Booking AI
+          </span>
           <ThemeToggle />
         </div>
         <nav className="flex-1 space-y-1">
