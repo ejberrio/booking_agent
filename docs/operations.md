@@ -399,3 +399,24 @@ La app refleja la realidad multi-canal del Channel Manager (Booking.com + Airbnb
   Header en Beds24 en el mismo momento.
 - **Privacidad**: el cuerpo del aviso (trae datos del huésped y tokens de pago) nunca se guarda ni se
   registra; la bitácora `webhook_event` solo guarda resultado, id de reserva y motivo fijo (30 días).
+
+## Idiomas: español, inglés y portugués (Feature 021 · issue #124)
+
+- **Selector**: menú lateral (escritorio y celular) y pantalla de login. Se recuerda con la cookie
+  `lang` y, con sesión, en la preferencia del host (`GET/PUT /preferences`) para todos sus
+  dispositivos. Primera visita: idioma del navegador si es es/en/pt; si no, español.
+- **Variantes**: inglés de EE. UU. (en-US) y portugués de Brasil (pt-BR) — decisión del host. Moneda
+  siempre COP; fechas y números con el formato del idioma.
+- **Dónde están las traducciones**: `apps/web/lib/i18n/catalog/<área>.ts` (common, shell, dashboard,
+  calendar, chat, suggestions, rationale, offers, connection, settings), cada archivo con `es`
+  (referencia), `en` y `pt` lado a lado. Para corregir un texto, editar ese valor. Para agregar uno,
+  añadirlo en `es` y en los otros dos: si falta en `en`/`pt`, `npx tsc --noEmit` / `npm run build`
+  FALLAN (no se puede publicar a medias).
+- **Mensajes del servidor**: la API sigue en español; `apps/web/lib/i18n/server-messages.ts` los
+  traduce (texto exacto o patrón). Sin traducción → se ve en español.
+- **Asistente**: el chat envía el idioma; el system prompt termina con "responde SIEMPRE en …" y los
+  textos fijos (propuestas, confirmaciones, resultados) se traducen en `apps/api/app/agent/texts.py`
+  conservando montos, fechas y nombres.
+- **No se traduce**: nombres de eventos, notas del host, huéspedes, promociones y textos de Beds24.
+- **Explicación de sugerencias**: se arma desde factores estructurados; las creadas antes de esta
+  versión se ven en español hasta el siguiente escaneo diario.

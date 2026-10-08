@@ -3,6 +3,8 @@ from collections.abc import AsyncIterator
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
+from typing import Literal
+
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,6 +20,8 @@ router = APIRouter()
 class ChatRequest(BaseModel):
     message: str
     conversation_id: int | None = None
+    # Idioma del host (feature 021): el asistente responde en él.
+    language: Literal["es", "en", "pt"] = "es"
 
 
 class ChatResponse(BaseModel):
@@ -42,7 +46,9 @@ async def chat(req: ChatRequest, session: AsyncSession = Depends(get_session)):
     try:
         conv_id = await _ensure_conversation(session, req.conversation_id)
         reply = await run_turn(
-            session, adapter, default_llm(), conversation_id=conv_id, user_text=req.message
+            session, adapter, default_llm(), conversation_id=conv_id,
+            user_text=req.message,
+            language=req.language,
         )
         await session.commit()
         return ChatResponse(
@@ -61,7 +67,9 @@ async def chat_stream(req: ChatRequest, session: AsyncSession = Depends(get_sess
     adapter = get_adapter()
     conv_id = await _ensure_conversation(session, req.conversation_id)
     reply = await run_turn(
-        session, adapter, default_llm(), conversation_id=conv_id, user_text=req.message
+        session, adapter, default_llm(), conversation_id=conv_id,
+        user_text=req.message,
+        language=req.language,
     )
     await session.commit()
     await adapter.aclose()

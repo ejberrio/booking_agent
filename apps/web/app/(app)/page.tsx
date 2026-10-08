@@ -8,8 +8,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useActiveUnit } from "@/lib/active-unit";
 import { api } from "@/lib/api";
 import { formatCOP, monthLabel, monthRange } from "@/lib/format";
+import { useI18n } from "@/lib/i18n";
 
 export default function DashboardPage() {
+  const { m } = useI18n();
   const [unitTypeId] = useActiveUnit();
   const now = new Date();
   const { from, to } = monthRange(now.getFullYear(), now.getMonth());
@@ -41,7 +43,7 @@ export default function DashboardPage() {
   const CHANNEL_NAMES: Record<string, string> = {
     booking: "Booking.com",
     airbnb: "Airbnb",
-    direct: "Directo",
+    direct: m.dashboard.direct,
   };
   const channels = status.data?.channels ?? [];
 
@@ -72,37 +74,41 @@ export default function DashboardPage() {
     ? [
         `Booking ${reserved.booking}`,
         `Airbnb ${reserved.airbnb}`,
-        ...(reserved.direct > 0 ? [`Directo ${reserved.direct}`] : []),
+        ...(reserved.direct > 0 ? [`${m.dashboard.direct} ${reserved.direct}`] : []),
       ].join(" · ")
     : undefined;
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
-      <h1 className="text-xl font-semibold">Panorama</h1>
+      <h1 className="text-xl font-semibold">{m.dashboard.title}</h1>
 
       {calendar.isLoading ? (
         <Skeleton className="h-24 w-full" />
       ) : (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
-          <Kpi label="Ocupación (mes)" value={`${occupancy}%`} hint={`${occupied} noches ocupadas`} />
           <Kpi
-            label="Noches reservadas (mes)"
+            label={m.dashboard.occupancy}
+            value={`${occupancy}%`}
+            hint={m.dashboard.occupiedNights(occupied)}
+          />
+          <Kpi
+            label={m.dashboard.reservedNights}
             value={String(kpis.data?.total_reserved ?? "—")}
             hint={reservedHint}
           />
           <Kpi
-            label="Noches bloqueadas (mes)"
+            label={m.dashboard.blockedNights}
             value={String(kpis.data?.blocked_nights ?? "—")}
-            hint="bloqueo global: cierra todos los canales"
+            hint={m.dashboard.blockedHint}
           />
-          <Kpi label="Sugerencias pendientes" value={String(suggestions.data?.length ?? 0)} />
-          <Kpi label="Días con promoción" value={String(promos)} />
+          <Kpi label={m.dashboard.pendingSuggestions} value={String(suggestions.data?.length ?? 0)} />
+          <Kpi label={m.dashboard.promoDays} value={String(promos)} />
         </div>
       )}
 
       <div className="grid gap-4 md:grid-cols-[2fr_1fr]">
         <Card>
-          <p className="mb-2 text-sm font-medium capitalize">
+          <p className="mb-2 text-sm font-medium">
             {monthLabel(now.getFullYear(), now.getMonth())}
           </p>
           {calendar.isLoading ? (
@@ -121,12 +127,12 @@ export default function DashboardPage() {
 
         <div className="space-y-4">
         <Card>
-          <p className="mb-2 text-sm font-medium">Canales</p>
+          <p className="mb-2 text-sm font-medium">{m.dashboard.channels}</p>
           {status.isLoading ? (
             <Skeleton className="h-16 w-full" />
           ) : !channels.length ? (
             <p className="text-xs text-muted-foreground">
-              Sin datos de canales (sincroniza para actualizar).
+              {m.dashboard.noChannelData}
             </p>
           ) : (
             <ul className="space-y-2 text-xs">
@@ -140,12 +146,12 @@ export default function DashboardPage() {
                       className={`inline-block h-2 w-2 rounded-full ${
                         c.is_active ? "bg-emerald-500" : "bg-muted-foreground/40"
                       }`}
-                      title={c.is_active ? "Conectado" : "Inactivo"}
+                      title={c.is_active ? m.dashboard.connected : m.dashboard.inactive}
                     />
                     {CHANNEL_NAMES[c.kind] ?? c.kind}
                   </span>
                   <span className="text-muted-foreground">
-                    {c.bookings} {c.bookings === 1 ? "reserva" : "reservas"}
+                    {m.dashboard.bookings(c.bookings)}
                   </span>
                 </li>
               ))}
@@ -154,11 +160,11 @@ export default function DashboardPage() {
         </Card>
 
         <Card>
-          <p className="mb-2 text-sm font-medium">Sugerencias recientes</p>
+          <p className="mb-2 text-sm font-medium">{m.dashboard.recentSuggestions}</p>
           {suggestions.isLoading ? (
             <Skeleton className="h-32 w-full" />
           ) : !suggestions.data?.length ? (
-            <p className="text-xs text-muted-foreground">Sin sugerencias pendientes.</p>
+            <p className="text-xs text-muted-foreground">{m.dashboard.noPendingSuggestions}</p>
           ) : (
             <ul className="space-y-2 text-xs">
               {suggestions.data.slice(0, 5).map((s) => (

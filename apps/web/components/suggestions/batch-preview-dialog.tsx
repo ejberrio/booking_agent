@@ -7,6 +7,8 @@ import { Dialog } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
 import { formatCOP, shortDate } from "@/lib/format";
+import { useI18n } from "@/lib/i18n";
+import { trServer } from "@/lib/i18n/server-messages";
 import type { BatchResult } from "@/lib/types";
 
 interface Props {
@@ -16,7 +18,9 @@ interface Props {
   onApplied: (r: BatchResult) => void;
 }
 
-const STATUS_LABEL = { applied: "aplicada", skipped: "omitida", failed: "falló" } as const;
+const STATUS_LABEL = { applied: "statusApplied", skipped: "statusSkipped", failed: "statusFailed" } as const;
+/** Error de la API cuando la vista previa quedó obsoleta (llega ya traducido por req()). */
+const STALE_ES = "La vista previa cambió (precios, reservas o sugerencias); revísala de nuevo.";
 const STATUS_CLASS = {
   applied: "text-emerald-600",
   skipped: "text-muted-foreground",
@@ -25,6 +29,8 @@ const STATUS_CLASS = {
 
 /** Vista previa ÚNICA del lote + confirmación explícita (Principio III, feature 019). */
 export function BatchPreviewDialog({ ids, titleOf, onClose, onApplied }: Props) {
+  const { m } = useI18n();
+  const t = m.suggestions;
   const open = ids !== null && ids.length > 0;
   const preview = useQuery({
     queryKey: ["suggestion-batch-preview", ids],
@@ -42,13 +48,15 @@ export function BatchPreviewDialog({ ids, titleOf, onClose, onApplied }: Props) 
     apply.reset();
     onClose();
   };
-  const stale = apply.error?.message.includes("revísala");
+  const errMsg = apply.error?.message;
+  const stale = !!errMsg && (errMsg.includes("revísala") || errMsg === trServer(STALE_ES));
   const result = apply.data;
+  const willPublish = t.willPublish(preview.data?.valid_count ?? 0);
 
   return (
     <Dialog open={open} onClose={close} className="max-w-2xl">
       <h2 className="text-base font-semibold">
-        {result ? "Resultado" : "Vista previa de los cambios"}
+        {result ? t.resultTitle : t.previewTitle}
       </h2>
 
       {preview.isLoading ? (
@@ -60,20 +68,18 @@ export function BatchPreviewDialog({ ids, titleOf, onClose, onApplied }: Props) 
       ) : preview.data ? (
         <>
           <p className="mt-1 text-sm text-muted-foreground">
-            Se publicarán <strong className="text-foreground">{preview.data.valid_count}</strong>{" "}
-            noche{preview.data.valid_count !== 1 ? "s" : ""} en Booking.com y Airbnb
-            {preview.data.skipped_count > 0 && (
-              <> · {preview.data.skipped_count} se omiten (ver motivo)</>
-            )}
+            {willPublish[0] && `${willPublish[0]} `}
+            <strong className="text-foreground">{preview.data.valid_count}</strong> {willPublish[1]}
+            {preview.data.skipped_count > 0 && <> · {t.skippedNote(preview.data.skipped_count)}</>}
             .
           </p>
           <div className="mt-3 max-h-[50vh] overflow-y-auto rounded-md border border-border">
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-card text-left text-muted-foreground">
                 <tr>
-                  <th className="px-2 py-1.5 font-medium">Noche</th>
-                  <th className="px-2 py-1.5 font-medium">Origen</th>
-                  <th className="px-2 py-1.5 font-medium">Antes → después</th>
+                  <th className="px-2 py-1.5 font-medium">{t.colNight}</th>
+                  <th className="px-2 py-1.5 font-medium">{t.colSource}</th>
+                  <th className="px-2 py-1.5 font-medium">{t.colChange}</th>
                 </tr>
               </thead>
               <tbody>
@@ -96,7 +102,7 @@ export function BatchPreviewDialog({ ids, titleOf, onClose, onApplied }: Props) 
                             {down && <ArrowDown size={12} className="text-orange-500" />}
                           </span>
                         ) : (
-                          <span>omitida: {i.reason}</span>
+                          <span>{t.skippedReason(trServer(i.reason))}</span>
                         )}
                       </td>
                     </tr>
@@ -113,11 +119,11 @@ export function BatchPreviewDialog({ ids, titleOf, onClose, onApplied }: Props) 
 
       <div className="mt-4 flex justify-end gap-2">
         {result ? (
-          <Button onClick={close}>Listo</Button>
+          <Button onClick={close}>{m.common.done}</Button>
         ) : (
           <>
             <Button className="bg-muted text-foreground" onClick={close} disabled={apply.isPending}>
-              Cancelar
+              {m.common.cancel}
             </Button>
             {stale ? (
               <Button
@@ -126,14 +132,14 @@ export function BatchPreviewDialog({ ids, titleOf, onClose, onApplied }: Props) 
                   preview.refetch();
                 }}
               >
-                Volver a previsualizar
+                {t.previewAgain}
               </Button>
             ) : (
               <Button
                 onClick={() => apply.mutate()}
                 disabled={apply.isPending || !preview.data || preview.data.valid_count === 0}
               >
-                {apply.isPending ? "Publicando…" : "Confirmar y publicar"}
+                {apply.isPending ? t.publishing : t.confirmPublish}
               </Button>
             )}
           </>
@@ -144,13 +150,14 @@ export function BatchPreviewDialog({ ids, titleOf, onClose, onApplied }: Props) 
 }
 
 function ResultView({ result, titleOf }: { result: BatchResult; titleOf: (id: number) => string }) {
+  const t = useI18n().m.suggestions;
   return (
     <>
       <p className="mt-1 text-sm">
-        <span className="text-emerald-600">{result.applied_count} aplicadas</span>
-        {result.skipped_count > 0 && <> · {result.skipped_count} omitidas</>}
+        <span className="text-emerald-600">{t.resultApplied(result.applied_count)}</span>
+        {result.skipped_count > 0 && <> · {t.resultSkipped(result.skipped_count)}</>}
         {result.failed_count > 0 && (
-          <span className="text-red-500"> · {result.failed_count} fallaron (siguen pendientes)</span>
+          <span className="text-red-500"> · {t.resultFailed(result.failed_count)}</span>
         )}
       </p>
       <ul className="mt-3 max-h-[50vh] space-y-1 overflow-y-auto text-xs">
@@ -160,8 +167,8 @@ function ResultView({ result, titleOf }: { result: BatchResult; titleOf: (id: nu
               {shortDate(n.date)} · <span className="text-muted-foreground">{titleOf(n.suggestion_id)}</span>
             </span>
             <span className={STATUS_CLASS[n.status]}>
-              {STATUS_LABEL[n.status]}
-              {n.reason ? ` (${n.reason})` : ""}
+              {t[STATUS_LABEL[n.status]]}
+              {n.reason ? ` (${trServer(n.reason)})` : ""}
             </span>
           </li>
         ))}

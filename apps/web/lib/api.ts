@@ -1,3 +1,5 @@
+import { getActiveLang } from "@/lib/i18n/core";
+import { trServer } from "@/lib/i18n/server-messages";
 import type {
   ApplyResult,
   AvailabilityAction,
@@ -62,7 +64,8 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
       .json()
       .then((b) => (typeof b?.detail === "string" ? b.detail : null))
       .catch(() => null);
-    throw new Error(detail ?? `API ${res.status} en ${path}`);
+    // Traducido al idioma activo en UN solo punto (feature 021); sin traducción → español.
+    throw new Error(trServer(detail ?? `API ${res.status} en ${path}`));
   }
   return (await res.json()) as T;
 }
@@ -209,11 +212,23 @@ export const api = {
   chat: (message: string, conversationId?: number) =>
     req<ChatReply>(`/chat`, {
       method: "POST",
-      body: JSON.stringify({ message, conversation_id: conversationId ?? null }),
+      body: JSON.stringify({
+        message,
+        conversation_id: conversationId ?? null,
+        language: getActiveLang(), // feature 021: el asistente responde en el idioma activo
+      }),
     }),
 
   // Estado del sistema (incluye canales conectados y reservas por canal)
   getStatus: () => req<SystemStatus>(`/status`),
+
+  // Preferencias del host (feature 021): idioma para todos sus dispositivos
+  getPreferences: () => req<{ language: "es" | "en" | "pt" }>(`/preferences`),
+  putPreferences: (language: "es" | "en" | "pt") =>
+    req<{ language: "es" | "en" | "pt" }>(`/preferences`, {
+      method: "PUT",
+      body: JSON.stringify({ language }),
+    }),
 
   // Ajuste de precio por canal (feature 013)
   getChannelOffsets: () => req<{ offsets: ChannelOffset[] }>(`/pricing/channel-offsets`),

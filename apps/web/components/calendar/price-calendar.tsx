@@ -2,10 +2,9 @@
 
 import { useMemo, useState } from "react";
 import type { CalendarDay } from "@/lib/types";
-import { ymd } from "@/lib/format";
+import { weekdayShortNames, ymd } from "@/lib/format";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-
-const WEEKDAYS = ["L", "M", "X", "J", "V", "S", "D"];
 
 interface Props {
   year: number;
@@ -31,6 +30,8 @@ export function PriceCalendar({
   noteDates,
   bookedDates,
 }: Props) {
+  const { m, lang } = useI18n();
+  const weekdays = weekdayShortNames(lang);
   const byDate = useMemo(() => new Map(days.map((d) => [d.date, d])), [days]);
   const [dragStart, setDragStart] = useState<string | null>(null);
   const [dragEnd, setDragEnd] = useState<string | null>(null);
@@ -70,8 +71,10 @@ export function PriceCalendar({
   return (
     <div className="select-none" onPointerUp={commit} onPointerLeave={commit}>
       <div className="mb-1 grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground">
-        {WEEKDAYS.map((w) => (
-          <div key={w}>{w}</div>
+        {weekdays.map((w, i) => (
+          <div key={i} className="truncate">
+            {w}
+          </div>
         ))}
       </div>
       <div className="grid grid-cols-7 gap-1">
@@ -113,23 +116,23 @@ export function PriceCalendar({
               </span>
               <span className="flex gap-0.5">
                 {suggestionDates?.has(date) ? (
-                  <span title="Sugerencia" className="h-1 w-1 rounded-full bg-violet-500" />
+                  <span title={m.calendar.legendSuggestion} className="h-1 w-1 rounded-full bg-violet-500" />
                 ) : null}
                 {d?.promotions.length ? (
-                  <span title="Promoción" className="h-1 w-1 rounded-full bg-amber-500" />
+                  <span title={m.calendar.legendPromotion} className="h-1 w-1 rounded-full bg-amber-500" />
                 ) : null}
                 {nativeDealDates?.has(date) ? (
-                  <span title="Deal nativo" className="h-1 w-1 rounded-full bg-cyan-500" />
+                  <span title={m.calendar.legendNativeDeal} className="h-1 w-1 rounded-full bg-cyan-500" />
                 ) : null}
                 {noteDates?.has(date) ? (
-                  <span title="Nota" className="h-1 w-1 rounded-full bg-lime-500" />
+                  <span title={m.calendar.legendNote} className="h-1 w-1 rounded-full bg-lime-500" />
                 ) : null}
                 {blocked ? (
-                  <span title="Bloqueada" className="h-1 w-1 rounded-full bg-slate-400" />
+                  <span title={m.calendar.legendBlocked} className="h-1 w-1 rounded-full bg-slate-400" />
                 ) : null}
               </span>
               {reserved ? (
-                <span title="Reservada" className="mt-0.5 h-1 w-full rounded-full bg-red-500" />
+                <span title={m.calendar.legendBooked} className="mt-0.5 h-1 w-full rounded-full bg-red-500" />
               ) : null}
             </button>
           );
@@ -137,30 +140,30 @@ export function PriceCalendar({
       </div>
       <div className="mt-2 flex flex-wrap gap-3 text-[10px] text-muted-foreground">
         <span className="flex items-center gap-1">
-          <span className="h-1.5 w-3 rounded-full bg-red-500" /> Reservada
+          <span className="h-1.5 w-3 rounded-full bg-red-500" /> {m.calendar.legendBooked}
         </span>
         <span className="flex items-center gap-1">
-          <span className="h-1.5 w-1.5 rounded-full bg-slate-400" /> Bloqueada
+          <span className="h-1.5 w-1.5 rounded-full bg-slate-400" /> {m.calendar.legendBlocked}
         </span>
         <span className="flex items-center gap-1">
-          <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Promoción
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> {m.calendar.legendPromotion}
         </span>
         {suggestionDates && suggestionDates.size > 0 ? (
           <span className="flex items-center gap-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-violet-500" /> Sugerencia
+            <span className="h-1.5 w-1.5 rounded-full bg-violet-500" /> {m.calendar.legendSuggestion}
           </span>
         ) : null}
         {nativeDealDates && nativeDealDates.size > 0 ? (
           <span className="flex items-center gap-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-cyan-500" /> Deal nativo
+            <span className="h-1.5 w-1.5 rounded-full bg-cyan-500" /> {m.calendar.legendNativeDeal}
           </span>
         ) : null}
         {noteDates && noteDates.size > 0 ? (
           <span className="flex items-center gap-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-lime-500" /> Nota
+            <span className="h-1.5 w-1.5 rounded-full bg-lime-500" /> {m.calendar.legendNote}
           </span>
         ) : null}
-        <span>— = sin datos</span>
+        <span>{m.calendar.legendNoData}</span>
       </div>
     </div>
   );

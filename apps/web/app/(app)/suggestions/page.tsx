@@ -4,15 +4,19 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BatchPreviewDialog } from "@/components/suggestions/batch-preview-dialog";
-import { SuggestionBlock } from "@/components/suggestions/suggestion-block";
+import { SuggestionBlock, useBlockTitle } from "@/components/suggestions/suggestion-block";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
 import { shortRange } from "@/lib/format";
+import { useI18n } from "@/lib/i18n";
 import type { BatchResult } from "@/lib/types";
 
 export default function SuggestionsPage() {
+  const { m } = useI18n();
+  const t = m.suggestions;
+  const blockTitle = useBlockTitle();
   const qc = useQueryClient();
   const { data, isLoading, isError } = useQuery({
     queryKey: ["suggestions", "blocks"],
@@ -33,13 +37,13 @@ export default function SuggestionsPage() {
       for (const s of b.suggestions) {
         titles.set(
           s.id,
-          b.kind === "event" ? b.title : `${b.title} · ${shortRange(b.date_from, b.date_to)}`,
+          b.kind === "event" ? b.title : `${blockTitle(b)} · ${shortRange(b.date_from, b.date_to)}`,
         );
         nights.set(s.id, s.sellable_count);
       }
     }
     return { titleById: titles, nightsById: nights };
-  }, [blocks]);
+  }, [blocks, blockTitle]);
 
   // La selección solo conserva sugerencias que siguen visibles.
   const openPreview = (ids: number[]) => {
@@ -69,7 +73,7 @@ export default function SuggestionsPage() {
   const reject = useMutation({
     mutationFn: (id: number) => api.rejectSuggestion(id),
     onSuccess: (_r, id) => {
-      toast("Sugerencia rechazada");
+      toast(t.rejected);
       toggle([id], false);
     },
     onError: (e: Error) => toast.error(e.message),
@@ -82,24 +86,21 @@ export default function SuggestionsPage() {
       .map(([id]) => Number(id));
     toggle(applied, false);
     if (r.failed_count > 0) {
-      toast.error(`${r.failed_count} noche(s) no se pudieron publicar; esas sugerencias siguen pendientes`);
+      toast.error(t.publishFailed(r.failed_count));
     } else {
-      toast.success(`${r.applied_count} noche(s) aplicadas y publicadas`);
+      toast.success(t.applied(r.applied_count));
     }
     refresh();
   };
 
   return (
     <div className="mx-auto max-w-2xl space-y-4 pb-20">
-      <h1 className="text-xl font-semibold">Sugerencias</h1>
-      <p className="text-sm text-muted-foreground">
-        Solo noches que todavía puedes vender, agrupadas por evento o periodo. Marca las que
-        quieras y aplícalas juntas con una sola revisión.
-      </p>
+      <h1 className="text-xl font-semibold">{t.title}</h1>
+      <p className="text-sm text-muted-foreground">{t.intro}</p>
 
       {isError ? (
         <Card>
-          <p className="text-sm text-red-500">No se pudieron cargar las sugerencias.</p>
+          <p className="text-sm text-red-500">{t.loadError}</p>
         </Card>
       ) : isLoading ? (
         <div className="space-y-2">
@@ -108,11 +109,10 @@ export default function SuggestionsPage() {
         </div>
       ) : !blocks.length ? (
         <Card>
-          <p className="text-sm text-muted-foreground">No hay sugerencias para noches libres.</p>
+          <p className="text-sm text-muted-foreground">{t.empty}</p>
           {(data?.hidden_occupied ?? 0) > 0 && (
             <p className="mt-1 text-xs text-muted-foreground">
-              {data?.hidden_occupied} noche(s) con sugerencia están ocultas por estar reservadas o
-              bloqueadas.
+              {t.hiddenOccupiedLong(data?.hidden_occupied ?? 0)}
             </p>
           )}
         </Card>
@@ -120,13 +120,13 @@ export default function SuggestionsPage() {
         <>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>
-              {blocks.length} bloque{blocks.length !== 1 ? "s" : ""}
+              {t.blocksCount(blocks.length)}
               {(data?.hidden_occupied ?? 0) > 0 &&
-                ` · ${data?.hidden_occupied} noche(s) ocultas (reservadas o bloqueadas)`}
+                ` · ${t.hiddenOccupiedShort(data?.hidden_occupied ?? 0)}`}
             </span>
             {visibleSelected.length > 0 && (
               <button type="button" className="underline" onClick={() => setSelected(new Set())}>
-                Quitar selección
+                {t.clearSelection}
               </button>
             )}
           </div>
@@ -150,17 +150,16 @@ export default function SuggestionsPage() {
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 px-4 py-3 backdrop-blur md:left-56">
           <div className="mx-auto flex max-w-2xl items-center justify-between gap-3">
             <span className="text-sm">
-              {visibleSelected.length} sugerencia{visibleSelected.length !== 1 ? "s" : ""} ·{" "}
-              {selectedNights} noche{selectedNights !== 1 ? "s" : ""}
+              {t.selectedCount(visibleSelected.length)} · {m.common.nights(selectedNights)}
             </span>
-            <Button onClick={() => openPreview(visibleSelected)}>Previsualizar</Button>
+            <Button onClick={() => openPreview(visibleSelected)}>{t.preview}</Button>
           </div>
         </div>
       )}
 
       <BatchPreviewDialog
         ids={previewIds}
-        titleOf={(id) => titles.get(id) ?? titleById.get(id) ?? `Sugerencia ${id}`}
+        titleOf={(id) => titles.get(id) ?? titleById.get(id) ?? t.fallbackTitle(id)}
         onClose={() => setPreviewIds(null)}
         onApplied={onApplied}
       />

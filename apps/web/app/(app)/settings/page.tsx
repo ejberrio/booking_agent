@@ -10,12 +10,25 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useActiveUnit } from "@/lib/active-unit";
 import { api } from "@/lib/api";
+import { dateTime, formatNumber } from "@/lib/format";
+import { useI18n } from "@/lib/i18n";
+import type { Messages } from "@/lib/i18n/messages";
+import { trServer } from "@/lib/i18n/server-messages";
 import type { OffsetPreview, Poi, SecretStatus, SecretTestResult, WebhookStatus } from "@/lib/types";
 
 const CHANNEL_NAMES: Record<string, string> = { booking: "Booking.com", airbnb: "Airbnb" };
-const cop = (v: string) => `${Number(v).toLocaleString("es-CO")} COP`;
+const cop = (v: string) => `${formatNumber(Number(v))} COP`;
+
+/** Avisos de la vista previa del ajuste por canal: el conocido se traduce aquí; el resto, vía trServer. */
+function offsetWarning(w: string, t: Messages["settings"]["offsets"]): string {
+  const inactive = /^el canal (\w+) está inactivo: /.exec(w);
+  if (inactive) return t.inactiveWarning(CHANNEL_NAMES[inactive[1]] ?? inactive[1]);
+  return trServer(w);
+}
 
 function ChannelOffsetsCard() {
+  const { m } = useI18n();
+  const t = m.settings.offsets;
   const qc = useQueryClient();
   const offsets = useQuery({
     queryKey: ["channel-offsets"],
@@ -40,10 +53,8 @@ function ChannelOffsetsCard() {
       }),
     onSuccess: (r) => {
       if (r.verified)
-        toast.success(
-          `Ajuste de ${CHANNEL_NAMES[r.channel] ?? r.channel} aplicado: ${r.offset_pct}%`,
-        );
-      else toast.warning(`Aplicado, pero sin verificar: ${r.issue ?? "revisa incidencias"}`);
+        toast.success(t.applied(CHANNEL_NAMES[r.channel] ?? r.channel, String(r.offset_pct)));
+      else toast.warning(t.appliedUnverified(r.issue ? trServer(r.issue) : t.checkIssues));
       setEditing(null);
       setPreview(null);
       setPct("");
@@ -54,12 +65,8 @@ function ChannelOffsetsCard() {
 
   return (
     <Card className="space-y-2">
-      <CardTitle>Precio por canal</CardTitle>
-      <CardDescription>
-        Recargo/descuento porcentual por canal sobre el precio base (0% = mismo precio).
-        Airbnb muestra el importe en la moneda del huésped (su margen cambiario no depende de
-        nosotros).
-      </CardDescription>
+      <CardTitle>{t.title}</CardTitle>
+      <CardDescription>{t.description}</CardDescription>
       {offsets.isLoading ? (
         <Skeleton className="h-16 w-full" />
       ) : (
@@ -70,7 +77,7 @@ function ChannelOffsetsCard() {
                 <span>
                   {CHANNEL_NAMES[o.channel] ?? o.channel}
                   {!o.is_active && (
-                    <span className="ml-2 text-xs text-muted-foreground">(inactivo)</span>
+                    <span className="ml-2 text-xs text-muted-foreground">{t.inactive}</span>
                   )}
                 </span>
                 <span className="flex items-center gap-2">
@@ -86,14 +93,14 @@ function ChannelOffsetsCard() {
                         setPreview(null);
                       }}
                     >
-                      Editar
+                      {m.common.edit}
                     </Button>
                   ) : (
                     <span
                       className="text-xs text-muted-foreground"
-                      title="Este canal vende al precio base; su ajuste no es configurable"
+                      title={t.basePriceHint}
                     >
-                      precio base
+                      {t.basePrice}
                     </span>
                   )}
                 </span>
@@ -108,26 +115,26 @@ function ChannelOffsetsCard() {
                       onChange={(e) => setPct(e.target.value)}
                     />
                     <span className="text-xs text-muted-foreground">
-                      % (−50 a 100; 0 = quitar)
+                      {t.range}
                     </span>
                     <Button
                       className="h-7 px-2 text-xs"
                       onClick={() => previewM.mutate()}
                       disabled={previewM.isPending || pct === ""}
                     >
-                      Ver propuesta
+                      {t.preview}
                     </Button>
                   </div>
                   {preview && (
                     <div className="rounded-md bg-muted p-2 text-xs">
                       <p>
-                        {preview.current_pct ?? "0"}% → <strong>{preview.new_pct}%</strong> · ej.:
-                        base {cop(preview.example.base)} →{" "}
+                        {preview.current_pct ?? "0"}% → <strong>{preview.new_pct}%</strong> · {t.example}{" "}
+                        {t.base} {cop(preview.example.base)} →{" "}
                         <strong>{cop(preview.example.effective)}</strong>
                       </p>
                       {preview.warnings.map((w) => (
                         <p key={w} className="mt-1 text-amber-600">
-                          ⚠️ {w}
+                          ⚠️ {offsetWarning(w, t)}
                         </p>
                       ))}
                       <div className="mt-2 flex gap-2">
@@ -136,7 +143,7 @@ function ChannelOffsetsCard() {
                           onClick={() => applyM.mutate()}
                           disabled={applyM.isPending}
                         >
-                          Confirmar y aplicar
+                          {t.apply}
                         </Button>
                         <Button
                           className="h-7 bg-transparent px-2 text-xs text-muted-foreground hover:bg-muted"
@@ -145,7 +152,7 @@ function ChannelOffsetsCard() {
                             setPreview(null);
                           }}
                         >
-                          Cancelar
+                          {m.common.cancel}
                         </Button>
                       </div>
                     </div>
@@ -160,28 +167,22 @@ function ChannelOffsetsCard() {
   );
 }
 
-/** Dónde se obtiene cada secreto (mismo estilo que la guía del refresh token de Beds24). */
-const SECRET_HELP: Record<string, string> = {
-  openai_api_key:
-    "platform.openai.com → Settings → API keys → \"Create new secret key\" (permisos: All). Empieza por \"sk-\" y solo se muestra una vez: cópiala y pégala aquí. Requiere saldo en Settings → Billing.",
-  anthropic_api_key:
-    "console.anthropic.com → Settings → API Keys → \"Create Key\". Empieza por \"sk-ant-\" y solo se muestra una vez. Requiere créditos en Settings → Billing. Opcional: solo se usa si eliges Anthropic como proveedor del chat.",
-  search_api_key:
-    "app.tavily.com → Overview → API Keys → copia la clave (o crea una con \"+\"). Empieza por \"tvly-\". El plan gratis (1.000 créditos/mes) alcanza para el escaneo diario.",
-  beds24_webhook_key:
-    "Se genera arriba, en la tarjeta \"Avisos en tiempo real\" → \"Generar clave\", y se pega en Beds24 (Booking Webhook → Custom Header). No hace falta pegarla aquí; para rotarla, genera una nueva allí.",
-};
-
-function sourceLabel(s: SecretStatus): string {
-  if (s.unreadable) return "guardado ilegible — se usa la variable de entorno";
-  if (s.source === "app") return `guardado en la app${s.updated_at ? ` · ${s.updated_at.slice(0, 10)}` : ""}`;
-  if (s.source === "env") return "por variable de entorno";
-  return "sin configurar";
+function sourceLabel(s: SecretStatus, t: Messages["settings"]["secrets"]): string {
+  if (s.unreadable) return t.sourceUnreadable;
+  if (s.source === "app") return `${t.sourceApp}${s.updated_at ? ` · ${s.updated_at.slice(0, 10)}` : ""}`;
+  if (s.source === "env") return t.sourceEnv;
+  return t.notConfigured;
 }
 
 /** Gestión write-only de secretos (feature 017): el valor nunca se muestra ni
  *  se puede recuperar; solo estado + pista de los últimos 4 caracteres. */
 function SecretsCard() {
+  const { m } = useI18n();
+  const t = m.settings.secrets;
+  // Guías, nombres y servicios por secreto (los desconocidos caen al texto del servidor).
+  const help: Record<string, string | undefined> = t.help;
+  const labels: Record<string, string | undefined> = t.labels;
+  const services: Record<string, string | undefined> = t.services;
   const qc = useQueryClient();
   const secrets = useQuery({ queryKey: ["secrets"], queryFn: () => api.listSecrets() });
   const audit = useQuery({ queryKey: ["secrets-audit"], queryFn: () => api.listSecretAudit() });
@@ -197,7 +198,7 @@ function SecretsCard() {
   const save = useMutation({
     mutationFn: (name: string) => api.setSecret(name, values[name] ?? ""),
     onSuccess: (_r, name) => {
-      toast.success("Secreto guardado — la rotación ya aplica");
+      toast.success(t.saved);
       setValues((v) => ({ ...v, [name]: "" })); // write-only: el campo se limpia
       refresh();
     },
@@ -206,7 +207,7 @@ function SecretsCard() {
   const remove = useMutation({
     mutationFn: (name: string) => api.deleteSecret(name),
     onSuccess: () => {
-      toast("Valor guardado eliminado (se usa la variable de entorno si existe)");
+      toast(t.removed);
       refresh();
     },
     onError,
@@ -217,11 +218,11 @@ function SecretsCard() {
   const redeem = useMutation({
     mutationFn: () => api.redeemBeds24Invite(inviteCode),
     onSuccess: () => {
-      toast.success("Código canjeado — Beds24 reconectado");
+      toast.success(t.redeemed);
       setInviteCode("");
-      setTestResults((t) => ({
-        ...t,
-        beds24_refresh_token: { ok: true, detail: "token nuevo guardado — pulsa Probar" },
+      setTestResults((prev) => ({
+        ...prev,
+        beds24_refresh_token: { ok: true, detail: t.newTokenSaved },
       }));
       refresh();
     },
@@ -229,18 +230,14 @@ function SecretsCard() {
   });
   const test = useMutation({
     mutationFn: (name: string) => api.testSecret(name),
-    onSuccess: (r, name) => setTestResults((t) => ({ ...t, [name]: r })),
+    onSuccess: (r, name) => setTestResults((prev) => ({ ...prev, [name]: r })),
     onError,
   });
 
   return (
     <Card className="space-y-3">
-      <CardTitle>Secretos</CardTitle>
-      <CardDescription>
-        API keys y tokens de los servicios. Write-only: el valor nunca se muestra; pega uno
-        nuevo para rotarlo. La rotación aplica de inmediato en la API; el escaneo diario la
-        toma en su próxima corrida.
-      </CardDescription>
+      <CardTitle>{t.title}</CardTitle>
+      <CardDescription>{t.description}</CardDescription>
 
       {secrets.isLoading ? (
         <Skeleton className="h-24 w-full" />
@@ -249,19 +246,19 @@ function SecretsCard() {
           {(secrets.data?.secrets ?? []).map((s) => (
             <div key={s.name} className="space-y-1.5 rounded-md border border-border p-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="font-medium">{s.label}</span>
+                <span className="font-medium">{labels[s.name] ?? s.label}</span>
                 <Badge variant={s.configured ? "success" : "warning"}>
-                  {s.configured ? `configurado ${s.hint}` : "sin configurar"}
+                  {s.configured ? t.configured(s.hint) : t.notConfigured}
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground">
-                {s.service} · {sourceLabel(s)}
+                {services[s.name] ?? s.service} · {sourceLabel(s, t)}
               </p>
               <div className="flex gap-2">
                 <Input
                   type="password"
                   autoComplete="off"
-                  placeholder="Pegar valor nuevo…"
+                  placeholder={t.newValuePlaceholder}
                   value={values[s.name] ?? ""}
                   onChange={(e) => setValues((v) => ({ ...v, [s.name]: e.target.value }))}
                 />
@@ -269,11 +266,11 @@ function SecretsCard() {
                   onClick={() => save.mutate(s.name)}
                   disabled={save.isPending || !(values[s.name] ?? "").trim()}
                 >
-                  Guardar
+                  {m.common.save}
                 </Button>
               </div>
-              {SECRET_HELP[s.name] && (
-                <p className="text-[11px] text-muted-foreground">{SECRET_HELP[s.name]}</p>
+              {help[s.name] && (
+                <p className="text-[11px] text-muted-foreground">{help[s.name]}</p>
               )}
               {s.name === "beds24_refresh_token" && (
                 <div className="space-y-1">
@@ -281,7 +278,7 @@ function SecretsCard() {
                     <Input
                       type="password"
                       autoComplete="off"
-                      placeholder="…o pegar código de invitación de Beds24"
+                      placeholder={t.invitePlaceholder}
                       value={inviteCode}
                       onChange={(e) => setInviteCode(e.target.value)}
                     />
@@ -289,15 +286,10 @@ function SecretsCard() {
                       onClick={() => redeem.mutate()}
                       disabled={redeem.isPending || !inviteCode.trim()}
                     >
-                      Canjear
+                      {t.redeem}
                     </Button>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    Beds24 → Settings → Marketplace → API → &quot;Generate invite code&quot;. Permisos:
-                    READ en bookings, bookings-personal, inventory, properties y channels; WRITE
-                    solo en inventory y channels. Pega el código (vence en minutos) y pulsa
-                    Canjear. No es la &quot;API Key&quot; de Account Access: esa es la API antigua.
-                  </p>
+                  <p className="text-[11px] text-muted-foreground">{t.inviteHelp}</p>
                 </div>
               )}
               <div className="flex items-center gap-2">
@@ -306,7 +298,7 @@ function SecretsCard() {
                   onClick={() => test.mutate(s.name)}
                   disabled={test.isPending}
                 >
-                  Probar
+                  {t.test}
                 </Button>
                 {s.source === "app" && (
                   <Button
@@ -314,14 +306,14 @@ function SecretsCard() {
                     onClick={() => remove.mutate(s.name)}
                     disabled={remove.isPending}
                   >
-                    Quitar
+                    {t.remove}
                   </Button>
                 )}
                 {testResults[s.name] && (
                   <span
                     className={`text-xs ${testResults[s.name].ok ? "text-emerald-500" : "text-red-500"}`}
                   >
-                    {testResults[s.name].ok ? "✓" : "✗"} {testResults[s.name].detail}
+                    {testResults[s.name].ok ? "✓" : "✗"} {trServer(testResults[s.name].detail)}
                   </span>
                 )}
               </div>
@@ -332,12 +324,12 @@ function SecretsCard() {
 
       {(audit.data?.entries.length ?? 0) > 0 && (
         <div>
-          <p className="text-xs font-medium">Últimos cambios</p>
+          <p className="text-xs font-medium">{t.recentChanges}</p>
           <ul className="mt-1 space-y-0.5 text-[11px] text-muted-foreground">
             {audit.data!.entries.slice(0, 6).map((e, i) => (
               <li key={i}>
-                {e.changed_at.slice(0, 16).replace("T", " ")} · {e.name} ·{" "}
-                {e.action === "set" ? `guardado ${e.hint}` : "eliminado"}
+                {e.changed_at.slice(0, 16).replace("T", " ")} · {labels[e.name] ?? e.name} ·{" "}
+                {e.action === "set" ? t.auditSet(e.hint) : t.auditDeleted}
               </li>
             ))}
           </ul>
@@ -349,6 +341,8 @@ function SecretsCard() {
 
 /** POIs que dirigen las búsquedas del scan (feature 018). Dato local. */
 function PoisCard() {
+  const { m } = useI18n();
+  const t = m.settings.pois;
   const qc = useQueryClient();
   const pois = useQuery({ queryKey: ["pois"], queryFn: () => api.listPois() });
   const empty = { name: "", note: "", from: "", to: "" };
@@ -366,7 +360,7 @@ function PoisCard() {
         date_to: form.to || null,
       }),
     onSuccess: () => {
-      toast.success("Sitio añadido — el próximo scan lo usará");
+      toast.success(t.added);
       setForm(empty);
       refresh();
     },
@@ -385,16 +379,13 @@ function PoisCard() {
 
   const vigencia = (p: Poi) =>
     !p.date_from && !p.date_to
-      ? "siempre relevante"
+      ? t.always
       : `${p.date_from ?? "…"} → ${p.date_to ?? "…"}`;
 
   return (
     <Card className="space-y-3">
-      <CardTitle>Sitios de interés (POIs)</CardTitle>
-      <CardDescription>
-        Lugares cercanos que dirigen las búsquedas de eventos del scan (p. ej. un escenario
-        nuevo con su fecha de inauguración).
-      </CardDescription>
+      <CardTitle>{t.title}</CardTitle>
+      <CardDescription>{t.description}</CardDescription>
       {pois.isLoading ? (
         <Skeleton className="h-16 w-full" />
       ) : (
@@ -410,7 +401,7 @@ function PoisCard() {
                   {" "}
                   · {vigencia(p)}
                   {p.note ? ` · ${p.note}` : ""}
-                  {p.is_active ? "" : " · inactivo"}
+                  {p.is_active ? "" : ` · ${t.inactive}`}
                 </span>
               </div>
               <div className="flex gap-1">
@@ -418,13 +409,13 @@ function PoisCard() {
                   className="bg-transparent px-2 text-muted-foreground hover:bg-muted"
                   onClick={() => toggle.mutate(p)}
                 >
-                  {p.is_active ? "Desactivar" : "Reactivar"}
+                  {p.is_active ? t.deactivate : t.reactivate}
                 </Button>
                 <Button
                   className="bg-transparent px-2 text-muted-foreground hover:bg-muted"
                   onClick={() => remove.mutate(p.id)}
                 >
-                  Borrar
+                  {t.remove}
                 </Button>
               </div>
             </div>
@@ -433,20 +424,20 @@ function PoisCard() {
       )}
       <div className="grid grid-cols-2 gap-2">
         <Input
-          placeholder="Nombre (p. ej. Daviarena)"
+          placeholder={t.namePlaceholder}
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
         />
         <Input
-          placeholder="Nota (distancia/contexto)"
+          placeholder={t.notePlaceholder}
           value={form.note}
           onChange={(e) => setForm({ ...form, note: e.target.value })}
         />
-        <Input type="date" value={form.from} onChange={(e) => setForm({ ...form, from: e.target.value })} />
-        <Input type="date" value={form.to} onChange={(e) => setForm({ ...form, to: e.target.value })} />
+        <Input type="date" aria-label={t.fromLabel} value={form.from} onChange={(e) => setForm({ ...form, from: e.target.value })} />
+        <Input type="date" aria-label={t.toLabel} value={form.to} onChange={(e) => setForm({ ...form, to: e.target.value })} />
       </div>
       <Button onClick={() => create.mutate()} disabled={create.isPending || !form.name.trim()}>
-        Añadir sitio
+        {t.add}
       </Button>
     </Card>
   );
@@ -454,6 +445,8 @@ function PoisCard() {
 
 /** Configuración del escaneo diario (feature 018). */
 function ScanConfigCard() {
+  const { m } = useI18n();
+  const t = m.settings.scan;
   const qc = useQueryClient();
   const cfg = useQuery({ queryKey: ["scan-config"], queryFn: () => api.getScanConfig() });
   const [zone, setZone] = useState<string | null>(null);
@@ -466,7 +459,7 @@ function ScanConfigCard() {
         ...(queries !== null ? { queries_per_scan: Number(queries) } : {}),
       }),
     onSuccess: () => {
-      toast.success("Configuración del scan guardada");
+      toast.success(t.saved);
       setZone(null);
       setQueries(null);
       qc.invalidateQueries({ queryKey: ["scan-config"] });
@@ -476,43 +469,40 @@ function ScanConfigCard() {
 
   return (
     <Card className="space-y-2">
-      <CardTitle>Escaneo de eventos y mercado</CardTitle>
+      <CardTitle>{t.title}</CardTitle>
       <CardDescription>
-        Zona efectiva: <strong>{cfg.data?.effective_zone ?? "…"}</strong> · consultas por
-        corrida: <strong>{cfg.data?.queries_per_scan ?? "…"}</strong> (el proveedor gratis
-        tiene ~1000 créditos/mes).
+        {t.effectiveZone} <strong>{cfg.data?.effective_zone ?? "…"}</strong> · {t.queriesPerRun}{" "}
+        <strong>{cfg.data?.queries_per_scan ?? "…"}</strong> {t.freeQuota}
       </CardDescription>
       <div className="grid grid-cols-2 gap-2">
         <Input
-          placeholder="Zona (vacío = ciudad + dirección)"
+          placeholder={t.zonePlaceholder}
           value={zone ?? cfg.data?.zone ?? ""}
           onChange={(e) => setZone(e.target.value)}
         />
         <Input
           type="number"
-          placeholder="Consultas por corrida"
+          placeholder={t.queriesPlaceholder}
           value={queries ?? String(cfg.data?.queries_per_scan ?? "")}
           onChange={(e) => setQueries(e.target.value)}
         />
       </div>
       <Button onClick={() => save.mutate()} disabled={save.isPending || (zone === null && queries === null)}>
-        Guardar
+        {m.common.save}
       </Button>
     </Card>
   );
 }
 
-const WEBHOOK_STATE: Record<
-  WebhookStatus["status"],
-  { label: string; variant: "success" | "warning" | "muted" }
-> = {
-  unconfigured: { label: "sin configurar", variant: "muted" },
-  never: { label: "esperando el primer aviso", variant: "warning" },
-  active: { label: "funcionando", variant: "success" },
-  idle: { label: "sin actividad (7+ días)", variant: "warning" },
+const WEBHOOK_VARIANT: Record<WebhookStatus["status"], "success" | "warning" | "muted"> = {
+  unconfigured: "muted",
+  never: "warning",
+  active: "success",
+  idle: "warning",
 };
 
 function CopyRow({ value, secret }: { value: string; secret?: boolean }) {
+  const { m } = useI18n();
   return (
     <div className="flex items-center gap-2">
       <code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-1 text-xs">
@@ -523,11 +513,11 @@ function CopyRow({ value, secret }: { value: string; secret?: boolean }) {
         onClick={() =>
           navigator.clipboard
             .writeText(value)
-            .then(() => toast.success(secret ? "Línea copiada" : "Copiado"))
-            .catch(() => toast.error("No se pudo copiar; selecciónalo a mano"))
+            .then(() => toast.success(secret ? m.settings.webhooks.lineCopied : m.common.copied))
+            .catch(() => toast.error(m.common.copyFailed))
         }
       >
-        Copiar
+        {m.common.copy}
       </Button>
     </div>
   );
@@ -535,6 +525,8 @@ function CopyRow({ value, secret }: { value: string; secret?: boolean }) {
 
 /** Reservas en tiempo real (feature 020): estado de los avisos de Beds24, clave y guía. */
 function WebhooksCard() {
+  const { m } = useI18n();
+  const t = m.settings.webhooks;
   const qc = useQueryClient();
   const status = useQuery({
     queryKey: ["webhook-status"],
@@ -553,12 +545,12 @@ function WebhooksCard() {
     onError: (e: Error) => toast.error(e.message),
   });
   const st = status.data;
-  const state = st ? WEBHOOK_STATE[st.status] : null;
+  const state = st ? { label: t.states[st.status], variant: WEBHOOK_VARIANT[st.status] } : null;
 
   const onGenerate = () => {
     if (
       st?.configured &&
-      !window.confirm("Ya hay una clave. Si generas otra, la anterior dejará de funcionar. ¿Continuar?")
+      !window.confirm(t.confirmRegenerate)
     ) {
       return;
     }
@@ -568,13 +560,10 @@ function WebhooksCard() {
   return (
     <Card className="space-y-3">
       <div className="flex items-center justify-between">
-        <CardTitle>Avisos en tiempo real</CardTitle>
+        <CardTitle>{t.title}</CardTitle>
         {state && <Badge variant={state.variant}>{state.label}</Badge>}
       </div>
-      <CardDescription>
-        Beds24 avisa a StayLever cuando entra, cambia o se cancela una reserva, y el calendario
-        se actualiza solo en ~1 minuto. La sincronización diaria sigue como respaldo.
-      </CardDescription>
+      <CardDescription>{t.description}</CardDescription>
 
       {status.isLoading ? (
         <Skeleton className="h-16 w-full" />
@@ -582,32 +571,27 @@ function WebhooksCard() {
         <>
           {st.configured && (
             <p className="text-xs text-muted-foreground">
-              Último aviso:{" "}
-              {st.last_accepted_at
-                ? new Date(st.last_accepted_at).toLocaleString("es-CO")
-                : "todavía ninguno"}{" "}
-              · 7 días: {st.counts_7d.accepted} aceptados, {st.counts_7d.rejected} rechazados,{" "}
-              {st.counts_7d.failed} con error
+              {t.lastNotice}{" "}
+              {st.last_accepted_at ? dateTime(st.last_accepted_at) : t.noneYet} ·{" "}
+              {t.stats(st.counts_7d.accepted, st.counts_7d.rejected, st.counts_7d.failed)}
             </p>
           )}
 
           {line ? (
             <div className="space-y-1.5 rounded-md border border-amber-500/40 p-2">
-              <p className="text-xs font-medium">
-                Copia esta línea ahora: no se volverá a mostrar.
-              </p>
+              <p className="text-xs font-medium">{t.copyNow}</p>
               <CopyRow value={line} secret />
             </div>
           ) : (
             <Button onClick={onGenerate} disabled={generate.isPending}>
-              {st.configured ? "Generar clave nueva" : "Generar clave"}
+              {st.configured ? t.generateNew : t.generate}
             </Button>
           )}
 
           <ol className="list-decimal space-y-1.5 pl-5 text-xs text-muted-foreground">
-            <li>Genera la clave aquí y copia la línea que aparece.</li>
+            <li>{t.step1}</li>
             <li>
-              En Beds24 abre <strong>Settings → Properties → Access</strong>, sección{" "}
+              {t.step2Open} <strong>Settings → Properties → Access</strong>{t.step2Section}{" "}
               <strong>Booking Webhook</strong>.
             </li>
             <li>
@@ -618,37 +602,40 @@ function WebhooksCard() {
               <CopyRow value={st.endpoint_url} />
             </li>
             <li>
-              <strong>Custom Header</strong>: pega la línea copiada (empieza por{" "}
-              <code>{st.header_name}:</code>). Pulsa <strong>Save</strong>.
+              <strong>Custom Header</strong>
+              {t.step5Paste} <code>{st.header_name}:</code>
+              {t.step5Press} <strong>Save</strong>.
             </li>
-            <li>Con el próximo cambio de una reserva, aquí verás &quot;funcionando&quot;.</li>
+            <li>{t.step6(t.states.active)}</li>
           </ol>
         </>
       ) : (
-        <p className="text-sm text-red-500">No se pudo cargar el estado de los avisos.</p>
+        <p className="text-sm text-red-500">{t.loadError}</p>
       )}
     </Card>
   );
 }
 
 export default function SettingsPage() {
+  const { m } = useI18n();
+  const t = m.settings;
   const [unitTypeId] = useActiveUnit();
   const test = useMutation({ mutationFn: () => api.testConnection() });
 
   return (
     <div className="mx-auto max-w-xl space-y-4">
-      <h1 className="text-xl font-semibold">Configuración</h1>
+      <h1 className="text-xl font-semibold">{t.title}</h1>
 
       <Card className="space-y-2">
-        <CardTitle>Integración Beds24</CardTitle>
-        <CardDescription>Estado de la conexión con el Channel Manager.</CardDescription>
+        <CardTitle>{t.beds24.title}</CardTitle>
+        <CardDescription>{t.beds24.description}</CardDescription>
         <div className="flex items-center gap-2">
           <Button onClick={() => test.mutate()} disabled={test.isPending}>
-            Comprobar
+            {t.beds24.check}
           </Button>
           {test.data && (
             <Badge variant={test.data.status === "connected" ? "success" : "warning"}>
-              {test.data.status}
+              {t.beds24.status[test.data.status] ?? test.data.status}
             </Badge>
           )}
         </div>
@@ -665,16 +652,13 @@ export default function SettingsPage() {
       <SecretsCard />
 
       <Card className="space-y-1">
-        <CardTitle>Modelo de LLM</CardTitle>
-        <CardDescription>
-          Modelos configurados en el servidor (.env): general para conversación y de acciones
-          para escrituras. Las API keys se rotan en la tarjeta Secretos.
-        </CardDescription>
+        <CardTitle>{t.llm.title}</CardTitle>
+        <CardDescription>{t.llm.description}</CardDescription>
       </Card>
 
       <Card className="space-y-1">
-        <CardTitle>Preferencias</CardTitle>
-        <CardDescription>Unidad activa: {unitTypeId} (se ajusta en Conexión).</CardDescription>
+        <CardTitle>{t.prefs.title}</CardTitle>
+        <CardDescription>{t.prefs.activeUnit(unitTypeId)}</CardDescription>
       </Card>
     </div>
   );

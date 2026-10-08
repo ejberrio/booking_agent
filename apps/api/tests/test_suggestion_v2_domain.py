@@ -131,3 +131,17 @@ def test_evento_fuerte_con_mercado_barato_caso_chayanne():
     # Antes (50/50) bajaba a 336500; con 25% sube a 0,75·481000 + 0,25·192000 = 408750.
     out = suggest_price_v2(D("370000"), event=_event(), market=_snapshot("192000"))
     assert out.price == D("408750")
+
+
+def test_factores_estructurados_para_traducir():
+    out = suggest_price_v2(D("300000"), event=_event(Relevance.medium), market=_snapshot("310000"))
+    ev = next(f for f in out.factors if f.kind == "event")
+    mk = next(f for f in out.factors if f.kind == "market")
+    assert ev.data == {"relevance": "medium"}
+    assert mk.data == {"adr": "310000", "samples": 5, "source": "tavily", "state": "used", "weight": 0.25}
+    gap = suggest_price_v2(D("300000"), gap_days_ahead=10).factors[0]
+    assert gap.data == {"days": 10}
+    disc = suggest_price_v2(D("270000"), event=_event(), market=_snapshot("52000"))
+    assert next(f for f in disc.factors if f.kind == "market").data["state"] == "discarded"
+    low = suggest_price_v2(D("300000"), event=_event(), market=_snapshot("310000", samples=2))
+    assert next(f for f in low.factors if f.kind == "market").data["state"] == "low_confidence"

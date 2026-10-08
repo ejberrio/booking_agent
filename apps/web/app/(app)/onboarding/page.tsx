@@ -9,52 +9,55 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useActiveUnit } from "@/lib/active-unit";
 import { api } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 
 export default function OnboardingPage() {
+  const { m } = useI18n();
+  const t = m.connection;
   const [unitTypeId, setUnitTypeId] = useActiveUnit();
   const [unitInput, setUnitInput] = useState(String(unitTypeId));
 
   const test = useMutation({
     mutationFn: () => api.testConnection(),
-    onError: () => toast.error("No se pudo conectar a Beds24"),
+    onError: () => toast.error(t.connect.failed),
   });
   const importRemote = useMutation({
     mutationFn: () => api.importRemote(),
-    onSuccess: (r) => toast.success(`Importación: ${r.created} creados, ${r.issues} incidencias`),
-    onError: () => toast.error("Falló la importación"),
+    onSuccess: (r) => toast.success(t.import.done(r.created, r.issues)),
+    onError: () => toast.error(t.import.failed),
   });
 
   return (
     <div className="mx-auto max-w-xl space-y-4">
-      <h1 className="text-xl font-semibold">Conexión y onboarding</h1>
+      <h1 className="text-xl font-semibold">{t.title}</h1>
 
       <Card className="space-y-2">
-        <CardTitle>1. Conectar Beds24</CardTitle>
-        <CardDescription>Verifica que las credenciales del .env funcionan.</CardDescription>
+        <CardTitle>{t.connect.title}</CardTitle>
+        <CardDescription>{t.connect.description}</CardDescription>
         <Button onClick={() => test.mutate()} disabled={test.isPending}>
-          {test.isPending ? "Probando…" : "Probar conexión"}
+          {test.isPending ? t.connect.testing : t.connect.test}
         </Button>
         {test.data && (
           <p className="text-xs">
-            Estado: <b>{test.data.status}</b>
+            {t.connect.status} <b>{t.statuses[test.data.status] ?? test.data.status}</b>
             {test.data.account ? ` · ${test.data.account}` : ""}
           </p>
         )}
       </Card>
 
       <Card className="space-y-2">
-        <CardTitle>2. Importar datos</CardTitle>
-        <CardDescription>Trae propiedades, precios y reservas desde Beds24.</CardDescription>
+        <CardTitle>{t.import.title}</CardTitle>
+        <CardDescription>{t.import.description}</CardDescription>
         <Button onClick={() => importRemote.mutate()} disabled={importRemote.isPending}>
-          {importRemote.isPending ? "Importando…" : "Importar ahora"}
+          {importRemote.isPending ? t.import.running : t.import.run}
         </Button>
       </Card>
 
       <Card className="space-y-2">
-        <CardTitle>3. Propiedad activa</CardTitle>
-        <CardDescription>Id de la unidad a gestionar (tras importar).</CardDescription>
+        <CardTitle>{t.unit.title}</CardTitle>
+        <CardDescription>{t.unit.description}</CardDescription>
         <div className="flex gap-2">
-          <Label className="sr-only">Unidad</Label>
+          <Label className="sr-only">{t.unit.label}</Label>
           <Input
             type="number"
             value={unitInput}
@@ -64,10 +67,10 @@ export default function OnboardingPage() {
           <Button
             onClick={() => {
               setUnitTypeId(Number(unitInput));
-              toast.success("Unidad activa guardada");
+              toast.success(t.unit.saved);
             }}
           >
-            Guardar
+            {m.common.save}
           </Button>
         </div>
       </Card>

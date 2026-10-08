@@ -1,4 +1,5 @@
 import { API_URL } from "@/lib/api";
+import { getActiveLang } from "@/lib/i18n/core";
 
 export interface ChatDoneEvent {
   reply: string;
@@ -21,7 +22,8 @@ export async function streamChat(
   const res = await fetch(`${API_URL}/chat/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, conversation_id: conversationId }),
+    // Idioma del host (feature 021): el asistente responde en él.
+    body: JSON.stringify({ message, conversation_id: conversationId, language: getActiveLang() }),
   });
   if (!res.body) throw new Error("sin cuerpo de respuesta");
 

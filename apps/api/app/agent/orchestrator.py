@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agent import texts as agent_texts
 from app.agent.prompts import system_prompt
 from app.agent.tools import (
     ALL_TOOLS,
@@ -103,12 +104,14 @@ async def _active_channels(session: AsyncSession) -> list[str]:
     return [k.value for k in rows]
 
 
-async def _build_messages(session: AsyncSession, conversation_id: int) -> list[dict]:
+async def _build_messages(
+    session: AsyncSession, conversation_id: int, language: str = "es"
+) -> list[dict]:
     res = await session.execute(
         select(Message).where(Message.conversation_id == conversation_id).order_by(Message.id)
     )
     system = system_prompt(
-        active_channels=await _active_channels(session) or None
+        active_channels=await _active_channels(session) or None, language=language
     ) + await _units_context(session)
     msgs = [{"role": "system", "content": system}]
     for m in res.scalars():
@@ -130,11 +133,15 @@ async def run_turn(
     *,
     conversation_id: int,
     user_text: str,
+    language: str = "es",
 ) -> AgentReply:
     user_msg = await _persist(session, conversation_id, MessageRole.user, user_text)
 
+    def tr(text: str) -> str:  # textos FIJOS al idioma del host (feature 021)
+        return agent_texts.translate(text, language)
+
     if llm is None:
-        text = (
+        text = tr(
             "No hay un LLM configurado. Configura OPENAI_API_KEY en .env para activar el agente."
         )
         await _persist(session, conversation_id, MessageRole.assistant, text)
@@ -143,7 +150,7 @@ async def run_turn(
     pending = await _pending_action(session, conversation_id)
     models = await _llm_models(session)
     model = models.actions if pending else models.general
-    messages = await _build_messages(session, conversation_id)
+    messages = await _build_messages(session, conversation_id, language)
     tools = openai_tools(include_control=pending is not None)
     events: list[dict] = []
 
@@ -180,14 +187,16 @@ async def run_turn(
 
         # Confirmación.
         if tc.name == "confirm_pending":
-            return await _confirm(session, channel, conversation_id, pending, user_msg.id, events)
+            return await _confirm(
+                session, channel, conversation_id, pending, user_msg.id, events, language
+            )
 
         # Cancelación.
         if tc.name == "cancel_pending":
             if pending:
                 pending.status = AgentActionStatus.cancelled
                 await session.flush()
-            text = "Entendido, cancelo la propuesta."
+            text = tr("Entendido, cancelo la propuesta.")
             await _persist(session, conversation_id, MessageRole.assistant, text)
             return AgentReply(text, events=events)
 
@@ -228,10 +237,11 @@ async def run_turn(
         )
         session.add(action)
         await session.flush()
-        await _persist(session, conversation_id, MessageRole.assistant, proposal.summary)
-        return AgentReply(proposal.summary, pending_action_id=action.id, events=events)
+        summary = tr(proposal.summary)
+        await _persist(session, conversation_id, MessageRole.assistant, summary)
+        return AgentReply(summary, pending_action_id=action.id, events=events)
 
-    text = "No pude completar la solicitud."
+    text = tr("No pude completar la solicitud.")
     await _persist(session, conversation_id, MessageRole.assistant, text)
     return AgentReply(text, events=events)
 
@@ -243,9 +253,13 @@ async def _confirm(
     pending: AgentAction | None,
     message_id: int,
     events: list[dict],
+    language: str = "es",
 ) -> AgentReply:
+    def tr(text: str) -> str:
+        return agent_texts.translate(text, language)
+
     if pending is None:
-        text = "No hay ninguna propuesta pendiente para confirmar."
+        text = tr("No hay ninguna propuesta pendiente para confirmar.")
         await _persist(session, conversation_id, MessageRole.assistant, text)
         return AgentReply(text, events=events)
 
@@ -266,12 +280,13 @@ async def _confirm(
         )
         session.add(new_action)
         await session.flush()
-        text = f"{outcome.summary} {proposal.summary}"
+        text = f"{tr(outcome.summary)} {tr(proposal.summary)}"
         await _persist(session, conversation_id, MessageRole.assistant, text)
         return AgentReply(text, pending_action_id=new_action.id, events=events)
 
     pending.status = AgentActionStatus.applied
     pending.applied_ref = outcome.applied_ref
     await session.flush()
-    await _persist(session, conversation_id, MessageRole.assistant, outcome.summary)
-    return AgentReply(outcome.summary, applied=True, events=events)
+    done = tr(outcome.summary)
+    await _persist(session, conversation_id, MessageRole.assistant, done)
+    return AgentReply(done, applied=True, events=events)
