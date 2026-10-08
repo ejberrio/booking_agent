@@ -16,6 +16,7 @@ from app.models.mixins import _now
 from app.services import (
     event_service,
     pricing_app_service,
+    pricing_service,
     suggestion_engine,
     suggestion_service,
 )
@@ -180,6 +181,14 @@ async def apply_suggestion(
             f"La sugerencia venció (rango {sug.date_from} → {sug.date_to}, todo en el pasado)"
         )
     applied_from = max(sug.date_from, today)
+
+    # Feature 022: una bajada NUNCA baja el precio base; se aplica como promoción desde
+    # la vista previa del lote (/suggestions/batch/*), que respeta el precio mínimo.
+    current = await pricing_service.get_price(session, sug.unit_type_id, applied_from)
+    if current is not None and sug.suggested_price < current:
+        raise SuggestionStateError(
+            "Las bajadas se aplican como promoción desde la vista previa del lote"
+        )
 
     applied = issues = 0
     day = applied_from

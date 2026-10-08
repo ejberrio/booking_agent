@@ -170,6 +170,8 @@ def _view(p: Promotion) -> PromotionView:
         status=status,
         published=published,
         channels_scope=c.get("channels_scope"),
+        source=c.get("source") or "manual",
+        finished=p.end_date < date.today(),
     )
 
 
@@ -465,4 +467,16 @@ async def list_promotions(session: AsyncSession, unit_type_id: int) -> list[Prom
         .where(Promotion.unit_type_id == unit_type_id, Promotion.offer_id.is_not(None))
         .order_by(Promotion.start_date)
     )
-    return [_view(p) for p in res.scalars()]
+    from app.services import suggestion_batch
+
+    views = []
+    today = date.today()
+    for p in res.scalars():
+        v = _view(p)
+        if v.source == "suggestion" and not v.finished and v.status != "retired":
+            lo = max(p.start_date, today)
+            busy = await suggestion_batch.occupied_nights(session, unit_type_id, lo, p.end_date)
+            nights = (p.end_date - lo).days + 1
+            v.no_free_nights = nights > 0 and len(busy) >= nights
+        views.append(v)
+    return views

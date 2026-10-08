@@ -1,15 +1,14 @@
 <!-- SPECKIT START -->
-Feature activa: **021-language-selector** (es/en/pt; issue #124).
-Plan: `specs/021-language-selector/{plan,research,data-model,quickstart}.md` + `contracts/preferences-api.md`.
-Diseño: i18n propia sin librerías — `apps/web/lib/i18n/{es,en,pt}.ts` (es = referencia; en/pt tipados
-`Messages = typeof es` → texto faltante rompe tsc/build), `I18nProvider`/`useI18n()` {lang, setLang, t, fmt}
-con Intl es-CO/en-US/pt-BR y moneda COP. Preferencia: cookie `lang` (login sin sesión) + `app_preference`
-(fila única, migración `b5c6d7e8f9a0`) vía GET/PUT /preferences (todos los dispositivos). Mensajes del
-servidor siguen en español; la web los traduce con `lib/i18n/server-messages.ts` (exactos + patrones),
-sin match → español. Factores de sugerencias con campos estructurados aditivos (relevance, days, adr,
-samples, weight, state) → la web arma la frase por idioma; nombres de eventos intactos. Chat:
-`language` en el request → instrucción al final del system prompt. Contenido del host/terceros nunca
-se traduce. Sin cambios de comportamiento.
+Feature activa: **022-discount-as-promotion** (bajar con promoción; issue #128).
+Plan: `specs/022-discount-as-promotion/{plan,research,data-model,quickstart}.md` + `contracts/promo-batch-api.md`.
+Decisiones del host (2026-10-09): TODA bajada sugerida = promoción temporal (base nunca baja por sugerencia;
+subidas siguen cambiando el base); piso = precio mínimo por noche en COP (`PricingRule.min_price`, GET/PUT
+/pricing/min-price); publicar en Booking.com + Airbnb. Diseño: lote 019 con `mode` base|promotion por noche;
+tramos contiguos de igual base y precio promo → `offer_promotion_service.apply(price=…, origin=suggestion)`
+en SAVEPOINT (issue/excepción → rollback + SyncIssue); `conditions.source="suggestion"` + suggestion_ids;
+`app/domain/promo_floor.py` PURO: precio_promo ≥ max(min, max_c min/(1−a_c)) con a_c = deals `stacking=always`
+del canal; <1 % u omitida por mínimo. Migración `c6d7e8f9a0b1`: native_deal.stacking (mobile→always),
+price_suggestion.applied_promotion_id. Ofertas: source, finished (end<hoy), no_free_nights. es/en/pt.
 <!-- SPECKIT END -->
 
 # Booking AI Agent

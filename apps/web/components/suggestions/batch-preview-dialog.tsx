@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
-import { formatCOP, shortDate } from "@/lib/format";
+import { formatCOP, formatNumber, shortDate } from "@/lib/format";
+import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
 import { trServer } from "@/lib/i18n/server-messages";
 import type { BatchResult } from "@/lib/types";
@@ -73,6 +74,33 @@ export function BatchPreviewDialog({ ids, titleOf, onClose, onApplied }: Props) 
             {preview.data.skipped_count > 0 && <> · {t.skippedNote(preview.data.skipped_count)}</>}
             .
           </p>
+          {preview.data.items.some((i) => i.mode === "promotion" && i.valid) && (
+            <div className="mt-2 space-y-1 rounded-md bg-muted/50 p-2 text-xs text-muted-foreground">
+              <p>{t.promoExplain}</p>
+              {preview.data.min_price ? (
+                <p>{t.minPriceNote(formatCOP(preview.data.min_price))}</p>
+              ) : (
+                <p className="text-amber-600">
+                  {t.noMinPrice}{" "}
+                  <Link href="/settings" className="underline">
+                    {t.setMinPrice}
+                  </Link>
+                </p>
+              )}
+              {preview.data.conditional_deals.length > 0 && (
+                <p>
+                  {t.conditionalDeals(
+                    preview.data.conditional_deals
+                      .map((d) => `${d.name} (${d.channel === "booking" ? "Booking.com" : "Airbnb"}, ${Number(d.pct)}%)`)
+                      .join(", "),
+                  )}
+                </p>
+              )}
+              {preview.data.overlaps.length > 0 && (
+                <p className="text-amber-600">{t.overlapsWarn(preview.data.overlaps.join(", "))}</p>
+              )}
+            </div>
+          )}
           <div className="mt-3 max-h-[50vh] overflow-y-auto rounded-md border border-border">
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-card text-left text-muted-foreground">
@@ -94,12 +122,33 @@ export function BatchPreviewDialog({ ids, titleOf, onClose, onApplied }: Props) 
                       <td className="px-2 py-1.5 whitespace-nowrap">{shortDate(i.date)}</td>
                       <td className="max-w-[10rem] truncate px-2 py-1.5">{titleOf(i.suggestion_id)}</td>
                       <td className="px-2 py-1.5">
-                        {i.valid ? (
+                        {i.valid && i.mode === "promotion" ? (
+                          <span className="flex flex-col gap-0.5">
+                            <span className="inline-flex flex-wrap items-center gap-1">
+                              {formatCOP(i.old_price)} →{" "}
+                              <strong>{formatCOP(i.promo_price)}</strong>
+                              <ArrowDown size={12} className="text-orange-500" />
+                              <span className="rounded bg-orange-500/15 px-1 text-[10px] text-orange-600">
+                                {t.modePromo(formatNumber(Number(i.promo_pct)))}
+                              </span>
+                            </span>
+                            {Object.keys(i.final_by_channel).length > 0 && (
+                              <span className="text-[10px] text-muted-foreground">
+                                {t.mobileShort}:{" "}
+                                {Object.entries(i.final_by_channel)
+                                  .map(([ch, v]) => `${ch === "booking" ? "Booking" : "Airbnb"} ${formatCOP(v)}`)
+                                  .join(" · ")}
+                              </span>
+                            )}
+                            {i.clipped && <span className="text-[10px] text-amber-600">{t.clipped}</span>}
+                          </span>
+                        ) : i.valid ? (
                           <span className="inline-flex items-center gap-1">
                             {formatCOP(i.old_price)} →{" "}
                             <strong>{formatCOP(i.new_price)}</strong>
                             {up && <ArrowUp size={12} className="text-emerald-600" />}
                             {down && <ArrowDown size={12} className="text-orange-500" />}
+                            <span className="text-[10px] text-muted-foreground">({t.modeBase})</span>
                           </span>
                         ) : (
                           <span>{t.skippedReason(trServer(i.reason))}</span>
@@ -159,6 +208,7 @@ function ResultView({ result, titleOf }: { result: BatchResult; titleOf: (id: nu
         {result.failed_count > 0 && (
           <span className="text-red-500"> · {t.resultFailed(result.failed_count)}</span>
         )}
+        {result.promotions.length > 0 && <> · {t.promotionsCreated(result.promotions.length)}</>}
       </p>
       <ul className="mt-3 max-h-[50vh] space-y-1 overflow-y-auto text-xs">
         {result.nights.map((n) => (

@@ -1,7 +1,9 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "sonner";
+import { BatchPreviewDialog } from "@/components/suggestions/batch-preview-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -26,25 +28,16 @@ export function SuggestionPanel({ date, suggestions }: Props) {
     qc.invalidateQueries({ queryKey: ["calendar"] });
   };
 
-  const apply = useMutation({
-    mutationFn: (id: number) => api.applySuggestion(id),
-    onSuccess: (s) => {
-      if (s.applied_from && s.applied_from > s.date_from) {
-        toast.success(m.calendar.appliedFrom(s.applied_from));
-      } else {
-        toast.success(m.calendar.appliedPublished);
-      }
-    },
-    onError: (e: Error) => toast.error(e.message),
-    onSettled: refresh,
-  });
+  // Feature 022: aplicar pasa por la misma vista previa del lote, así una bajada se
+  // publica como promoción (el precio base no baja) y respeta el precio mínimo.
+  const [previewIds, setPreviewIds] = useState<number[] | null>(null);
   const reject = useMutation({
     mutationFn: (id: number) => api.rejectSuggestion(id),
     onSuccess: () => toast(m.calendar.rejected),
     onError: (e: Error) => toast.error(e.message),
     onSettled: refresh,
   });
-  const busy = apply.isPending || reject.isPending;
+  const busy = reject.isPending;
 
   return (
     <Card>
@@ -74,7 +67,7 @@ export function SuggestionPanel({ date, suggestions }: Props) {
             </p>
             <Rationale rationale={s.rationale} />
             <div className="flex gap-2 pt-1">
-              <Button onClick={() => apply.mutate(s.id)} disabled={busy}>
+              <Button onClick={() => setPreviewIds([s.id])} disabled={busy}>
                 {m.calendar.approveApply}
               </Button>
               <Button
@@ -88,6 +81,16 @@ export function SuggestionPanel({ date, suggestions }: Props) {
           </div>
         ))}
       </div>
+      <BatchPreviewDialog
+        ids={previewIds}
+        titleOf={() => date}
+        onClose={() => setPreviewIds(null)}
+        onApplied={(r) => {
+          if (r.failed_count > 0) toast.error(m.suggestions.resultFailed(r.failed_count));
+          else toast.success(m.calendar.appliedPublished);
+          refresh();
+        }}
+      />
     </Card>
   );
 }

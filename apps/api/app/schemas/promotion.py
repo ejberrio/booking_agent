@@ -45,6 +45,10 @@ class PromotionView:
     status: str  # "published" | "sync_error" | "retired"
     published: bool
     channels_scope: list[str] | None = None  # None = todos los canales
+    # Feature 022
+    source: str = "manual"  # "manual" | "suggestion"
+    finished: bool = False  # su última noche ya pasó
+    no_free_nights: bool = False  # (source=suggestion) todas sus noches futuras ocupadas
 
 
 @dataclass

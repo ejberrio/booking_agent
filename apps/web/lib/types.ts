@@ -73,6 +73,10 @@ export interface Promotion {
   status: "published" | "sync_error" | "retired";
   published: boolean;
   channels_scope: string[] | null;
+  // Feature 022
+  source: "manual" | "suggestion";
+  finished: boolean;
+  no_free_nights: boolean;
 }
 
 export interface PromotionPreview {
@@ -235,6 +239,12 @@ export interface BatchPreviewItem {
   new_price: string;
   valid: boolean;
   reason: string | null;
+  // Feature 022: las bajadas se aplican como promoción (el precio base no baja)
+  mode: "base" | "promotion";
+  promo_price: string | null;
+  promo_pct: string | null;
+  clipped: boolean;
+  final_by_channel: Record<string, string>;
 }
 
 export interface BatchPreview {
@@ -243,6 +253,9 @@ export interface BatchPreview {
   valid_count: number;
   skipped_count: number;
   fingerprint: string;
+  min_price: string | null;
+  conditional_deals: { channel: string; name: string; pct: string }[];
+  overlaps: string[];
 }
 
 export interface BatchResult {
@@ -251,6 +264,7 @@ export interface BatchResult {
   skipped_count: number;
   failed_count: number;
   suggestions: Record<string, "applied" | "pending" | "unchanged">;
+  promotions: { id: number; name: string; first_night: string; last_night: string; price: string }[];
 }
 
 export interface BookingView {
@@ -280,6 +294,7 @@ export interface NativeDeal {
   date_from: string | null;
   date_to: string | null;
   is_active: boolean;
+  stacking: "always" | "conditional"; // feature 022: ¿cuenta para el precio mínimo?
 }
 
 export interface NativeDealInput {
@@ -289,6 +304,7 @@ export interface NativeDealInput {
   date_from?: string | null;
   date_to?: string | null;
   is_active?: boolean;
+  stacking?: "always" | "conditional";
 }
 
 export interface ChannelStatus {

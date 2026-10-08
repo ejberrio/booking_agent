@@ -218,7 +218,7 @@ async def test_huella_cambia_y_apply_stale_no_escribe(session):
 async def test_apply_publica_audita_y_marca_aplicadas(session):
     prop, unit = await _unit(session)
     a = await _sug(session, prop, unit, day(3), day(4), price="380000")
-    b = await _sug(session, prop, unit, day(5), day(5), price="250000")  # a la baja
+    b = await _sug(session, prop, unit, day(5), day(5), price="320000")  # (022: las bajadas van como promoción)
     await _book(session, unit, day(4), day(5))  # omite el 4
     p = await suggestion_batch.preview_batch(session, [a.id, b.id], today=TODAY)
     cm = FakeCM()
@@ -228,7 +228,7 @@ async def test_apply_publica_audita_y_marca_aplicadas(session):
     assert r.suggestions == {a.id: "applied", b.id: "applied"}
     assert await pricing_service.get_price(session, unit.id, day(3)) == D("380000")
     assert await pricing_service.get_price(session, unit.id, day(4)) == D("300000")  # omitida
-    assert await pricing_service.get_price(session, unit.id, day(5)) == D("250000")  # bajada
+    assert await pricing_service.get_price(session, unit.id, day(5)) == D("320000")
     assert len(cm.published) == 2
     logs = (await session.execute(select(PriceChangeLog).where(PriceChangeLog.suggestion_id == a.id))).scalars().all()
     assert [lg.origin for lg in logs] == [ChangeOrigin.suggestion]

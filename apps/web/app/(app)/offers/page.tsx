@@ -98,8 +98,8 @@ export default function OffersPage() {
     onError: () => toast.error(t.retireFailed),
   });
 
-  const active = data?.promotions.filter((p) => p.status !== "retired") ?? [];
-  const retired = data?.promotions.filter((p) => p.status === "retired") ?? [];
+  const active = data?.promotions.filter((p) => p.status !== "retired" && !p.finished) ?? [];
+  const retired = data?.promotions.filter((p) => p.status === "retired" || p.finished) ?? [];
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
@@ -243,7 +243,14 @@ export default function OffersPage() {
                 className="flex items-center justify-between rounded-md border border-border p-3 text-sm"
               >
                 <div>
-                  <div className="font-medium">{p.name}</div>
+                  <div className="font-medium">
+                    {p.name}
+                    {p.source === "suggestion" && (
+                      <span className="ml-2 rounded bg-violet-500/15 px-1.5 py-0.5 text-[10px] font-normal text-violet-600">
+                        {t.fromSuggestions}
+                      </span>
+                    )}
+                  </div>
                   <div className="text-muted-foreground">
                     {p.first_night} → {p.last_night} · {money(p.price)}
                     {p.saving ? ` · ${t.savingInline(money(p.saving))}` : ""}
@@ -254,6 +261,7 @@ export default function OffersPage() {
                   {p.status === "sync_error" ? (
                     <div className="text-amber-600">{t.notPublished}</div>
                   ) : null}
+                  {p.no_free_nights ? <div className="text-amber-600">{t.noFreeNights}</div> : null}
                 </div>
                 <Button
                   className="bg-transparent px-2 text-muted-foreground hover:bg-muted"
@@ -270,7 +278,8 @@ export default function OffersPage() {
                 className="flex items-center justify-between rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground"
               >
                 <span>
-                  {p.name} · {p.first_night} → {p.last_night} {t.retiredTag}
+                  {p.name} · {p.first_night} → {p.last_night}{" "}
+                  {p.status === "retired" ? t.retiredTag : t.finishedTag}
                 </span>
               </div>
             ))}
@@ -384,6 +393,13 @@ function NativeDealsCard() {
     onSuccess: refresh,
     onError,
   });
+  // Feature 022: ¿el descuento puede aplicar a cualquier reserva (cuenta para el piso)?
+  const toggleStacking = useMutation({
+    mutationFn: (d: NativeDeal) =>
+      api.updateNativeDeal(d.id, { stacking: d.stacking === "always" ? "conditional" : "always" }),
+    onSuccess: refresh,
+    onError,
+  });
   const remove = useMutation({
     mutationFn: (id: number) => api.deleteNativeDeal(id),
     onSuccess: () => {
@@ -415,6 +431,15 @@ function NativeDealsCard() {
                   {DEAL_CHANNELS[d.channel]} · {Number(d.discount_pct)}% · {dealVigencia(d, t)}
                   {d.is_active ? "" : ` · ${t.inactive}`}
                 </div>
+                <button
+                  type="button"
+                  className="mt-0.5 text-left text-[11px] text-muted-foreground underline decoration-dotted"
+                  onClick={() => toggleStacking.mutate(d)}
+                  disabled={toggleStacking.isPending}
+                  title={d.stacking === "always" ? t.stackingMakeConditional : t.stackingMakeAlways}
+                >
+                  {d.stacking === "always" ? t.stackingAlways : t.stackingConditional}
+                </button>
               </div>
               <div className="flex gap-1">
                 <Button

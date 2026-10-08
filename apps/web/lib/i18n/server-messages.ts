@@ -18,6 +18,20 @@ const EXACT: Record<string, Tr> = {
   "fuera de límites": { en: "outside price limits", pt: "fora dos limites" },
   "sugerencia resuelta": { en: "suggestion already resolved", pt: "sugestão já resolvida" },
   conflicto: { en: "conflict", pt: "conflito" },
+  "por debajo del precio mínimo": { en: "below the minimum price", pt: "abaixo do preço mínimo" },
+  "menos de 1 %": { en: "less than 1%", pt: "menos de 1%" },
+  "Las bajadas se aplican como promoción desde la vista previa del lote": {
+    en: "Price decreases are applied as a promotion from the batch preview",
+    pt: "As reduções são aplicadas como promoção a partir da pré-visualização do lote",
+  },
+  "El precio mínimo debe ser mayor que 0": {
+    en: "The minimum price must be greater than 0",
+    pt: "O preço mínimo deve ser maior que 0",
+  },
+  "La acumulación debe ser always o conditional": {
+    en: "Stacking must be always or conditional",
+    pt: "O acúmulo deve ser always ou conditional",
+  },
   "no se pudo publicar al canal": { en: "couldn't publish to the channel", pt: "não foi possível publicar no canal" },
   "clave inválida": { en: "invalid key", pt: "chave inválida" },
   "conflicto al guardar la reserva; el cron lo corregirá": {

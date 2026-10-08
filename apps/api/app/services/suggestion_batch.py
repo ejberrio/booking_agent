@@ -24,11 +24,19 @@ from app.domain.pricing import violates_rule
 from app.models.audit import PriceChangeLog
 from app.models.booking import Booking
 from app.models.calendar import CalendarDay
-from app.models.enums import BookingStatus, ChangeOrigin, SuggestionStatus, SyncIssueKind
+from app.domain.promo_floor import plan_promo
+from app.models.enums import (
+    BookingStatus,
+    ChangeOrigin,
+    PromotionStatus,
+    SuggestionStatus,
+    SyncIssueKind,
+)
 from app.models.market import PriceSuggestion
+from app.models.pricing import Promotion
 from app.models.property import UnitType
 from app.models.sync import SyncIssue
-from app.services import pricing_app_service, pricing_service
+from app.services import native_deal_service, pricing_app_service, pricing_service
 
 _PENDING = (SuggestionStatus.proposed, SuggestionStatus.approved)
 
@@ -61,6 +69,12 @@ class BatchPreviewItem:
     new_price: Decimal
     valid: bool
     reason: str | None = None
+    # Feature 022: las bajadas se aplican como promoción (el base no cambia).
+    mode: str = "base"  # "base" | "promotion"
+    promo_price: Decimal | None = None
+    promo_pct: Decimal | None = None
+    clipped: bool = False
+    final_by_channel: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -70,6 +84,9 @@ class BatchPreview:
     fingerprint: str
     valid_count: int
     skipped_count: int
+    min_price: Decimal | None = None
+    conditional_deals: list[dict] = field(default_factory=list)
+    overlaps: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -85,6 +102,7 @@ class BatchResult:
     nights: list[BatchResultNight] = field(default_factory=list)
     suggestions: dict[int, str] = field(default_factory=dict)  # applied|pending|unchanged
     stale: bool = False
+    promotions: list[dict] = field(default_factory=list)  # feature 022: creadas en el lote
 
     @property
     def applied_count(self) -> int:
@@ -209,11 +227,16 @@ async def pending_views(
 # --------- lote: vista previa ---------
 
 
-def _fingerprint(ids: list[int], items: list[BatchPreviewItem]) -> str:
+def _fingerprint(
+    ids: list[int],
+    items: list[BatchPreviewItem],
+    extra: str = "",
+) -> str:
     raw = ",".join(str(i) for i in sorted(set(ids))) + "#" + ";".join(
         f"{i.date.isoformat()}|{i.suggestion_id}|{i.old_price}|{i.new_price}|{i.valid}|{i.reason}"
+        f"|{i.mode}|{i.promo_price}|{i.clipped}"
         for i in items
-    )
+    ) + "#" + extra
     return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
 
@@ -239,6 +262,8 @@ async def preview_batch(
 
     rules: dict[int, tuple[Decimal | None, Decimal | None] | None] = {}
     items: list[BatchPreviewItem] = []
+    promo_nights: list[date] = []
+    min_price: Decimal | None = None
     for s in sugs:
         resolved = s.status not in _PENDING or s.unit_type_id is None
         if s.unit_type_id is not None and s.unit_type_id not in rules:
@@ -247,6 +272,8 @@ async def preview_batch(
             rules[s.unit_type_id] = (rule.min_price, rule.max_price) if rule else None
         bounds = rules.get(s.unit_type_id) if s.unit_type_id is not None else None
         out_of_bounds = bool(bounds and violates_rule(s.suggested_price, bounds[0], bounds[1]))
+        if bounds and bounds[0] is not None:
+            min_price = bounds[0]
         busy = occ.get(s.unit_type_id, {}) if s.unit_type_id is not None else {}
         for d in _days(s.date_from, s.date_to):
             old = (
@@ -254,6 +281,10 @@ async def preview_batch(
                 if s.unit_type_id is not None
                 else None
             )
+            # Feature 022: una bajada se aplica como promoción (el base no baja) y su
+            # piso lo pone el precio mínimo con los descuentos que siempre se acumulan.
+            is_down = old is not None and s.suggested_price < old
+            plan = None
             if resolved:
                 reason = "sugerencia resuelta"
             elif d < today:
@@ -262,10 +293,31 @@ async def preview_batch(
                 reason = busy[d]
             elif (s.unit_type_id, d) in conflicts:
                 reason = "conflicto"
+            elif is_down:
+                always = await native_deal_service.always_pct_for(session, d)
+                plan = plan_promo(old, s.suggested_price, bounds[0] if bounds else None, always)
+                reason = plan.skip_reason
             elif out_of_bounds:
                 reason = "fuera de límites"
             else:
                 reason = None
+            if is_down and reason is None and plan is not None:
+                promo_nights.append(d)
+                items.append(
+                    BatchPreviewItem(
+                        date=d,
+                        suggestion_id=s.id,
+                        old_price=old,
+                        new_price=s.suggested_price,
+                        valid=True,
+                        mode="promotion",
+                        promo_price=plan.price,
+                        promo_pct=plan.pct,
+                        clipped=plan.clipped,
+                        final_by_channel=dict(plan.final_by_channel),
+                    )
+                )
+                continue
             items.append(
                 BatchPreviewItem(
                     date=d,
@@ -274,20 +326,162 @@ async def preview_batch(
                     new_price=s.suggested_price,
                     valid=reason is None,
                     reason=reason,
+                    mode="promotion" if is_down else "base",
                 )
             )
     items.sort(key=lambda i: (i.date, i.suggestion_id))
     valid = sum(1 for i in items if i.valid)
+
+    conditional: list[dict] = []
+    overlaps: list[str] = []
+    if promo_nights:
+        lo, hi = min(promo_nights), max(promo_nights)
+        conditional = [
+            {"channel": dl.channel.value, "name": dl.name, "pct": str(dl.discount_pct)}
+            for dl in await native_deal_service.conditional_deals_for(session, lo, hi)
+        ]
+        overlaps = await _overlapping_promotions(session, promo_nights, today)
+    extra = f"{min_price}|{conditional}|{overlaps}"
     return BatchPreview(
         suggestion_ids=ids,
         items=items,
-        fingerprint=_fingerprint(ids, items),
+        fingerprint=_fingerprint(ids, items, extra),
         valid_count=valid,
         skipped_count=len(items) - valid,
+        min_price=min_price,
+        conditional_deals=conditional,
+        overlaps=overlaps,
     )
 
 
+async def _overlapping_promotions(session: AsyncSession, nights: list[date], today: date) -> list[str]:
+    """Nombres de promociones activas y vigentes que cubren alguna de las noches."""
+    lo, hi = min(nights), max(nights)
+    promos = (
+        await session.execute(
+            select(Promotion).where(
+                Promotion.status == PromotionStatus.active,
+                Promotion.start_date <= hi,
+                Promotion.end_date >= max(lo, today),
+            )
+        )
+    ).scalars()
+    wanted = set(nights)
+    out = []
+    for p in promos:
+        if any(p.start_date <= d <= p.end_date for d in wanted):
+            out.append(p.name)
+    return sorted(set(out))
+
+
 # --------- lote: aplicación ---------
+
+_PERIOD_TITLES = {"gap": "Libre próximo", "occupancy": "Ocupación alta"}
+_MONTHS_ES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+
+
+def _title(sug: PriceSuggestion) -> str:
+    """Título del bloque de origen (evento o tipo de periodo), en español."""
+    factors = (sug.rationale or {}).get("factors") or []
+    for f in factors:
+        if f.get("kind") == "event":
+            return ((f.get("event") or {}).get("name") or f.get("label") or "Evento")[:60]
+    kinds = {f.get("kind") for f in factors}
+    for k in ("occupancy", "gap"):
+        if k in kinds:
+            return _PERIOD_TITLES[k]
+    return "Sugerencia"
+
+
+def _range_es(first: date, last: date) -> str:
+    if first == last:
+        return f"{first.day} {_MONTHS_ES[first.month - 1]}"
+    if first.month == last.month:
+        return f"{first.day}–{last.day} {_MONTHS_ES[last.month - 1]}"
+    return (
+        f"{first.day} {_MONTHS_ES[first.month - 1]} – {last.day} {_MONTHS_ES[last.month - 1]}"
+    )
+
+
+def _promo_tramos(items: list[BatchPreviewItem], unit_of: dict[int, int]):
+    """Noches de promoción contiguas con igual (unidad, base, precio promo): una
+    promoción de precio fijo por tramo (feature 022)."""
+    tramos: list[list[BatchPreviewItem]] = []
+    for it in sorted(items, key=lambda i: (unit_of[i.suggestion_id], i.date)):
+        last = tramos[-1][-1] if tramos else None
+        if (
+            last is not None
+            and unit_of[last.suggestion_id] == unit_of[it.suggestion_id]
+            and last.old_price == it.old_price
+            and last.promo_price == it.promo_price
+            and last.date + timedelta(days=1) == it.date
+        ):
+            tramos[-1].append(it)
+        else:
+            tramos.append([it])
+    return tramos
+
+
+async def _apply_promo_tramo(session, channel, tramo, unit_of, sugs, result: "BatchResult"):
+    """Publica el tramo como promoción en SAVEPOINT; si falla no queda nada (FR-005)."""
+    from app.services import offer_promotion_service
+
+    first, last = tramo[0].date, tramo[-1].date
+    unit_id = unit_of[tramo[0].suggestion_id]
+    sug_ids = sorted({it.suggestion_id for it in tramo})
+    name = f"StayLever · {_title(sugs[tramo[0].suggestion_id])} {_range_es(first, last)}"
+    failure: str | None = None
+    promo_id: int | None = None
+    try:
+        async with session.begin_nested():
+            res = await offer_promotion_service.apply(
+                session,
+                channel,
+                unit_type_id=unit_id,
+                first_night=first,
+                last_night=last,
+                name=name,
+                price=tramo[0].promo_price,
+                origin=ChangeOrigin.suggestion,
+                confirm_overlap=True,  # el host confirmó el lote viendo los solapes
+            )
+            if not res.published:
+                raise _TramoNoPublicado
+            promo = await session.get(Promotion, res.id)
+            conditions = dict(promo.conditions or {})
+            conditions["source"] = "suggestion"
+            conditions["suggestion_ids"] = sug_ids
+            promo.conditions = conditions
+            promo_id = promo.id
+            await session.flush()
+    except _TramoNoPublicado:
+        failure = "no se pudo publicar al canal"
+    except Exception as exc:  # noqa: BLE001 — PromotionError, red… → tramo fallido
+        failure = f"error al publicar ({type(exc).__name__})"
+    if failure:
+        session.add(
+            SyncIssue(
+                kind=SyncIssueKind.comm_error,
+                entity_ref=f"suggestion-promo:{first.isoformat()}..{last.isoformat()}",
+                detail=failure,
+            )
+        )
+        await session.flush()
+    else:
+        for sid in sug_ids:
+            sugs[sid].applied_promotion_id = promo_id
+        result.promotions.append(
+            {
+                "id": promo_id,
+                "name": name,
+                "first_night": first.isoformat(),
+                "last_night": last.isoformat(),
+                "price": str(tramo[0].promo_price),
+            }
+        )
+    status = "failed" if failure else "applied"
+    for it in tramo:
+        result.nights.append(BatchResultNight(it.date, it.suggestion_id, status, failure))
 
 
 def _tramos(items: list[BatchPreviewItem], unit_of: dict[int, int]):
@@ -327,7 +521,11 @@ async def apply_batch(
         if not it.valid:
             result.nights.append(BatchResultNight(it.date, it.suggestion_id, "skipped", it.reason))
 
-    for tramo in _tramos([i for i in preview.items if i.valid], unit_of):
+    promo_items = [i for i in preview.items if i.valid and i.mode == "promotion"]
+    for tramo in _promo_tramos(promo_items, unit_of):
+        await _apply_promo_tramo(session, channel, tramo, unit_of, sugs, result)
+
+    for tramo in _tramos([i for i in preview.items if i.valid and i.mode == "base"], unit_of):
         unit_id = unit_of[tramo[0].suggestion_id]
         unit = await session.get(UnitType, unit_id)
         failure: str | None = None
