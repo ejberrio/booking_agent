@@ -3,8 +3,8 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
-  title: "Booking AI Agent",
-  description: "Gestión inteligente de precios para Booking.com y Airbnb",
+  title: "StayLever",
+  description: "StayLever · precios inteligentes para Booking.com y Airbnb",
 };
 
 export default function RootLayout({

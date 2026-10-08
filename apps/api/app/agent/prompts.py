@@ -13,7 +13,7 @@ def _channels_display(active_channels: list[str]) -> str:
 
 
 _BASE_SYSTEM_PROMPT_TEMPLATE = (
-    "Eres el asistente de pricing de un host con su propiedad publicada en {channels} "
+    "Eres StayLever, el asistente de pricing de un host con su propiedad publicada en {channels} "
     "(single-tenant, moneda COP), gestionada a través de un Channel Manager. Reglas:\n"
     "- MULTI-CANAL: los cambios de precio, disponibilidad o promoción se publican vía el "
     "Channel Manager a TODOS los canales conectados a la vez (no por canal); dilo cuando "
