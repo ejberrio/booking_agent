@@ -115,6 +115,7 @@ class NativeDealCreateRequest(BaseModel):
     date_from: date | None = None
     date_to: date | None = None
     is_active: bool = True
+    stacking: str | None = None  # feature 022: always | conditional (None = por nombre)
 
 
 class NativeDealUpdateRequest(BaseModel):
@@ -125,6 +126,11 @@ class NativeDealUpdateRequest(BaseModel):
     date_from: date | None = None
     date_to: date | None = None
     is_active: bool | None = None
+    stacking: str | None = None
+
+
+class MinPriceRequest(BaseModel):
+    min_price: Decimal | None = None
 
 
 @router.get("/calendar")
@@ -154,6 +160,7 @@ def _deal_view(d) -> dict:
         "date_from": d.date_from.isoformat() if d.date_from else None,
         "date_to": d.date_to.isoformat() if d.date_to else None,
         "is_active": d.is_active,
+        "stacking": d.stacking,
     }
 
 
@@ -183,6 +190,7 @@ async def create_native_deal(
             date_from=req.date_from,
             date_to=req.date_to,
             is_active=req.is_active,
+            stacking=req.stacking,
         )
         await session.commit()
         return _deal_view(deal)
@@ -208,6 +216,8 @@ async def update_native_deal(
         kwargs["date_to"] = req.date_to
     if "is_active" in sent and req.is_active is not None:
         kwargs["is_active"] = req.is_active
+    if "stacking" in sent and req.stacking is not None:
+        kwargs["stacking"] = req.stacking
     try:
         deal = await native_deal_service.update(session, deal_id, **kwargs)
         await session.commit()
@@ -216,6 +226,46 @@ async def update_native_deal(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except NativeDealError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+# --------- precio mínimo por noche (feature 022) ---------
+
+
+async def _rule(session: AsyncSession, *, create: bool):
+    from sqlalchemy import select
+
+    from app.models.pricing import PricingRule
+    from app.models.property import Property
+
+    rule = (
+        await session.execute(select(PricingRule).order_by(PricingRule.id))
+    ).scalars().first()
+    if rule is None and create:
+        prop = (await session.execute(select(Property).order_by(Property.id))).scalars().first()
+        if prop is None:
+            raise HTTPException(status_code=409, detail="no hay propiedad sincronizada; importa desde el Channel Manager")
+        rule = PricingRule(property_id=prop.id, is_active=True)
+        session.add(rule)
+        await session.flush()
+    return rule
+
+
+@router.get("/min-price")
+async def get_min_price(session: AsyncSession = Depends(get_session)):
+    rule = await _rule(session, create=False)
+    value = rule.min_price if rule and rule.is_active else None
+    return {"min_price": f"{value:.2f}" if value is not None else None}
+
+
+@router.put("/min-price")
+async def put_min_price(req: MinPriceRequest, session: AsyncSession = Depends(get_session)):
+    if req.min_price is not None and req.min_price <= 0:
+        raise HTTPException(status_code=422, detail="El precio mínimo debe ser mayor que 0")
+    rule = await _rule(session, create=True)
+    rule.min_price = req.min_price
+    rule.is_active = True
+    await session.commit()
+    return {"min_price": f"{rule.min_price:.2f}" if rule.min_price is not None else None}
 
 
 @router.delete("/native-deals/{deal_id}")

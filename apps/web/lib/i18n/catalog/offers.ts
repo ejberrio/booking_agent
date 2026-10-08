@@ -43,6 +43,14 @@ const es = {
   notPublished: "No publicada (incidencia de sincronización)",
   retire: "Retirar",
   retiredTag: "(retirada)",
+  // feature 022
+  fromSuggestions: "desde sugerencias",
+  finishedTag: "(finalizada)",
+  noFreeNights: "Todas sus noches ya están reservadas: puedes retirarla.",
+  stackingAlways: "se acumula siempre (cuenta para el precio mínimo)",
+  stackingConditional: "condicional (solo informativo)",
+  stackingMakeAlways: "Marcar: se acumula siempre",
+  stackingMakeConditional: "Marcar: condicional",
 
   // Guía de deals nativos
   guideTitle: "¿Y los deals nativos de los canales?",
@@ -124,6 +132,13 @@ const en: Shape = {
   notPublished: "Not published (sync issue)",
   retire: "Remove",
   retiredTag: "(removed)",
+  fromSuggestions: "from suggestions",
+  finishedTag: "(ended)",
+  noFreeNights: "All its nights are already booked: you can remove it.",
+  stackingAlways: "always stacks (counts for the minimum price)",
+  stackingConditional: "conditional (informational only)",
+  stackingMakeAlways: "Mark: always stacks",
+  stackingMakeConditional: "Mark: conditional",
 
   guideTitle: "What about the channels' native deals?",
   guideIntro: "There are three kinds of discount, and each one is managed in its own place:",
@@ -201,6 +216,13 @@ const pt: Shape = {
   notPublished: "Não publicada (problema de sincronização)",
   retire: "Retirar",
   retiredTag: "(retirada)",
+  fromSuggestions: "das sugestões",
+  finishedTag: "(encerrada)",
+  noFreeNights: "Todas as noites já estão reservadas: você pode retirá-la.",
+  stackingAlways: "sempre se acumula (conta para o preço mínimo)",
+  stackingConditional: "condicional (apenas informativo)",
+  stackingMakeAlways: "Marcar: sempre se acumula",
+  stackingMakeConditional: "Marcar: condicional",
 
   guideTitle: "E os deals nativos dos canais?",
   guideIntro: "Há três tipos de desconto e cada um é gerenciado no seu lugar:",

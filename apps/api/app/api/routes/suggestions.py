@@ -145,12 +145,21 @@ async def batch_preview(req: BatchRequest, session: AsyncSession = Depends(get_s
                 "new_price": _money(i.new_price),
                 "valid": i.valid,
                 "reason": i.reason,
+                # feature 022
+                "mode": i.mode,
+                "promo_price": _money(i.promo_price),
+                "promo_pct": _money(i.promo_pct),
+                "clipped": i.clipped,
+                "final_by_channel": {k: _money(v) for k, v in i.final_by_channel.items()},
             }
             for i in p.items
         ],
         "valid_count": p.valid_count,
         "skipped_count": p.skipped_count,
         "fingerprint": p.fingerprint,
+        "min_price": _money(p.min_price),
+        "conditional_deals": p.conditional_deals,
+        "overlaps": p.overlaps,
     }
 
 
@@ -180,6 +189,7 @@ async def batch_apply(req: BatchApplyRequest, session: AsyncSession = Depends(ge
             "skipped_count": r.skipped_count,
             "failed_count": r.failed_count,
             "suggestions": {str(k): v for k, v in r.suggestions.items()},
+            "promotions": r.promotions,
         }
     finally:
         await adapter.aclose()

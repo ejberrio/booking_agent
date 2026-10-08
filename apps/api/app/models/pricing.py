@@ -62,3 +62,6 @@ class NativeDeal(Base, TimestampMixin):
     date_from: Mapped[date | None] = mapped_column(Date, nullable=True)
     date_to: Mapped[date | None] = mapped_column(Date, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Feature 022: "always" = puede aplicar a cualquier reserva (p. ej. móvil) y cuenta
+    # para el precio mínimo; "conditional" = depende de la estadía/anticipación (informativo).
+    stacking: Mapped[str] = mapped_column(String(12), default="conditional")

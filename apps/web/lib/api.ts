@@ -178,6 +178,14 @@ export const api = {
   deleteCalendarNote: (id: number) =>
     req<{ deleted: boolean }>(`/calendar-notes/${id}`, { method: "DELETE" }),
 
+  // Precio mínimo por noche (feature 022): piso de las promociones de sugerencias
+  getMinPrice: () => req<{ min_price: string | null }>(`/pricing/min-price`),
+  putMinPrice: (min_price: number | null) =>
+    req<{ min_price: string | null }>(`/pricing/min-price`, {
+      method: "PUT",
+      body: JSON.stringify({ min_price }),
+    }),
+
   // Deals nativos (feature 015: registro informativo local)
   listNativeDeals: () => req<{ deals: NativeDeal[] }>(`/pricing/native-deals`),
   createNativeDeal: (body: NativeDealInput) =>

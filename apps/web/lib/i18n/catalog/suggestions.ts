@@ -39,6 +39,19 @@ const es = {
   // Vista previa del lote
   resultTitle: "Resultado",
   previewTitle: "Vista previa de los cambios",
+  // feature 022: bajadas como promoción
+  modeBase: "precio base",
+  modePromo: (pct: string) => `promoción −${pct}%`,
+  mobileShort: "celular",
+  clipped: "recortado por el precio mínimo",
+  minPriceNote: (price: string) =>
+    `Precio mínimo por noche: ${price} (se respeta incluso con los descuentos del celular).`,
+  noMinPrice: "Sin precio mínimo configurado: las bajadas solo respetan el tope del motor (−15 %).",
+  setMinPrice: "Configurar en Ajustes",
+  promoExplain: "Las bajadas se publican como promoción temporal en Booking.com y Airbnb; el precio base no cambia.",
+  conditionalDeals: (list: string) => `Además pueden sumarse descuentos condicionales: ${list}.`,
+  overlapsWarn: (list: string) => `Se solapa con promociones activas: ${list}. Al confirmar se crea igualmente.`,
+  promotionsCreated: (n: number) => `${n} promoción${n !== 1 ? "es" : ""} creada${n !== 1 ? "s" : ""}`,
   /** [texto antes del número, texto después del número] */
   willPublish: (n: number): [string, string] => [
     n !== 1 ? "Se publicarán" : "Se publicará",
@@ -98,6 +111,18 @@ const en: Shape = {
 
   resultTitle: "Result",
   previewTitle: "Preview changes",
+  modeBase: "base price",
+  modePromo: (pct: string) => `promotion −${pct}%`,
+  mobileShort: "mobile",
+  clipped: "capped by the minimum price",
+  minPriceNote: (price: string) =>
+    `Minimum price per night: ${price} (respected even with mobile discounts).`,
+  noMinPrice: "No minimum price set: decreases only follow the engine cap (−15%).",
+  setMinPrice: "Set it in Settings",
+  promoExplain: "Decreases are published as a temporary promotion on Booking.com and Airbnb; the base price doesn't change.",
+  conditionalDeals: (list: string) => `Conditional discounts may also stack: ${list}.`,
+  overlapsWarn: (list: string) => `Overlaps active promotions: ${list}. Confirming creates it anyway.`,
+  promotionsCreated: (n: number) => `${n} promotion${n !== 1 ? "s" : ""} created`,
   willPublish: (n: number): [string, string] => [
     "",
     `night${n !== 1 ? "s" : ""} will be published to Booking.com and Airbnb`,
@@ -154,6 +179,18 @@ const pt: Shape = {
 
   resultTitle: "Resultado",
   previewTitle: "Pré-visualização das alterações",
+  modeBase: "preço base",
+  modePromo: (pct: string) => `promoção −${pct}%`,
+  mobileShort: "celular",
+  clipped: "limitado pelo preço mínimo",
+  minPriceNote: (price: string) =>
+    `Preço mínimo por noite: ${price} (respeitado mesmo com os descontos de celular).`,
+  noMinPrice: "Sem preço mínimo configurado: as reduções só respeitam o limite do motor (−15%).",
+  setMinPrice: "Configurar em Configurações",
+  promoExplain: "As reduções são publicadas como promoção temporária no Booking.com e no Airbnb; o preço base não muda.",
+  conditionalDeals: (list: string) => `Também podem se somar descontos condicionais: ${list}.`,
+  overlapsWarn: (list: string) => `Sobrepõe promoções ativas: ${list}. Ao confirmar, ela é criada mesmo assim.`,
+  promotionsCreated: (n: number) => `${n} promoç${n !== 1 ? "ões" : "ão"} criada${n !== 1 ? "s" : ""}`,
   willPublish: (n: number): [string, string] => [
     n !== 1 ? "Serão publicadas" : "Será publicada",
     `noite${n !== 1 ? "s" : ""} no Booking.com e no Airbnb`,

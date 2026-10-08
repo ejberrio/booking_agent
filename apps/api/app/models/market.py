@@ -42,6 +42,8 @@ class PriceSuggestion(Base, TimestampMixin):
     # Enlace al cambio aplicado (id de price_change_log). Sin FK para evitar
     # dependencia circular price_suggestion <-> price_change_log.
     applied_change_id: Mapped[int | None] = mapped_column(nullable=True)
+    # Feature 022: promoción que aplicó una bajada (sin FK, como applied_change_id).
+    applied_promotion_id: Mapped[int | None] = mapped_column(nullable=True)
 
 
 class PointOfInterest(Base, TimestampMixin):

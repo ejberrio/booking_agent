@@ -41,6 +41,17 @@ const es = {
     step6: (active: string) => `Con el próximo cambio de una reserva, aquí verás "${active}".`,
     loadError: "No se pudo cargar el estado de los avisos.",
   },
+  minPrice: {
+    title: "Precio mínimo por noche",
+    description:
+      "Piso de las promociones que crean las sugerencias a la baja: el precio que paga el huésped, incluso con los descuentos del celular, nunca queda por debajo.",
+    placeholder: "Ej.: 230000",
+    current: (price: string) => `Actual: ${price}`,
+    none: "Sin precio mínimo",
+    remove: "Quitar",
+    saved: "Precio mínimo guardado",
+    removed: "Precio mínimo quitado",
+  },
   offsets: {
     title: "Precio por canal",
     description:
@@ -186,6 +197,17 @@ const en: Shape = {
     step6: (active: string) => `On the next booking change, you'll see "${active}" here.`,
     loadError: "Couldn't load the notification status.",
   },
+  minPrice: {
+    title: "Minimum price per night",
+    description:
+      "Floor for the promotions created from price-decrease suggestions: what the guest pays, even with mobile discounts, never goes below it.",
+    placeholder: "e.g. 230000",
+    current: (price: string) => `Current: ${price}`,
+    none: "No minimum price",
+    remove: "Remove",
+    saved: "Minimum price saved",
+    removed: "Minimum price removed",
+  },
   offsets: {
     title: "Price per channel",
     description:
@@ -328,6 +350,17 @@ const pt: Shape = {
     step5Press: "). Clique em",
     step6: (active: string) => `Na próxima alteração de uma reserva, você verá "${active}" aqui.`,
     loadError: "Não foi possível carregar o status dos avisos.",
+  },
+  minPrice: {
+    title: "Preço mínimo por noite",
+    description:
+      "Piso das promoções criadas pelas sugestões de redução: o preço que o hóspede paga, mesmo com os descontos de celular, nunca fica abaixo dele.",
+    placeholder: "Ex.: 230000",
+    current: (price: string) => `Atual: ${price}`,
+    none: "Sem preço mínimo",
+    remove: "Remover",
+    saved: "Preço mínimo salvo",
+    removed: "Preço mínimo removido",
   },
   offsets: {
     title: "Preço por canal",

@@ -35,6 +35,44 @@ def _validate(channel: ChannelKind, name: str, pct: Decimal, date_from, date_to)
         raise NativeDealError("La fecha de fin no puede ser anterior a la de inicio")
 
 
+STACKING = ("always", "conditional")
+
+
+def _stacking(value, name: str) -> str:
+    """Valor explícito validado; sin valor, por nombre: móvil → always (feature 022)."""
+    if value is None:
+        low = (name or "").lower()
+        return "always" if any(k in low for k in ("mobile", "móvil", "movil")) else "conditional"
+    if value not in STACKING:
+        raise NativeDealError("La acumulación debe ser always o conditional")
+    return value
+
+
+def _covers(deal: NativeDeal, day: date) -> bool:
+    return (deal.date_from is None or deal.date_from <= day) and (
+        deal.date_to is None or deal.date_to >= day
+    )
+
+
+async def always_pct_for(session: AsyncSession, day: date) -> dict[str, Decimal]:
+    """% acumulado de deals ACTIVOS 'always' que cubren la noche, por canal (feature 022)."""
+    out: dict[str, Decimal] = {"booking": Decimal(0), "airbnb": Decimal(0)}
+    deals = (
+        await session.execute(
+            select(NativeDeal).where(NativeDeal.is_active.is_(True), NativeDeal.stacking == "always")
+        )
+    ).scalars()
+    for d in deals:
+        if _covers(d, day):
+            out[d.channel.value] = out.get(d.channel.value, Decimal(0)) + d.discount_pct
+    return out
+
+
+async def conditional_deals_for(session: AsyncSession, first: date, last: date) -> list[NativeDeal]:
+    """Deals ACTIVOS 'conditional' que solapan el rango (aviso informativo)."""
+    return [d for d in await find_overlapping(session, first, last) if d.stacking != "always"]
+
+
 async def list_deals(session: AsyncSession) -> list[NativeDeal]:
     stmt = select(NativeDeal).order_by(
         NativeDeal.channel, NativeDeal.date_from.asc().nulls_first(), NativeDeal.id
@@ -51,6 +89,7 @@ async def create(
     date_from: date | None = None,
     date_to: date | None = None,
     is_active: bool = True,
+    stacking: str | None = None,
 ) -> NativeDeal:
     _validate(channel, name, discount_pct, date_from, date_to)
     deal = NativeDeal(
@@ -60,6 +99,7 @@ async def create(
         date_from=date_from,
         date_to=date_to,
         is_active=is_active,
+        stacking=_stacking(stacking, name),
     )
     session.add(deal)
     await session.flush()
@@ -76,6 +116,7 @@ async def update(
     date_from: date | None | object = _UNSET,
     date_to: date | None | object = _UNSET,
     is_active: bool | object = _UNSET,
+    stacking: str | object = _UNSET,
 ) -> NativeDeal:
     """Actualización parcial; date_from/date_to aceptan None explícito para abrir el extremo."""
     deal = await session.get(NativeDeal, deal_id)
@@ -94,6 +135,8 @@ async def update(
     deal.date_to = new_to
     if is_active is not _UNSET:
         deal.is_active = is_active
+    if stacking is not _UNSET:
+        deal.stacking = _stacking(stacking, deal.name)
     await session.flush()
     return deal
 

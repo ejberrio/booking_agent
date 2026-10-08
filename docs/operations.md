@@ -420,3 +420,19 @@ La app refleja la realidad multi-canal del Channel Manager (Booking.com + Airbnb
 - **No se traduce**: nombres de eventos, notas del host, huéspedes, promociones y textos de Beds24.
 - **Explicación de sugerencias**: se arma desde factores estructurados; las creadas antes de esta
   versión se ven en español hasta el siguiente escaneo diario.
+
+## Bajadas como promoción (Feature 022 · issue #128)
+
+- **Regla del host**: toda sugerencia que BAJA el precio se aplica como **promoción temporal** en
+  Booking.com y Airbnb (nombre "StayLever · {bloque} {fechas}", marca "desde sugerencias" en Ofertas);
+  el precio base no baja. Las subidas siguen cambiando el precio base. Un lote mixto se confirma una vez.
+- **Precio mínimo por noche** (Ajustes): piso de esas promociones. Se calcula contra los descuentos que
+  **siempre** pueden acumularse por canal (deals nativos con "se acumula siempre", p. ej. el 10 % móvil):
+  `precio_promo ≥ max(mínimo, mínimo / (1 − descuento_canal))`. Si no cabe ≥ 1 %, la noche se omite.
+  Los descuentos **condicionales** (semanal, mensual, anticipación) solo se informan.
+- En Ofertas, cada deal nativo indica si "se acumula siempre" o es "condicional" (clic para cambiarlo).
+- Si la promoción no se puede publicar, no queda creada (incidencia `suggestion-promo:<fechas>`) y la
+  sugerencia sigue pendiente. Las promociones vencidas se ven como "finalizadas"; las de sugerencias sin
+  noches libres muestran un aviso para retirarlas. Al retirar una, la sugerencia queda "aplicada" y la
+  retirada consta en el historial de la promoción.
+- El endpoint antiguo `POST /suggestions/{id}/apply` rechaza bajadas (deben pasar por la vista previa).

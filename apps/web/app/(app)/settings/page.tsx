@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useActiveUnit } from "@/lib/active-unit";
 import { api } from "@/lib/api";
-import { dateTime, formatNumber } from "@/lib/format";
+import { dateTime, formatCOP, formatNumber } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import type { Messages } from "@/lib/i18n/messages";
 import { trServer } from "@/lib/i18n/server-messages";
@@ -616,6 +616,53 @@ function WebhooksCard() {
   );
 }
 
+/** Precio mínimo por noche (feature 022): piso de las promociones de sugerencias. */
+function MinPriceCard() {
+  const { m } = useI18n();
+  const t = m.settings.minPrice;
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ["min-price"], queryFn: () => api.getMinPrice() });
+  const [value, setValue] = useState("");
+  const save = useMutation({
+    mutationFn: (v: number | null) => api.putMinPrice(v),
+    onSuccess: (r) => {
+      toast.success(r.min_price ? t.saved : t.removed);
+      setValue("");
+      qc.invalidateQueries({ queryKey: ["min-price"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const current = q.data?.min_price;
+  const parsed = Number(value.replace(/[^\d]/g, ""));
+  return (
+    <Card className="space-y-2">
+      <CardTitle>{t.title}</CardTitle>
+      <CardDescription>{t.description}</CardDescription>
+      <p className="text-sm">{current ? t.current(formatCOP(current)) : t.none}</p>
+      <div className="flex gap-2">
+        <Input
+          inputMode="numeric"
+          placeholder={t.placeholder}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+        />
+        <Button onClick={() => save.mutate(parsed)} disabled={save.isPending || !parsed}>
+          {m.common.save}
+        </Button>
+        {current && (
+          <Button
+            className="bg-muted text-foreground"
+            onClick={() => save.mutate(null)}
+            disabled={save.isPending}
+          >
+            {t.remove}
+          </Button>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 export default function SettingsPage() {
   const { m } = useI18n();
   const t = m.settings;
@@ -642,6 +689,8 @@ export default function SettingsPage() {
       </Card>
 
       <WebhooksCard />
+
+      <MinPriceCard />
 
       <ChannelOffsetsCard />
 
