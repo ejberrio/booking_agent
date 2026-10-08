@@ -340,8 +340,8 @@ La app refleja la realidad multi-canal del Channel Manager (Booking.com + Airbnb
 - Gestionables: OpenAI, Anthropic, Tavily, refresh token de Beds24. SECRET_KEY/APP_PASSWORD/
   DATABASE_URL siguen SOLO en Railway. El agente de chat no tiene acceso a los secretos.
 - **Reconectar Beds24** (estado "invalid" / "Token not valid"): el refresh token de Beds24 vence
-  si pasa 30 días sin usarse. En Beds24 → Settings → Account → Account Access → API, generar un
-  código de invitación (lectura + escritura) y pegarlo en Ajustes → Secretos → "Canjear"; el
+  si pasa 30 días sin usarse. En Beds24 → Settings → Marketplace → API → "Generate invite code" (READ:
+  bookings, bookings-personal, inventory, properties, channels; WRITE: inventory, channels) y pegarlo en Ajustes → Secretos → "Canjear"; el
   servidor lo cambia por un refresh token nuevo. El cron diario (`scan`) sincroniza con Beds24
   antes de escanear, lo que además mantiene vivo el token.
 

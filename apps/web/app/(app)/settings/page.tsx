@@ -278,8 +278,10 @@ function SecretsCard() {
                     </Button>
                   </div>
                   <p className="text-[11px] text-muted-foreground">
-                    Beds24 → Settings → Account → Account Access → API → generar código de
-                    invitación (con permisos de lectura y escritura).
+                    Beds24 → Settings → Marketplace → API → &quot;Generate invite code&quot;. Permisos:
+                    READ en bookings, bookings-personal, inventory, properties y channels; WRITE
+                    solo en inventory y channels. Pega el código (vence en minutos) y pulsa
+                    Canjear. No es la &quot;API Key&quot; de Account Access: esa es la API antigua.
                   </p>
                 </div>
               )}

@@ -59,7 +59,7 @@ async def redeem_beds24_invite(
 ):
     """Canjea un código de invitación de Beds24 y guarda el refresh token resultante.
 
-    El host solo pega el código (Beds24 → Settings → Account → Account Access → API);
+    El host solo pega el código (Beds24 → Settings → Marketplace → API → Generate invite code);
     el token nunca sale del servidor.
     """
     from app.channels.beds24_v2 import exchange_invite_code
