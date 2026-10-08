@@ -4,7 +4,7 @@ Referencia rápida para operar la plataforma desplegada. Complemento de [`deploy
 
 ## URLs y proyecto
 
-- **App (web pública)**: https://web-production-dfcaf.up.railway.app
+- **App (web pública)**: https://staylever.com (dominio en Cloudflare, proxied → Railway `web`; SSL/TLS en "Full"). Dominio de Railway como respaldo: https://web-production-dfcaf.up.railway.app
 - **Railway**: proyecto `booking-ai-agent` (3 servicios: `web` público, `api` privado, `scan` cron).
 - **Base de datos**: Neon Postgres (connection string en las variables de Railway, NUNCA en el repo).
 - **Repo**: `ejberrio/booking_agent`, rama `main`.
@@ -29,7 +29,7 @@ Navegador ─HTTPS→ web (Next, público) ─red privada IPv6→ api (FastAPI, 
 > El middleware solo exige que exista la cookie `session`, así que para chequeos se puede usar `session=ok`.
 
 ```bash
-WEB=https://web-production-dfcaf.up.railway.app
+WEB=https://staylever.com
 curl -s -o /dev/null -w "login %{http_code}\n" "$WEB/login"                 # 200
 curl -s -H "Cookie: session=ok" "$WEB/api/proxy/health"                      # {"status":"healthy","db":"up"}
 curl -s -H "Cookie: session=ok" "$WEB/api/proxy/openapi.json" | jq .info.version
