@@ -291,7 +291,11 @@ function ResultView({ result }: { result: ExtensionResult }) {
             {r.status === "applied" && (
               <span className="text-muted-foreground">{t.resultSummary(r.nights, r.opened)}</span>
             )}
-            {r.detail && <span className="text-red-500">{trServer(r.detail)}</span>}
+            {r.detail && (
+              <span className={r.status === "applied" ? "text-amber-600" : "text-red-500"}>
+                {trServer(r.detail)}
+              </span>
+            )}
           </li>
         ))}
       </ul>

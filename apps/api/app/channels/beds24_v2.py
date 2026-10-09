@@ -377,14 +377,22 @@ class Beds24V2Adapter:
         last = max(e.date_to for e in entries)
         remote = {r.date: r for r in await self.get_rates(room_external_id, first, last)}
         verified = ok
+        avail_mismatch = 0
         for e in entries:
             for day in _days(e.date_from, e.date_to):
                 r = remote.get(day)
-                if r is None or r.price != e.price or (
-                    e.num_avail is not None and r.available != e.num_avail
-                ):
+                if r is None or r.price != e.price:
                     verified = False
-        detail = None if verified else "el calendario no se confirmó al releer"
+                elif e.num_avail is not None and r.available != e.num_avail:
+                    avail_mismatch += 1
+        if not verified:
+            detail = f"el calendario no se confirmó al releer (respuesta: {str(result)[:300]})"
+        elif avail_mismatch:
+            # Visto en producción (2026-10-09): Beds24 responde success y guarda el
+            # precio, pero la disponibilidad pedida no queda en el calendario de la API.
+            detail = f"precio confirmado; la apertura no se confirmó en {avail_mismatch} noche(s)"
+        else:
+            detail = None
         return WriteResult(ok=ok, verified=verified, detail=detail)
 
     # --- Promociones vía fixed price sobre una oferta (feature 011) ---
