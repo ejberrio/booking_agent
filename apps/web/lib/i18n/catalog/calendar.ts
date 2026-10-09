@@ -33,6 +33,8 @@ const es = {
   appliedDays: (n: number) => `Aplicado a ${n} día${n !== 1 ? "s" : ""}`,
   blockedNights: (n: number) => `${n === 1 ? "Bloqueada" : "Bloqueadas"} ${n} noche${n !== 1 ? "s" : ""}`,
   reopenedNights: (n: number) => `${n === 1 ? "Reabierta" : "Reabiertas"} ${n} noche${n !== 1 ? "s" : ""}`,
+  availNotConfirmed: (n: number) =>
+    `Beds24 no confirmó el cambio de disponibilidad en ${n} tramo${n !== 1 ? "s" : ""}: revisa en Beds24 si quedaron abiertas/cerradas.`,
   pricePreviewTitle: "Vista previa del precio",
   pricePreviewSummary: (valid: number, invalid: number) =>
     `${valid} día${valid !== 1 ? "s" : ""} a aplicar` + (invalid ? `, ${invalid} fuera de límites` : "") + ".",
@@ -114,6 +116,8 @@ const en: Shape = {
   appliedDays: (n: number) => `Applied to ${n} day${n !== 1 ? "s" : ""}`,
   blockedNights: (n: number) => `Blocked ${n} night${n !== 1 ? "s" : ""}`,
   reopenedNights: (n: number) => `Reopened ${n} night${n !== 1 ? "s" : ""}`,
+  availNotConfirmed: (n: number) =>
+    `Beds24 didn't confirm the availability change on ${n} range${n !== 1 ? "s" : ""}: check in Beds24 whether they're open/closed.`,
   pricePreviewTitle: "Price preview",
   pricePreviewSummary: (valid: number, invalid: number) =>
     `${valid} day${valid !== 1 ? "s" : ""} to apply` + (invalid ? `, ${invalid} outside price limits` : "") + ".",
@@ -186,6 +190,8 @@ const pt: Shape = {
   appliedDays: (n: number) => `Aplicado a ${n} dia${n !== 1 ? "s" : ""}`,
   blockedNights: (n: number) => `${n} noite${n !== 1 ? "s" : ""} bloqueada${n !== 1 ? "s" : ""}`,
   reopenedNights: (n: number) => `${n} noite${n !== 1 ? "s" : ""} reaberta${n !== 1 ? "s" : ""}`,
+  availNotConfirmed: (n: number) =>
+    `O Beds24 não confirmou a mudança de disponibilidade em ${n} período${n !== 1 ? "s" : ""}: verifique no Beds24 se ficaram abertas/fechadas.`,
   pricePreviewTitle: "Pré-visualização do preço",
   pricePreviewSummary: (valid: number, invalid: number) =>
     `${valid} dia${valid !== 1 ? "s" : ""} a aplicar` + (invalid ? `, ${invalid} fora dos limites` : "") + ".",

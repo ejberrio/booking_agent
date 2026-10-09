@@ -106,7 +106,12 @@ export function RangeEditor({ unitTypeId, selection, onApplied }: Props) {
         return;
       }
       const n = res.applied.length;
-      toast.success(availAction === "block" ? m.calendar.blockedNights(n) : m.calendar.reopenedNights(n));
+      if (res.publish_issues > 0) {
+        // El CM no confirmó (p. ej. Beds24 acepta abrir pero no lo aplica): decirlo claro.
+        toast.warning(m.calendar.availNotConfirmed(res.publish_issues), { duration: 15_000 });
+      } else {
+        toast.success(availAction === "block" ? m.calendar.blockedNights(n) : m.calendar.reopenedNights(n));
+      }
       setAvailPreview(null);
       onApplied();
     } catch {

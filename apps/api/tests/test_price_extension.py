@@ -77,7 +77,8 @@ class FakeCM:
                 d += timedelta(days=1)
         if self.ignore_avail and any(e.num_avail is not None for e in entries):
             # como Beds24 en producción: guarda el precio, no la apertura
-            return WriteResult(ok=True, verified=True, detail="precio confirmado; la apertura no se confirmó")
+            n = sum((e.date_to - e.date_from).days + 1 for e in entries if e.num_avail is not None)
+            return WriteResult(ok=True, verified=True, detail="precio confirmado; la apertura no se confirmó", unconfirmed=n)
         return WriteResult(ok=True, verified=True)
 
     async def aclose(self):
@@ -225,6 +226,28 @@ async def test_apertura_no_confirmada_es_aviso_y_cada_mes_se_guarda(session):
     issues = (await session.execute(select(SyncIssue))).scalars().all()
     assert len(issues) == 3 and all(i.kind.value == "write_unverified" for i in issues)
     assert await pricing_service.get_price(session, unit.id, day(40)) == D("300000")
+    # la app refleja lo que quedó de verdad: cerradas, y se informa cuántas
+    assert r.opened_nights == 0 and r.not_opened_nights == p.total_to_open > 0
+    assert all(m.not_opened == m.nights for m in r.months)
+    cd = (await session.execute(select(CalendarDay).where(CalendarDay.date == day(40)))).scalar_one()
+    assert cd.units_available == 0
+    logs = (await session.execute(select(AvailabilityChangeLog))).scalars().all()
+    assert logs and all(log.new_units_available == 0 for log in logs)
+
+
+async def test_noches_con_precio_pero_cerradas_se_avisan(session):
+    prop, unit = await _seed(session)
+    cm = FakeCM()
+    for i in (5, 6, 7):
+        cm.cal[day(i)] = (D("300000"), 0)  # con precio, cerradas
+    session.add(CalendarDay(unit_type_id=unit.id, date=day(6), units_available=0, is_blocked=True))
+    for i in (5, 7):
+        session.add(CalendarDay(unit_type_id=unit.id, date=day(i), units_available=0))
+    await session.flush()
+    p = await ext.preview(session, cm, ExtensionParams(unit_type_id=unit.id, until=day(60)), today=TODAY)
+    assert p.closed_priced == 2 and p.first_closed_priced == day(5)  # la bloqueada por el host no cuenta
+    s = await ext.status(session, unit.id, today=TODAY)
+    assert s.closed_nights == 2 and s.first_closed_night == day(5)
 
 
 async def test_tramos_agrupados_por_precio_y_apertura(session):
@@ -338,7 +361,7 @@ async def test_adaptador_v2_un_post_y_una_relectura(monkeypatch):
     # disponibilidad distinta pero precio OK → verificado con aviso
     entries[0] = CalendarEntry(date(2037, 3, 1), date(2037, 3, 5), D("300000"), 0)
     res = await a.set_calendar_entries("697411", entries)
-    assert res.verified and "apertura" in (res.detail or "")
+    assert res.verified and "apertura" in (res.detail or "") and res.unconfirmed == 5
     entries[0] = CalendarEntry(date(2037, 3, 1), date(2037, 3, 5), D("300000"), 1)
     # si la relectura no coincide → no verificado
     entries[1] = CalendarEntry(date(2037, 3, 6), date(2037, 3, 6), D("340000"), None)

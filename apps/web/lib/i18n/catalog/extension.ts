@@ -47,6 +47,18 @@ const es = {
   statusFailed: "falló",
   statusSkipped: "excluido",
   failedNote: "Los meses fallidos no quedaron con precio; vuelve a extender para reintentarlos.",
+  // --- noches con precio pero cerradas ---
+  closedPricedNote: (n: number, from: string) =>
+    `Ojo: ${n} noche${n !== 1 ? "s" : ""} ya tiene${n !== 1 ? "n" : ""} precio pero está${n !== 1 ? "n" : ""} cerrada${n !== 1 ? "s" : ""} en Beds24 (desde el ${from}), así que no se pueden reservar. Esta extensión no las cambia.`,
+  notOpenedTitle: "Algunas noches no se pudieron abrir",
+  notOpenedText: (n: number) =>
+    `${n} noche${n !== 1 ? "s" : ""} ${n !== 1 ? "quedaron" : "quedó"} con precio pero cerrada${n !== 1 ? "s" : ""}: Beds24 aceptó la orden de abrir${n !== 1 ? "las" : "la"} pero no la aplicó. ` +
+    "No se pueden reservar en Booking.com ni en Airbnb hasta que se abran en Beds24.",
+  monthNotOpened: (n: number) => `${n} sin abrir`,
+  bannerClosedTitle: "Noches con precio que no se pueden reservar",
+  bannerClosedText: (n: number, from: string) =>
+    `${n} noche${n !== 1 ? "s" : ""} con precio está${n !== 1 ? "n" : ""} cerrada${n !== 1 ? "s" : ""} en el canal desde el ${from}. ` +
+    "Ábrelas en Beds24 (o en Calendario → Abrir) para poder recibir reservas.",
 };
 
 type Shape = typeof es;
@@ -96,6 +108,17 @@ const en: Shape = {
   statusFailed: "failed",
   statusSkipped: "excluded",
   failedNote: "Failed months didn't get prices; extend again to retry them.",
+  closedPricedNote: (n: number, from: string) =>
+    `Heads-up: ${n} night${n !== 1 ? "s" : ""} already ha${n !== 1 ? "ve" : "s"} a price but ${n !== 1 ? "are" : "is"} closed in Beds24 (from ${from}), so ${n !== 1 ? "they" : "it"} can't be booked. This extension doesn't change ${n !== 1 ? "them" : "it"}.`,
+  notOpenedTitle: "Some nights couldn't be opened",
+  notOpenedText: (n: number) =>
+    `${n} night${n !== 1 ? "s" : ""} got a price but stayed closed: Beds24 accepted the request to open ${n !== 1 ? "them" : "it"} but didn't apply it. ` +
+    "They can't be booked on Booking.com or Airbnb until they're opened in Beds24.",
+  monthNotOpened: (n: number) => `${n} not opened`,
+  bannerClosedTitle: "Priced nights that can't be booked",
+  bannerClosedText: (n: number, from: string) =>
+    `${n} priced night${n !== 1 ? "s are" : " is"} closed on the channels from ${from}. ` +
+    "Open them in Beds24 (or Calendar → Open) to receive bookings.",
 };
 
 const pt: Shape = {
@@ -143,6 +166,17 @@ const pt: Shape = {
   statusFailed: "falhou",
   statusSkipped: "excluído",
   failedNote: "Os meses que falharam ficaram sem preço; estenda de novo para tentar outra vez.",
+  closedPricedNote: (n: number, from: string) =>
+    `Atenção: ${n} noite${n !== 1 ? "s" : ""} já ${n !== 1 ? "têm" : "tem"} preço mas ${n !== 1 ? "estão fechadas" : "está fechada"} no Beds24 (desde ${from}), então não ${n !== 1 ? "podem" : "pode"} ser reservada${n !== 1 ? "s" : ""}. Esta extensão não as altera.`,
+  notOpenedTitle: "Algumas noites não puderam ser abertas",
+  notOpenedText: (n: number) =>
+    `${n} noite${n !== 1 ? "s" : ""} ${n !== 1 ? "ficaram" : "ficou"} com preço mas fechada${n !== 1 ? "s" : ""}: o Beds24 aceitou a ordem de abrir mas não a aplicou. ` +
+    "Não podem ser reservadas no Booking.com nem no Airbnb até serem abertas no Beds24.",
+  monthNotOpened: (n: number) => `${n} sem abrir`,
+  bannerClosedTitle: "Noites com preço que não podem ser reservadas",
+  bannerClosedText: (n: number, from: string) =>
+    `${n} noite${n !== 1 ? "s" : ""} com preço ${n !== 1 ? "estão fechadas" : "está fechada"} nos canais desde ${from}. ` +
+    "Abra-as no Beds24 (ou em Calendário → Abrir) para receber reservas.",
 };
 
 const catalog = { es, en, pt };

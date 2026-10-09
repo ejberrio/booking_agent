@@ -117,6 +117,8 @@ class WriteResult:
     ok: bool
     verified: bool
     detail: str | None = None
+    # Noches cuya disponibilidad pedida NO quedó al releer (precio sí confirmado).
+    unconfirmed: int = 0
 
 
 @dataclass(frozen=True)

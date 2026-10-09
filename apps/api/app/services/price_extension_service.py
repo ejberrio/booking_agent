@@ -101,6 +101,10 @@ class ExtensionPreview:
     total_nights: int
     total_to_open: int
     fingerprint: str
+    # Noches que YA tienen precio pero están cerradas en el CM (no reservables);
+    # la extensión no las toca: se avisan para que el host lo sepa.
+    closed_priced: int = 0
+    first_closed_priced: date | None = None
 
 
 @dataclass
@@ -110,6 +114,7 @@ class MonthResult:
     nights: int
     opened: int
     detail: str | None = None
+    not_opened: int = 0  # se pidió abrir pero el CM las dejó cerradas
 
 
 @dataclass
@@ -119,6 +124,7 @@ class ExtensionResult:
     applied_nights: int = 0
     opened_nights: int = 0
     failed_months: int = 0
+    not_opened_nights: int = 0
 
 
 @dataclass
@@ -128,6 +134,10 @@ class HorizonStatus:
     needs_extension: bool
     default_until: date
     max_until: date
+    # Noches con precio pero cerradas (no reservadas ni bloqueadas por el host desde
+    # la app) en los próximos 365 días: con precio y aun así no se pueden reservar.
+    closed_nights: int = 0
+    first_closed_night: date | None = None
 
 
 class _MonthNotPublished(Exception):
@@ -205,6 +215,14 @@ async def preview(
     blocked = await _blocked_days(session, unit.id, today, until)
 
     targets = [d for d in days if remote.get(d, (Decimal(0), 0))[0] <= 0 and d not in booked]
+    closed_priced = [
+        d
+        for d in days
+        if remote.get(d, (Decimal(0), 0))[0] > 0
+        and remote[d][1] <= 0
+        and d not in booked
+        and d not in blocked
+    ]
     month_keys = list(dict.fromkeys(month_key(d) for d in targets))
 
     known = await _known_prices(session, unit.id)
@@ -263,6 +281,8 @@ async def preview(
         total_nights=sum(m.nights for m in included),
         total_to_open=sum(m.to_open for m in included),
         fingerprint=hashlib.sha256(";".join(raw).encode()).hexdigest()[:16],
+        closed_priced=len(closed_priced),
+        first_closed_priced=closed_priced[0] if closed_priced else None,
     )
 
 
@@ -284,7 +304,7 @@ def _entries(items: list[ExtensionNight], num_avail: int) -> list[CalendarEntry]
 
 async def _write_month_locally(
     session: AsyncSession, unit: UnitType, items: list[ExtensionNight], target_avail: int
-) -> None:
+) -> dict[date, tuple[CalendarDay, AvailabilityChangeLog]]:
     """Precios + auditoría + aperturas del mes en lote (pocas consultas, un solo flush).
 
     Noche a noche costaba ~0,5 s por noche contra la BD remota; con 15 meses la
@@ -314,6 +334,7 @@ async def _write_month_locally(
         if open_days
         else {}
     )
+    opened: dict[date, tuple[CalendarDay, AvailabilityChangeLog]] = {}
     for n in items:
         rate = rates.get(n.date)
         old = rate.base_price if rate is not None and rate.base_price > 0 else None
@@ -335,20 +356,21 @@ async def _write_month_locally(
             if cd is None:
                 cd = CalendarDay(unit_type_id=unit.id, date=n.date, units_available=0)
                 session.add(cd)
-            session.add(
-                AvailabilityChangeLog(
-                    unit_type_id=unit.id,
-                    date=n.date,
-                    old_units_available=cd.units_available,
-                    new_units_available=target_avail,
-                    was_blocked=bool(cd.is_blocked),
-                    is_blocked=False,
-                    origin=ChangeOrigin.extension,
-                )
+            log = AvailabilityChangeLog(
+                unit_type_id=unit.id,
+                date=n.date,
+                old_units_available=cd.units_available,
+                new_units_available=target_avail,
+                was_blocked=bool(cd.is_blocked),
+                is_blocked=False,
+                origin=ChangeOrigin.extension,
             )
+            session.add(log)
             cd.units_available = target_avail
             cd.is_blocked = False
+            opened[n.date] = (cd, log)
     await session.flush()
+    return opened
 
 
 async def apply(
@@ -375,15 +397,30 @@ async def apply(
             continue
         failure: str | None = None
         warning: str | None = None
+        not_opened = 0
         try:
             async with session.begin_nested():
-                await _write_month_locally(session, unit, m.items, target_avail)
+                opened_local = await _write_month_locally(session, unit, m.items, target_avail)
                 res = await channel.set_calendar_entries(
                     unit.external_ref, _entries(m.items, target_avail)
                 )
                 if not (res.ok and res.verified):
                     raise _MonthNotPublished(res.detail or "escritura no verificada")
                 warning = res.detail  # precio confirmado; aviso p. ej. disponibilidad
+                if res.unconfirmed and opened_local:
+                    # La app refleja lo que REALMENTE quedó en el CM (no lo pedido).
+                    first, last = min(opened_local), max(opened_local)
+                    real = {
+                        r.date: r.available
+                        for r in await channel.get_rates(unit.external_ref, first, last)
+                    }
+                    for d, (cd, log) in opened_local.items():
+                        avail = real.get(d, 0)
+                        if avail < target_avail:
+                            not_opened += 1
+                            cd.units_available = avail
+                            log.new_units_available = avail
+                    await session.flush()
         except _MonthNotPublished as exc:
             failure = str(exc)
         except ChannelError as exc:
@@ -409,10 +446,13 @@ async def apply(
                     )
                 )
                 await session.flush()
-            opened = sum(1 for n in m.items if n.open)
+            opened = sum(1 for n in m.items if n.open) - not_opened
             result.applied_nights += len(m.items)
             result.opened_nights += opened
-            result.months.append(MonthResult(m.month, "applied", len(m.items), opened, warning))
+            result.not_opened_nights += not_opened
+            result.months.append(
+                MonthResult(m.month, "applied", len(m.items), opened, warning, not_opened)
+            )
         if on_month_done is not None:
             await on_month_done()
     return result
@@ -447,7 +487,22 @@ async def status(session: AsyncSession, unit_type_id: int, *, today: date) -> Ho
         if first.day < today.day:
             covered -= 1
         covered = max(covered, 0)
+    window_end = today + timedelta(days=WARN_DAYS)
+    closed_rows = (
+        await session.execute(
+            select(CalendarDay.date).where(
+                CalendarDay.unit_type_id == unit_type_id,
+                CalendarDay.date >= today,
+                CalendarDay.date <= window_end,
+                CalendarDay.units_available <= 0,
+                CalendarDay.is_blocked.is_(False),
+            )
+        )
+    ).scalars()
+    closed = sorted(d for d in closed_rows if d in priced and d not in booked)
     return HorizonStatus(
+        closed_nights=len(closed),
+        first_closed_night=closed[0] if closed else None,
         first_unpriced_night=first,
         months_covered=covered,
         needs_extension=first is not None and first < today + timedelta(days=WARN_DAYS),

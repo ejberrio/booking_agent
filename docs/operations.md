@@ -458,3 +458,7 @@ estaban sin precio y cerradas (`numAvail 0`), así que no se podían reservar. E
 - **Costo en Beds24**: ≈ 1 lectura + 2 llamadas por mes (~31 para 18 meses). Sin costo adicional.
 - **Precio 0**: la sincronización ya no guarda 0 para noches sin precio y la app muestra "—"; la migración
   `d7e8f9a0b1c2` borró las filas basura.
+- **Aperturas no aplicadas (2026-10-09)**: Beds24 respondió `success` a `numAvail: 1` desde el 13-feb-2027 pero el
+  inventario (Channel Manager → Channel Inventory) siguió en 0; ticket Beds24 #1064511. La app relee tras extender,
+  guarda la disponibilidad REAL, avisa cuántas noches quedaron sin abrir y el panel muestra "Noches con precio que no
+  se pueden reservar". Las escrituras de Beds24 pueden aplicarse con retraso (el precio de julio-2027 apareció minutos después).
