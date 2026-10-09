@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Tema por CLASE (next-themes pone .dark / .light en <html>): así el botón de tema
+   manda sobre el modo del sistema. Antes los colores seguían solo a
+   `prefers-color-scheme` y el botón no tenía efecto visible. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #0a0a0a;
@@ -9,19 +14,19 @@
   --muted: #f4f4f5;
   --muted-foreground: #71717a;
   --border: #e4e4e7;
+  color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #fafafa;
-    --card: #121214;
-    --primary: #3b82f6;
-    --primary-foreground: #ffffff;
-    --muted: #1c1c1f;
-    --muted-foreground: #a1a1aa;
-    --border: #27272a;
-  }
+.dark {
+  --background: #0a0a0a;
+  --foreground: #fafafa;
+  --card: #121214;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --muted: #1c1c1f;
+  --muted-foreground: #a1a1aa;
+  --border: #27272a;
+  color-scheme: dark;
 }
 
 @theme inline {
