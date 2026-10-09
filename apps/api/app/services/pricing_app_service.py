@@ -15,10 +15,10 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.channels.base import ChannelManager
-from app.domain.pricing import violates_rule
+from app.domain.pricing import PromotionLike, effective_price, violates_rule
 from app.models.audit import PriceChangeLog
 from app.models.booking import Booking
-from app.models.calendar import CalendarDay
+from app.models.calendar import CalendarDay, Rate
 from app.models.enums import BookingStatus, ChangeOrigin, ChannelKind, PromotionStatus
 from app.models.pricing import Promotion
 from app.models.property import UnitType
@@ -37,31 +37,6 @@ def _date_range(date_from: date, date_to: date) -> list[date]:
     return [date_from + timedelta(days=i) for i in range((date_to - date_from).days + 1)]
 
 
-async def _availability(session: AsyncSession, unit_type_id: int, day: date) -> tuple[int | None, bool]:
-    """Devuelve (units_available, is_blocked). None = sin datos (distinto de 0 = sin disponibilidad)."""
-    res = await session.execute(
-        select(CalendarDay.units_available, CalendarDay.is_blocked).where(
-            CalendarDay.unit_type_id == unit_type_id, CalendarDay.date == day
-        )
-    )
-    row = res.first()
-    if row is None:
-        return None, False
-    return int(row[0]), bool(row[1])
-
-
-async def _active_promo_names(session: AsyncSession, property_id: int, day: date) -> list[str]:
-    res = await session.execute(
-        select(Promotion.name).where(
-            Promotion.property_id == property_id,
-            Promotion.status == PromotionStatus.active,
-            Promotion.start_date <= day,
-            Promotion.end_date >= day,
-        )
-    )
-    return [n for n in res.scalars()]
-
-
 def _group_contiguous(eff: dict[date, Decimal]) -> list[tuple[date, date, Decimal]]:
     groups: list[list] = []
     for d, p in sorted(eff.items()):
@@ -78,26 +53,62 @@ def _group_contiguous(eff: dict[date, Decimal]) -> list[tuple[date, date, Decima
 async def get_calendar(
     session: AsyncSession, unit_type_id: int, date_from: date, date_to: date
 ) -> list[CalendarDayView]:
+    """Vista del calendario del rango en lote: 3 consultas en total (antes ~5 por día,
+    ~10 s por mes contra la BD de producción)."""
     unit = await session.get(UnitType, unit_type_id)
     if unit is None:
         return []
+    rates = {
+        r.date: r.base_price
+        for r in (
+            await session.execute(
+                select(Rate).where(
+                    Rate.unit_type_id == unit_type_id,
+                    Rate.date >= date_from,
+                    Rate.date <= date_to,
+                    Rate.base_price > 0,  # ≤ 0 = sin precio (feature 023)
+                )
+            )
+        ).scalars()
+    }
+    cal = {
+        c.date: (int(c.units_available), bool(c.is_blocked))
+        for c in (
+            await session.execute(
+                select(CalendarDay).where(
+                    CalendarDay.unit_type_id == unit_type_id,
+                    CalendarDay.date >= date_from,
+                    CalendarDay.date <= date_to,
+                )
+            )
+        ).scalars()
+    }
+    promos = list(
+        (
+            await session.execute(
+                select(Promotion).where(
+                    Promotion.property_id == unit.property_id,
+                    Promotion.status == PromotionStatus.active,
+                )
+            )
+        ).scalars()
+    )
+    likes = [
+        PromotionLike(p.discount_type, p.discount_value, p.start_date, p.end_date, True)
+        for p in promos
+    ]
     views: list[CalendarDayView] = []
     for day in _date_range(date_from, date_to):
-        base = await pricing_service.get_price(session, unit_type_id, day)
-        eff = (
-            await pricing_service.get_effective_price(session, unit.property_id, unit_type_id, day)
-            if base is not None
-            else None
-        )
-        avail, blocked = await _availability(session, unit_type_id, day)
+        base = rates.get(day)
+        avail, blocked = cal.get(day, (None, False))
         views.append(
             CalendarDayView(
                 date=day,
                 base_price=base,
-                effective_price=eff,
+                effective_price=effective_price(base, likes, day) if base is not None else None,
                 available=avail,
                 is_blocked=blocked,
-                promotions=await _active_promo_names(session, unit.property_id, day),
+                promotions=[p.name for p in promos if p.start_date <= day <= p.end_date],
             )
         )
     return views
