@@ -393,7 +393,7 @@ class Beds24V2Adapter:
             detail = f"precio confirmado; la apertura no se confirmó en {avail_mismatch} noche(s)"
         else:
             detail = None
-        return WriteResult(ok=ok, verified=verified, detail=detail)
+        return WriteResult(ok=ok, verified=verified, detail=detail, unconfirmed=avail_mismatch)
 
     # --- Promociones vía fixed price sobre una oferta (feature 011) ---
 

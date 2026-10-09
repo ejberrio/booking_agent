@@ -139,3 +139,12 @@ Como host, quiero que el calendario y los indicadores muestren "sin precio" en l
 - Booking.com y Airbnb reciben de Beds24 lo que su ventana de reservas acepte; la app no controla esa ventana.
 - El aviso usa los datos locales, que la sincronización diaria mantiene al día para 365 días.
 - Fuera de alcance: cambiar precios ya cargados, extensión automática sin confirmación, extensión desde el chat del agente.
+
+## Addendum (2026-10-09): aperturas que el Channel Manager no aplica
+
+En producción Beds24 aceptó (`success`) abrir las noches desde el 13-feb-2027 pero el inventario siguió en 0 (ticket Beds24 #1064511). Pedido del host: la app debe comprobar si las fechas quedaron abiertas y avisar claramente cuando no.
+
+- **FR-015**: Tras extender, el sistema MUST releer el CM y contar las noches que se pidió abrir y siguen cerradas; el resultado MUST mostrarlas en un aviso destacado (total y por mes) y la app MUST guardar la disponibilidad real (no la pedida).
+- **FR-016**: La vista previa MUST avisar cuántas noches ya tienen precio pero están cerradas en el CM (no reservables) y desde cuándo.
+- **FR-017**: El aviso de horizonte MUST incluir las noches con precio pero cerradas (próximos 365 días, sin reservas ni bloqueos del host) con la primera fecha.
+- **FR-018**: "Abrir/Bloquear" del calendario MUST avisar cuando el CM no confirma el cambio de disponibilidad.

@@ -363,6 +363,8 @@ export interface HorizonStatus {
   needs_extension: boolean;
   default_until: string;
   max_until: string;
+  closed_nights: number;
+  first_closed_night: string | null;
 }
 
 export interface ExtensionMonthInput {
@@ -405,12 +407,22 @@ export interface ExtensionPreview {
   total_nights: number;
   total_to_open: number;
   fingerprint: string;
+  closed_priced: number;
+  first_closed_priced: string | null;
 }
 
 export interface ExtensionResult {
   stale: boolean;
-  months: { month: string; status: "applied" | "failed" | "skipped"; nights: number; opened: number; detail: string | null }[];
+  months: {
+    month: string;
+    status: "applied" | "failed" | "skipped";
+    nights: number;
+    opened: number;
+    detail: string | null;
+    not_opened: number;
+  }[];
   applied_nights: number;
   opened_nights: number;
   failed_months: number;
+  not_opened_nights: number;
 }

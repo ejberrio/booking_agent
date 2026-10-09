@@ -7,7 +7,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
-import { formatCOP, monthLabel } from "@/lib/format";
+import { dateWithYear, formatCOP, monthLabel } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { trServer } from "@/lib/i18n/server-messages";
 import type { ExtensionParams, ExtensionResult } from "@/lib/types";
@@ -224,6 +224,11 @@ export function ExtendPricesDialog({ open, unitTypeId, defaultUntil, maxUntil, o
                 </table>
               </div>
               <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                {data.closed_priced > 0 && data.first_closed_priced && (
+                  <p className="text-amber-600">
+                    {t.closedPricedNote(data.closed_priced, dateWithYear(data.first_closed_priced))}
+                  </p>
+                )}
                 <p>{data.min_price ? t.minNote(formatCOP(data.min_price)) : t.noMin}</p>
                 <p className="text-sm text-foreground">{t.totals(data.total_nights, data.total_to_open)}</p>
               </div>
@@ -283,6 +288,12 @@ function ResultView({ result }: { result: ExtensionResult }) {
   return (
     <>
       <p className="mt-1 text-sm">{t.resultSummary(result.applied_nights, result.opened_nights)}</p>
+      {result.not_opened_nights > 0 && (
+        <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+          <p className="font-medium text-amber-700 dark:text-amber-400">⚠ {t.notOpenedTitle}</p>
+          <p className="mt-1 text-muted-foreground">{t.notOpenedText(result.not_opened_nights)}</p>
+        </div>
+      )}
       <ul className="mt-3 space-y-1 text-xs">
         {result.months.map((r) => (
           <li key={r.month} className="flex flex-wrap gap-2">
@@ -291,7 +302,8 @@ function ResultView({ result }: { result: ExtensionResult }) {
             {r.status === "applied" && (
               <span className="text-muted-foreground">{t.resultSummary(r.nights, r.opened)}</span>
             )}
-            {r.detail && (
+            {r.not_opened > 0 && <span className="text-amber-600">{t.monthNotOpened(r.not_opened)}</span>}
+            {r.detail && r.not_opened === 0 && (
               <span className={r.status === "applied" ? "text-amber-600" : "text-red-500"}>
                 {trServer(r.detail)}
               </span>
