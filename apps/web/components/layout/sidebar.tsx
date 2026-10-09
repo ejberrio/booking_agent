@@ -55,7 +55,8 @@ export function Sidebar() {
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="mb-4 flex items-center justify-between px-2">
+        {/* En celular el botón ☰ (fijo arriba a la izquierda) tapaba el logo: se deja su hueco. */}
+        <div className="mb-4 flex items-center justify-between pl-10 pr-2 md:px-2">
           {/* Logo + nombre → página principal, como en la mayoría de las apps. */}
           <Link
             href="/"
