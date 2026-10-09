@@ -17,6 +17,7 @@ class ChangeOrigin(str, enum.Enum):
     manual = "manual"
     suggestion = "suggestion"
     rollback = "rollback"
+    extension = "extension"  # extensión de precios hacia el futuro (feature 023)
 
 
 class SuggestionStatus(str, enum.Enum):

@@ -233,6 +233,9 @@ class Beds24Adapter:
         # Las escrituras de la API V1 no funcionan; producción usa V2.
         raise ChannelError("La API V1 no soporta escritura de disponibilidad; usa la V2.")
 
+    async def set_calendar_entries(self, room_external_id: str, entries) -> WriteResult:
+        raise ChannelError("La API V1 no soporta escritura de calendario; usa la V2.")
+
     # --- Ajuste de precio por canal (feature 013) ---
     # V1 es legacy de solo lectura: no expone channel settings.
 

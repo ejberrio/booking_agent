@@ -1,14 +1,12 @@
 <!-- SPECKIT START -->
-Feature activa: **022-discount-as-promotion** (bajar con promoción; issue #128).
-Plan: `specs/022-discount-as-promotion/{plan,research,data-model,quickstart}.md` + `contracts/promo-batch-api.md`.
-Decisiones del host (2026-10-09): TODA bajada sugerida = promoción temporal (base nunca baja por sugerencia;
-subidas siguen cambiando el base); piso = precio mínimo por noche en COP (`PricingRule.min_price`, GET/PUT
-/pricing/min-price); publicar en Booking.com + Airbnb. Diseño: lote 019 con `mode` base|promotion por noche;
-tramos contiguos de igual base y precio promo → `offer_promotion_service.apply(price=…, origin=suggestion)`
-en SAVEPOINT (issue/excepción → rollback + SyncIssue); `conditions.source="suggestion"` + suggestion_ids;
-`app/domain/promo_floor.py` PURO: precio_promo ≥ max(min, max_c min/(1−a_c)) con a_c = deals `stacking=always`
-del canal; <1 % u omitida por mínimo. Migración `c6d7e8f9a0b1`: native_deal.stacking (mobile→always),
-price_suggestion.applied_promotion_id. Ofertas: source, finished (end<hoy), no_free_nights. es/en/pt.
+Feature activa: **023-extend-prices** (extender precios hacia el futuro; issue #126).
+Plan: `specs/023-extend-prices/{plan,research,data-model,quickstart}.md` + `contracts/extension-api.md`.
+Hallazgo (2026-10-08): en Beds24 solo hay precio hasta 2027-02-12; desde el 13-feb las noches están sin precio y
+cerradas (numAvail 0). Decisiones del host: plantilla mensual editable (mediana del mismo mes sin eventos, si no la
+global; % opcional viernes/sábado), horizonte por defecto hoy+18 meses (máx. 24), abrir las noches cerradas sin
+precio salvo las bloqueadas por el host desde la app. Diseño: preview lee el calendario remoto; apply por mes en
+SAVEPOINT con `set_calendar_entries` (1 POST + 1 GET); auditoría `ChangeOrigin.extension`; aviso < 12 meses en
+panel y calendario; precio ≤ 0 = sin precio (migración `d7e8f9a0b1c2` borra filas basura).
 <!-- SPECKIT END -->
 
 # Booking AI Agent

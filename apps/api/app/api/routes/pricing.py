@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.routes.sync import get_adapter
 from app.db.session import get_session
+from app.channels.errors import ChannelError
 from app.models.enums import ChangeOrigin, ChannelKind, PromotionType
 from app.schemas.pricing import RangeSelection
 from app.services import (
@@ -15,6 +16,7 @@ from app.services import (
     channel_pricing_service,
     native_deal_service,
     offer_promotion_service,
+    price_extension_service,
     pricing_app_service,
     promotion_service,
 )
@@ -22,6 +24,7 @@ from app.services.audit_service import RollbackConflict
 from app.services.channel_pricing_service import ChannelOffsetError, FingerprintError
 from app.services.native_deal_service import NativeDealError
 from app.services.offer_promotion_service import PromotionError
+from app.services.price_extension_service import ExtensionError, ExtensionParams, MonthInput
 
 router = APIRouter()
 
@@ -547,5 +550,97 @@ async def delete_promotion(promotion_id: int, session: AsyncSession = Depends(ge
         return {"deleted": promotion_id}
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    finally:
+        await adapter.aclose()
+
+
+# --------- Extender precios hacia el futuro (feature 023) ---------
+
+
+class ExtensionMonthBody(BaseModel):
+    month: str
+    price: Decimal | None = None
+    included: bool = True
+
+
+class ExtensionPreviewRequest(BaseModel):
+    unit_type_id: int
+    until: date | None = None
+    weekend_pct: Decimal = Decimal(0)
+    open_closed: bool = True
+    months: list[ExtensionMonthBody] | None = None
+
+    def to_params(self) -> ExtensionParams:
+        return ExtensionParams(
+            unit_type_id=self.unit_type_id,
+            until=self.until,
+            weekend_pct=self.weekend_pct,
+            open_closed=self.open_closed,
+            months=(
+                [MonthInput(m.month, m.price, m.included) for m in self.months]
+                if self.months is not None
+                else None
+            ),
+        )
+
+
+class ExtensionApplyRequest(ExtensionPreviewRequest):
+    fingerprint: str
+
+
+def _preview_json(p) -> dict:
+    data = asdict(p)
+    for m in data["months"]:
+        m.pop("items", None)  # el detalle por noche no viaja (hasta ~700 noches)
+    return data
+
+
+@router.get("/extension/status")
+async def extension_status(unit_type_id: int, session: AsyncSession = Depends(get_session)):
+    return asdict(
+        await price_extension_service.status(session, unit_type_id, today=date.today())
+    )
+
+
+@router.post("/extension/preview")
+async def extension_preview(
+    req: ExtensionPreviewRequest, session: AsyncSession = Depends(get_session)
+):
+    adapter = get_adapter()
+    try:
+        preview = await price_extension_service.preview(
+            session, adapter, req.to_params(), today=date.today()
+        )
+        return _preview_json(preview)
+    except ExtensionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except ChannelError as exc:
+        raise HTTPException(
+            status_code=502, detail=f"no se pudo leer el Channel Manager: {exc}"
+        ) from exc
+    finally:
+        await adapter.aclose()
+
+
+@router.post("/extension/apply")
+async def extension_apply(req: ExtensionApplyRequest, session: AsyncSession = Depends(get_session)):
+    adapter = get_adapter()
+    try:
+        result = await price_extension_service.apply(
+            session, adapter, req.to_params(), req.fingerprint, today=date.today()
+        )
+        if result.stale:
+            raise HTTPException(
+                status_code=409,
+                detail="la vista previa quedó desactualizada; vuelve a previsualizar",
+            )
+        await session.commit()
+        return asdict(result)
+    except ExtensionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except ChannelError as exc:
+        raise HTTPException(
+            status_code=502, detail=f"no se pudo leer el Channel Manager: {exc}"
+        ) from exc
     finally:
         await adapter.aclose()

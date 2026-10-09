@@ -103,6 +103,16 @@ class RemoteFixedPrice:
 
 
 @dataclass(frozen=True)
+class CalendarEntry:
+    """Tramo de calendario a escribir: precio y, opcionalmente, disponibilidad (feature 023)."""
+
+    date_from: date
+    date_to: date
+    price: Decimal
+    num_avail: int | None = None  # None = no tocar la disponibilidad
+
+
+@dataclass(frozen=True)
 class WriteResult:
     ok: bool
     verified: bool
@@ -159,6 +169,13 @@ class ChannelManager(Protocol):
     async def set_availability_range(
         self, room_external_id: str, date_from: date, date_to: date, num_avail: int
     ) -> WriteResult: ...
+
+    async def set_calendar_entries(
+        self, room_external_id: str, entries: list[CalendarEntry]
+    ) -> WriteResult:
+        """Escribe varios tramos (precio + disponibilidad opcional) en una sola operación
+        y verifica releyendo (feature 023: extensión de precios)."""
+        ...
 
     # --- Promociones vía 'fixed price' sobre una oferta (feature 011) ---
 

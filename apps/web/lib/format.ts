@@ -90,3 +90,14 @@ export function pctChange(from: string | null, to: string): string {
   const p = Math.round(((b - a) / a) * 100);
   return p > 0 ? `+${p}%` : `−${Math.abs(p)}%`;
 }
+
+/** "2027-02-12" → "12 feb 2027" / "Feb 12, 2027" (con año; UTC). */
+export function dateWithYear(iso: string, lang?: Lang): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Intl.DateTimeFormat(locale(lang), {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(y, m - 1, d)));
+}

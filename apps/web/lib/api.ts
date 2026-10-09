@@ -32,6 +32,10 @@ import type {
   RangeSelection,
   Suggestion,
   SystemStatus,
+  HorizonStatus,
+  ExtensionParams,
+  ExtensionPreview,
+  ExtensionResult,
 } from "@/lib/types";
 
 export interface PromotionInput {
@@ -179,6 +183,20 @@ export const api = {
     req<{ deleted: boolean }>(`/calendar-notes/${id}`, { method: "DELETE" }),
 
   // Precio mínimo por noche (feature 022): piso de las promociones de sugerencias
+  // Extender precios (feature 023)
+  getHorizonStatus: (unitTypeId: number) =>
+    req<HorizonStatus>(`/pricing/extension/status?unit_type_id=${unitTypeId}`),
+  previewExtension: (params: ExtensionParams) =>
+    req<ExtensionPreview>(`/pricing/extension/preview`, {
+      method: "POST",
+      body: JSON.stringify(params),
+    }),
+  applyExtension: (params: ExtensionParams, fingerprint: string) =>
+    req<ExtensionResult>(`/pricing/extension/apply`, {
+      method: "POST",
+      body: JSON.stringify({ ...params, fingerprint }),
+    }),
+
   getMinPrice: () => req<{ min_price: string | null }>(`/pricing/min-price`),
   putMinPrice: (min_price: number | null) =>
     req<{ min_price: string | null }>(`/pricing/min-price`, {

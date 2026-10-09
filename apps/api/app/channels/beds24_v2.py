@@ -23,6 +23,7 @@ from typing import Any
 import httpx
 
 from app.channels.base import (
+    CalendarEntry,
     ConnectionInfo,
     FixedPriceWriteResult,
     RemoteBooking,
@@ -347,6 +348,43 @@ class Beds24V2Adapter:
         days = _days(date_from, date_to)
         verified = ok and len(rates) == len(days) and all(r.available == num_avail for r in rates)
         detail = None if verified else "la disponibilidad no se confirmó al releer"
+        return WriteResult(ok=ok, verified=verified, detail=detail)
+
+    async def set_calendar_entries(
+        self, room_external_id: str, entries: list[CalendarEntry]
+    ) -> WriteResult:
+        if not entries:
+            return WriteResult(ok=True, verified=True)
+        calendar: list[dict[str, Any]] = []
+        for e in entries:
+            item: dict[str, Any] = {
+                "from": e.date_from.isoformat(),
+                "to": e.date_to.isoformat(),
+                "price1": float(e.price),
+            }
+            if e.num_avail is not None:
+                item["numAvail"] = int(e.num_avail)
+            calendar.append(item)
+        body = [{"roomId": int(room_external_id), "calendar": calendar}]
+        result = await self._request("POST", "inventory/rooms/calendar", json_body=body)
+        ok = False
+        if isinstance(result, list) and result:
+            ok = bool(result[0].get("success"))
+        elif isinstance(result, dict):
+            ok = bool(result.get("success"))
+        # Verificación: UNA relectura del rango completo y comparación noche a noche.
+        first = min(e.date_from for e in entries)
+        last = max(e.date_to for e in entries)
+        remote = {r.date: r for r in await self.get_rates(room_external_id, first, last)}
+        verified = ok
+        for e in entries:
+            for day in _days(e.date_from, e.date_to):
+                r = remote.get(day)
+                if r is None or r.price != e.price or (
+                    e.num_avail is not None and r.available != e.num_avail
+                ):
+                    verified = False
+        detail = None if verified else "el calendario no se confirmó al releer"
         return WriteResult(ok=ok, verified=verified, detail=detail)
 
     # --- Promociones vía fixed price sobre una oferta (feature 011) ---

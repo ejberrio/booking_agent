@@ -149,6 +149,31 @@ const EXACT: Record<string, Tr> = {
   "API no disponible": { en: "API unavailable", pt: "API indisponível" },
   "Idioma no soportado": { en: "Unsupported language", pt: "Idioma não suportado" },
   "Aviso demasiado grande": { en: "Notification too large", pt: "Aviso grande demais" },
+  // --- extender precios (feature 023) ---
+  "la fecha final no puede ser anterior a hoy": {
+    en: "the end date can't be before today",
+    pt: "a data final não pode ser anterior a hoje",
+  },
+  "la fecha final no puede superar 24 meses desde hoy": {
+    en: "the end date can't be more than 24 months from today",
+    pt: "a data final não pode passar de 24 meses a partir de hoje",
+  },
+  "el % de fin de semana debe estar entre 0 y 50": {
+    en: "the weekend % must be between 0 and 50",
+    pt: "o % de fim de semana deve estar entre 0 e 50",
+  },
+  "unidad no encontrada o sin mapear al Channel Manager": {
+    en: "unit not found or not mapped to the Channel Manager",
+    pt: "unidade não encontrada ou não mapeada no Channel Manager",
+  },
+  "la vista previa quedó desactualizada; vuelve a previsualizar": {
+    en: "the preview is out of date; preview again",
+    pt: "a pré-visualização ficou desatualizada; pré-visualize de novo",
+  },
+  "el calendario no se confirmó al releer": {
+    en: "the calendar couldn't be confirmed on re-read",
+    pt: "o calendário não foi confirmado ao reler",
+  },
 };
 
 type Pattern = { re: RegExp; en: (m: RegExpExecArray) => string; pt: (m: RegExpExecArray) => string };
@@ -224,6 +249,27 @@ const PATTERNS: Pattern[] = [
     re: /^el canal (\S+) está inactivo: el ajuste no tendrá efecto hasta reactivarlo$/,
     en: (m) => `the ${m[1]} channel is inactive: the adjustment won't take effect until it's reactivated`,
     pt: (m) => `o canal ${m[1]} está inativo: o ajuste só terá efeito quando for reativado`,
+  },
+  // --- extender precios (feature 023) ---
+  {
+    re: /^el precio de (\d{4}-\d{2}) debe ser mayor que 0$/,
+    en: (m) => `the price for ${m[1]} must be greater than 0`,
+    pt: (m) => `o preço de ${m[1]} deve ser maior que 0`,
+  },
+  {
+    re: /^falta el precio de (\d{4}-\d{2})$/,
+    en: (m) => `the price for ${m[1]} is missing`,
+    pt: (m) => `falta o preço de ${m[1]}`,
+  },
+  {
+    re: /^no se pudo leer el Channel Manager: (.+)$/,
+    en: (m) => `couldn't read the Channel Manager: ${m[1]}`,
+    pt: (m) => `não foi possível ler o Channel Manager: ${m[1]}`,
+  },
+  {
+    re: /^error al publicar \((.+)\)$/,
+    en: (m) => `publishing error (${m[1]})`,
+    pt: (m) => `erro ao publicar (${m[1]})`,
   },
   {
     re: /^API (\d+) en (.+)$/,

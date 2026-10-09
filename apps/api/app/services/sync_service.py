@@ -181,11 +181,18 @@ async def import_remote(
 
             for rate in await adapter.get_rates(room.external_id, date_from, date_to):
                 existing = await _get_rate(session, unit.id, rate.date)
-                if existing is None:
+                # Sin precio remoto (0) NO se guarda como precio 0 (feature 023).
+                if rate.price <= 0:
+                    pass
+                elif existing is None:
                     session.add(
                         Rate(unit_type_id=unit.id, date=rate.date, base_price=rate.price)
                     )
                     created += 1
+                elif existing.base_price <= 0:
+                    # Fila basura local (precio 0): el remoto es la línea base.
+                    existing.base_price = rate.price
+                    updated += 1
                 elif existing.base_price != rate.price:
                     session.add(
                         SyncIssue(
