@@ -95,9 +95,15 @@ jobs:
       - name: Verificar firma
         run: |
           apk=android/app/build/outputs/apk/release/app-release.apk
-          test -f "$apk" || { echo "::error::No se generó un APK firmado"; exit 1; }
-          "$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner" verify --print-certs "$apk" | grep -E "Signer #1 certificate (DN|SHA-256)"
+          if [ ! -f "$apk" ]; then
+            echo "::error::No se generó un APK firmado"; ls -la android/app/build/outputs/apk/release/ || true; exit 1
+          fi
+          bt="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)"
+          echo "build-tools: $bt"
+          # Falla (con detalle) si la firma no es válida; muestra el certificado.
+          "${bt}apksigner" verify --verbose --print-certs "$apk"
           cp "$apk" "StayLever-$APP_VERSION.apk"
+          ls -la "StayLever-$APP_VERSION.apk"
 
       - uses: actions/upload-artifact@v4
         with:
