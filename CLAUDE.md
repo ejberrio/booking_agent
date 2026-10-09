@@ -1,12 +1,10 @@
 <!-- SPECKIT START -->
-Feature activa: **023-extend-prices** (extender precios hacia el futuro; issue #126).
-Plan: `specs/023-extend-prices/{plan,research,data-model,quickstart}.md` + `contracts/extension-api.md`.
-Hallazgo (2026-10-08): en Beds24 solo hay precio hasta 2027-02-12; desde el 13-feb las noches están sin precio y
-cerradas (numAvail 0). Decisiones del host: plantilla mensual editable (mediana del mismo mes sin eventos, si no la
-global; % opcional viernes/sábado), horizonte por defecto hoy+18 meses (máx. 24), abrir las noches cerradas sin
-precio salvo las bloqueadas por el host desde la app. Diseño: preview lee el calendario remoto; apply por mes en
-SAVEPOINT con `set_calendar_entries` (1 POST + 1 GET); auditoría `ChangeOrigin.extension`; aviso < 12 meses en
-panel y calendario; precio ≤ 0 = sin precio (migración `d7e8f9a0b1c2` borra filas basura).
+Feature activa: **024-floating-chat** (chat flotante desde cualquier pantalla; issue #127).
+Plan: `specs/024-floating-chat/{plan,research,data-model,quickstart}.md` + `contracts/chat-history-api.md`.
+Diseño: `ChatProvider` (contexto) en `app/(app)/layout.tsx` compartido por la sección Chat y el panel flotante;
+id de conversación en localStorage + historial desde `GET /chat/conversations` y `GET /chat/conversations/{id}`
+(solo user/assistant, `pending_action_id`); panel superpuesto a la derecha (360–720 px, recordado), pantalla
+completa en móvil, Ctrl+K/⌘K y Esc; tras `applied` se invalidan las consultas. Sin migraciones ni dependencias.
 <!-- SPECKIT END -->
 
 # Booking AI Agent

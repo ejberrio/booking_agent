@@ -36,6 +36,8 @@ import type {
   ExtensionParams,
   ExtensionPreview,
   ExtensionResult,
+  ConversationSummary,
+  ConversationDetail,
 } from "@/lib/types";
 
 export interface PromotionInput {
@@ -235,6 +237,9 @@ export const api = {
     }),
 
   // Chat (no streaming)
+  // Historial de chat (feature 024)
+  listConversations: (limit = 20) => req<ConversationSummary[]>(`/chat/conversations?limit=${limit}`),
+  getConversation: (id: number) => req<ConversationDetail>(`/chat/conversations/${id}`),
   chat: (message: string, conversationId?: number) =>
     req<ChatReply>(`/chat`, {
       method: "POST",

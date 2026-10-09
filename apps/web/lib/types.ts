@@ -426,3 +426,18 @@ export interface ExtensionResult {
   failed_months: number;
   not_opened_nights: number;
 }
+
+// --- Historial de chat (feature 024) ---
+export interface ConversationSummary {
+  id: number;
+  title: string;
+  updated_at: string;
+  message_count: number;
+}
+
+export interface ConversationDetail {
+  id: number;
+  title: string;
+  messages: { role: "user" | "agent"; text: string; created_at: string }[];
+  pending_action_id: number | null;
+}

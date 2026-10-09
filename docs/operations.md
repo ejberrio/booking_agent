@@ -466,3 +466,13 @@ estaban sin precio y cerradas (`numAvail 0`), así que no se podían reservar. E
   a los canales esté en 0 (responde `success` sin `"modified"`). Pasar por 0 y luego N lo corrige (probado por el
   host en el panel y luego por API para 2027-02-14..2028-04-09; Booking.com y Airbnb abrieron). El adaptador V2
   ahora reintenta solo con 0 → N cuando una APERTURA no queda al releer (nunca al bloquear).
+
+## Chat flotante (Feature 024 · issue #127)
+
+- Botón del asistente abajo a la derecha en todas las pantallas autenticadas (no en Chat ni en el acceso). Abre un panel
+  a la derecha sin oscurecer la página; en celular ocupa la pantalla completa. **Ctrl+K / ⌘K** alterna, **Esc** cierra;
+  el ancho se arrastra (360–720 px) y se recuerda (`localStorage["staylever.chat.width"]`).
+- **Misma conversación** en el panel y en la sección Chat (`ChatProvider` en el layout). El id de la conversación en curso
+  vive en `localStorage["staylever.chat.conversation"]`; los mensajes y la propuesta pendiente se recuperan con
+  `GET /chat/conversations/{id}` (solo host/asistente). "Recientes" usa `GET /chat/conversations` (máx. 20).
+- Si el asistente aplica un cambio, se invalidan las consultas y la pantalla de fondo se actualiza.
