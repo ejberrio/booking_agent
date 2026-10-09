@@ -36,20 +36,35 @@ def propose_template(
     event_days: set[date],
     months: list[str],
     fallback: Decimal | None = None,
+    min_clean: int = 7,
 ) -> dict[str, Decimal | None]:
     """Precio propuesto por año-mes ("YYYY-MM").
 
     `known` = precios base conocidos (> 0) de cualquier fecha. Las noches con
-    evento se excluyen para que los picos no contaminen la plantilla.
+    evento relevante (`event_days`) se excluyen para que los picos no contaminen
+    la plantilla; si un mes queda con menos de `min_clean` noches limpias (hay
+    meses casi enteros cubiertos por ferias), se usan todas sus noches: la
+    mediana ya resiste los picos puntuales.
     """
-    clean = [(d, p) for d, p in known.items() if p > 0 and d not in event_days]
-    by_month: dict[int, list[Decimal]] = {}
-    for d, p in clean:
-        by_month.setdefault(d.month, []).append(p)
-    overall = round_1000(Decimal(median([p for _, p in clean]))) if clean else None
+    valid = {d: p for d, p in known.items() if p > 0}
+    all_by_month: dict[int, list[Decimal]] = {}
+    clean_by_month: dict[int, list[Decimal]] = {}
+    for d, p in valid.items():
+        all_by_month.setdefault(d.month, []).append(p)
+        if d not in event_days:
+            clean_by_month.setdefault(d.month, []).append(p)
+
+    def pick(clean: list[Decimal], every: list[Decimal]) -> list[Decimal]:
+        return clean if len(clean) >= min_clean else every
+
+    every = list(valid.values())
+    clean_all = [p for d, p in valid.items() if d not in event_days]
+    pool = pick(clean_all, every)
+    overall = round_1000(Decimal(median(pool))) if pool else None
     out: dict[str, Decimal | None] = {}
     for key in months:
-        values = by_month.get(int(key[5:7]))
+        m = int(key[5:7])
+        values = pick(clean_by_month.get(m, []), all_by_month.get(m, []))
         if values:
             out[key] = round_1000(Decimal(median(values)))
         else:

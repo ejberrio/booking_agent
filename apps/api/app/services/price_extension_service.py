@@ -29,7 +29,7 @@ from app.domain.price_extension import (
 )
 from app.models.availability import AvailabilityChangeLog
 from app.models.calendar import CalendarDay, Rate
-from app.models.enums import ChangeOrigin, SyncIssueKind
+from app.models.enums import ChangeOrigin, Relevance, SyncIssueKind
 from app.models.market import Event
 from app.models.property import UnitType
 from app.models.sync import SyncIssue
@@ -146,8 +146,12 @@ async def _known_prices(session: AsyncSession, unit_type_id: int) -> dict[date, 
 
 
 async def _event_days(session: AsyncSession) -> set[date]:
+    """Noches con evento de relevancia ALTA (los de relevancia media/baja cubren casi
+    todo el calendario y dejarían la plantilla sin datos)."""
     out: set[date] = set()
-    for ev in (await session.execute(select(Event))).scalars():
+    for ev in (
+        await session.execute(select(Event).where(Event.relevance == Relevance.high))
+    ).scalars():
         out.update(_days(ev.start_date, ev.end_date or ev.start_date))
     return out
 

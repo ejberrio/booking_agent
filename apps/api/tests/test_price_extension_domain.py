@@ -51,3 +51,13 @@ def test_fin_de_semana_y_limites():
     assert night_price(D("350000"), tue, D("10"), None, None) == (D("350000"), None)
     assert night_price(D("200000"), tue, D("0"), D("230000"), None) == (D("230000"), "min")
     assert night_price(D("400000"), fri, D("10"), None, D("420000")) == (D("420000"), "max")
+
+
+def test_mes_casi_todo_con_eventos_usa_todas_sus_noches():
+    # julio cubierto por una feria larga: sin noches limpias suficientes → mediana de todo julio
+    known = _span(date(2026, 7, 1), 31, "350000") | _span(date(2026, 12, 1), 31, "378000")
+    feria = {date(2026, 7, 1) + timedelta(days=i) for i in range(28)}
+    t = propose_template(known, feria, ["2027-07", "2027-03"])
+    assert t["2027-07"] == D("350000")
+    # la mediana global usa las noches limpias (3 de julio + 31 de diciembre)
+    assert t["2027-03"] == D("378000")
