@@ -10,6 +10,7 @@ const es = {
     settings: "Configuración",
   },
   menu: "Menú",
+  home: "Ir al inicio",
   logout: "Cerrar sesión",
   toggleTheme: "Cambiar tema",
   login: {
@@ -35,6 +36,7 @@ const en: Shape = {
     settings: "Settings",
   },
   menu: "Menu",
+  home: "Go to home",
   logout: "Sign out",
   toggleTheme: "Toggle theme",
   login: {
@@ -58,6 +60,7 @@ const pt: Shape = {
     settings: "Configurações",
   },
   menu: "Menu",
+  home: "Ir para o início",
   logout: "Sair",
   toggleTheme: "Alternar tema",
   login: {

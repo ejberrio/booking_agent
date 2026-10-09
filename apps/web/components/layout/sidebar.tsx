@@ -10,8 +10,8 @@ import {
   Plug,
   Settings,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -56,17 +56,24 @@ export function Sidebar() {
         )}
       >
         <div className="mb-4 flex items-center justify-between px-2">
-          <span className="flex items-center gap-2 text-sm font-semibold">
+          {/* Logo + nombre → página principal, como en la mayoría de las apps. */}
+          <Link
+            href="/"
+            onClick={() => setOpen(false)}
+            aria-label={m.shell.home}
+            title={m.shell.home}
+            className="flex items-center gap-2 rounded-md text-sm font-semibold hover:opacity-80"
+          >
             <Logo size={24} />
             StayLever
-          </span>
+          </Link>
           <ThemeToggle />
         </div>
         <nav className="flex-1 space-y-1">
           {NAV.map(({ href, key, icon: Icon }) => {
             const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
             return (
-              <a
+              <Link
                 key={href}
                 href={href}
                 onClick={() => setOpen(false)}
@@ -77,7 +84,7 @@ export function Sidebar() {
               >
                 <Icon size={16} />
                 {m.shell.nav[key]}
-              </a>
+              </Link>
             );
           })}
         </nav>
