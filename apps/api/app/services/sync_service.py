@@ -119,25 +119,6 @@ async def _upsert_unit(session: AsyncSession, prop: Property, ext_id: str, name:
     return unit
 
 
-async def _get_rate(session: AsyncSession, unit_id: int, day: date) -> Rate | None:
-    res = await session.execute(
-        select(Rate).where(Rate.unit_type_id == unit_id, Rate.date == day)
-    )
-    return res.scalar_one_or_none()
-
-
-async def _upsert_calendar(session: AsyncSession, unit_id: int, day: date, available: int) -> None:
-    res = await session.execute(
-        select(CalendarDay).where(CalendarDay.unit_type_id == unit_id, CalendarDay.date == day)
-    )
-    cd = res.scalar_one_or_none()
-    if cd is None:
-        session.add(CalendarDay(unit_type_id=unit_id, date=day, units_available=available))
-    else:
-        cd.units_available = available
-    await session.flush()
-
-
 # --------- operaciones públicas ---------
 
 
@@ -179,15 +160,45 @@ async def import_remote(
             unit = await _upsert_unit(session, prop, room.external_id, room.name, room.units_count)
             units_by_room[room.external_id] = unit
 
-            for rate in await adapter.get_rates(room.external_id, date_from, date_to):
-                existing = await _get_rate(session, unit.id, rate.date)
+            # En lote (feature 023): con 730 días, consultar noche a noche contra la BD
+            # remota tardaba demasiado; se precargan tarifas y calendario del rango.
+            remote_rates = await adapter.get_rates(room.external_id, date_from, date_to)
+            span = [r.date for r in remote_rates]
+            rates_by_day: dict[date, Rate] = {}
+            cal_by_day: dict[date, CalendarDay] = {}
+            if span:
+                lo, hi = min(span), max(span)
+                rates_by_day = {
+                    r.date: r
+                    for r in (
+                        await session.execute(
+                            select(Rate).where(
+                                Rate.unit_type_id == unit.id, Rate.date >= lo, Rate.date <= hi
+                            )
+                        )
+                    ).scalars()
+                }
+                cal_by_day = {
+                    c.date: c
+                    for c in (
+                        await session.execute(
+                            select(CalendarDay).where(
+                                CalendarDay.unit_type_id == unit.id,
+                                CalendarDay.date >= lo,
+                                CalendarDay.date <= hi,
+                            )
+                        )
+                    ).scalars()
+                }
+            for rate in remote_rates:
+                existing = rates_by_day.get(rate.date)
                 # Sin precio remoto (0) NO se guarda como precio 0 (feature 023).
                 if rate.price <= 0:
                     pass
                 elif existing is None:
-                    session.add(
-                        Rate(unit_type_id=unit.id, date=rate.date, base_price=rate.price)
-                    )
+                    new_rate = Rate(unit_type_id=unit.id, date=rate.date, base_price=rate.price)
+                    session.add(new_rate)
+                    rates_by_day[rate.date] = new_rate
                     created += 1
                 elif existing.base_price <= 0:
                     # Fila basura local (precio 0): el remoto es la línea base.
@@ -206,7 +217,16 @@ async def import_remote(
                         )
                     )
                     issues += 1
-                await _upsert_calendar(session, unit.id, rate.date, rate.available)
+                cd = cal_by_day.get(rate.date)
+                if cd is None:
+                    cd = CalendarDay(
+                        unit_type_id=unit.id, date=rate.date, units_available=rate.available
+                    )
+                    session.add(cd)
+                    cal_by_day[rate.date] = cd
+                else:
+                    cd.units_available = rate.available
+            await session.flush()
 
         # Reservas: por propiedad, asignadas a su unidad, con su canal REAL de
         # origen. El remoto es fuente de verdad: re-importar corrige canal

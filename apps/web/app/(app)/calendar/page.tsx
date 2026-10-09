@@ -115,7 +115,7 @@ export default function CalendarPage() {
     allNotes.filter((n) => n.date_from <= toD && n.date_to >= fromD);
   // Sincronización manual con el Channel Manager (cancelaciones, reservas nuevas…).
   const syncNow = useMutation({
-    mutationFn: () => api.importRemote(365),
+    mutationFn: () => api.importRemote(),
     onSuccess: (r) => {
       toast.success(m.calendar.synced(r.created, r.updated, r.issues));
       qc.invalidateQueries();
