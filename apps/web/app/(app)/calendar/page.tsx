@@ -74,7 +74,11 @@ export default function CalendarPage() {
   });
   const [extendOpen, setExtendOpen] = useState(false);
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("extend") === "1") setExtendOpen(true);
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("extend") === "1") setExtendOpen(true);
+    // `?month=YYYY-MM` (p. ej. desde un aviso de reserva en el celular, feature 025).
+    const month = /^(\d{4})-(\d{2})$/.exec(params.get("month") ?? "");
+    if (month) setYm({ year: Number(month[1]), month: Number(month[2]) - 1 });
   }, []);
 
   // Sugerencias vigentes (proposed y con al menos un día no pasado) por fecha.

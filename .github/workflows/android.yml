@@ -1,0 +1,121 @@
+name: Android APK
+
+# App móvil de StayLever (feature 025). Construye el APK firmado y lo publica como Release.
+# Secretos (el repo es público; nunca en el código) — los carga el host con
+# scripts/mobile/setup-android-secrets.sh:
+#   ANDROID_KEYSTORE_B64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD (obligatorios)
+#   GOOGLE_SERVICES_JSON (opcional: sin él el APK funciona pero sin avisos)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versión de la app (p. ej. 1.0.0)"
+        required: true
+        default: "1.0.0"
+  push:
+    tags: ["android-v*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk
+  cancel-in-progress: false
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Versión
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          v="${INPUT_VERSION:-${GITHUB_REF_NAME#android-v}}"
+          if ! [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then echo "::error::Versión inválida: $v (usa X.Y.Z)"; exit 1; fi
+          echo "APP_VERSION=$v" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=${{ github.run_number }}" >> "$GITHUB_ENV"
+
+      - name: Llave de firma (obligatoria)
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::error::Falta la llave de firma. Corre scripts/mobile/setup-android-secrets.sh (ver docs/mobile.md)."
+            exit 1
+          fi
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/staylever.keystore"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/staylever.keystore" >> "$GITHUB_ENV"
+
+      - name: Firebase (avisos, opcional)
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+            echo "PUSH_ENABLED=sí" >> "$GITHUB_ENV"
+          else
+            echo "::warning::Sin GOOGLE_SERVICES_JSON: el APK funciona pero sin avisos al celular."
+            echo "PUSH_ENABLED=no" >> "$GITHUB_ENV"
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@v3
+        with:
+          # El paquete por defecto "tools" ya no existe en el sdkmanager actual.
+          packages: platform-tools
+
+      - run: npm ci
+      # cap sync lee google-services.json para marcar " push" en el User-Agent.
+      - run: npx cap sync android
+
+      - name: Construir APK firmado
+        working-directory: apps/mobile/android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Verificar firma
+        run: |
+          apk=android/app/build/outputs/apk/release/app-release.apk
+          test -f "$apk" || { echo "::error::No se generó un APK firmado"; exit 1; }
+          "$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner" verify --print-certs "$apk" | grep -E "Signer #1 certificate (DN|SHA-256)"
+          cp "$apk" "StayLever-$APP_VERSION.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: StayLever-${{ env.APP_VERSION }}
+          path: apps/mobile/StayLever-${{ env.APP_VERSION }}.apk
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-v${{ env.APP_VERSION }}
+          name: StayLever Android ${{ env.APP_VERSION }}
+          prerelease: true
+          files: apps/mobile/StayLever-${{ env.APP_VERSION }}.apk
+          body: |
+            **StayLever para Android ${{ env.APP_VERSION }}** (avisos: ${{ env.PUSH_ENABLED }})
+
+            Instalar en el celular (sin Play Store):
+            1. Abre esta página en el Android y descarga `StayLever-${{ env.APP_VERSION }}.apk`.
+            2. Ábrelo; si Android lo pide, permite **instalar apps desconocidas** para el navegador o "Archivos".
+            3. Instala, abre StayLever, inicia sesión y permite los avisos.
+
+            Las versiones nuevas se instalan encima (misma llave de firma) sin perder la sesión.

@@ -48,6 +48,12 @@ SECRET_NAMES: dict[str, dict[str, str]] = {
         "service": "Reservas en tiempo real (avisos de Beds24)",
         "test": "webhook",
     },
+    # Feature 025: cuenta de servicio de Firebase (JSON) para avisos al celular.
+    "fcm_service_account": {
+        "label": "Credencial de avisos (Firebase)",
+        "service": "Avisos al celular (app de Android/iPhone)",
+        "test": "push",
+    },
 }
 
 _cache: dict[str, str] = {}

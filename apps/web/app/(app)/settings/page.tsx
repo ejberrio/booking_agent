@@ -663,6 +663,110 @@ function MinPriceCard() {
   );
 }
 
+function PushCard() {
+  const { m } = useI18n();
+  const t = m.settings.push;
+  const qc = useQueryClient();
+  const status = useQuery({ queryKey: ["push-status"], queryFn: () => api.pushStatus() });
+  const devices = useQuery({ queryKey: ["push-devices"], queryFn: () => api.listPushDevices() });
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ["push-devices"] });
+    qc.invalidateQueries({ queryKey: ["push-status"] });
+  };
+  const update = useMutation({
+    mutationFn: (v: { id: number; notify_bookings?: boolean; notify_suggestions?: boolean }) =>
+      api.updatePushDevice(v.id, v),
+    onSuccess: refresh,
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const remove = useMutation({
+    mutationFn: (id: number) => api.deletePushDevice(id),
+    onSuccess: refresh,
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const test = useMutation({
+    mutationFn: () => api.testPush(),
+    onSuccess: (r) => {
+      if (!r.configured) toast.warning(t.testNotConfigured);
+      else if (r.failed && !r.sent) toast.error(t.testResult(r.sent, r.failed));
+      else toast.success(t.testResult(r.sent, r.failed));
+      refresh();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const list = devices.data ?? [];
+
+  return (
+    <Card className="space-y-3">
+      <div className="flex items-center justify-between">
+        <CardTitle>{t.title}</CardTitle>
+        {status.data && (
+          <Badge variant={status.data.configured ? "success" : "warning"}>
+            {status.data.configured ? t.configured : m.settings.secrets.notConfigured}
+          </Badge>
+        )}
+      </div>
+      <CardDescription>{t.description}</CardDescription>
+      {status.data && !status.data.configured && (
+        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs">{t.notConfigured}</p>
+      )}
+      {devices.isLoading ? (
+        <Skeleton className="h-12 w-full" />
+      ) : list.length === 0 ? (
+        <p className="text-xs text-muted-foreground">{t.noDevices}</p>
+      ) : (
+        <ul className="space-y-2">
+          {list.map((d) => (
+            <li key={d.id} className="rounded-md border border-border p-2 text-xs">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-medium">
+                  {d.model || (d.platform === "ios" ? "iPhone" : "Android")}
+                  {d.app_version && (
+                    <span className="ml-1 font-normal text-muted-foreground">· {t.androidVersion(d.app_version)}</span>
+                  )}
+                </span>
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-red-500"
+                  onClick={() => window.confirm(t.confirmRemove) && remove.mutate(d.id)}
+                >
+                  {t.remove}
+                </button>
+              </div>
+              <p className="mt-0.5 text-muted-foreground">
+                {t.lastSeen(dateTime(d.last_seen_at))}
+                {!d.enabled && <span className="text-amber-600"> · {t.disabled}</span>}
+              </p>
+              <div className="mt-1.5 flex flex-wrap gap-4">
+                <label className="flex items-center gap-1.5">
+                  <input
+                    type="checkbox"
+                    checked={d.notify_bookings}
+                    onChange={(e) => update.mutate({ id: d.id, notify_bookings: e.target.checked })}
+                  />
+                  {t.bookings}
+                </label>
+                <label className="flex items-center gap-1.5">
+                  <input
+                    type="checkbox"
+                    checked={d.notify_suggestions}
+                    onChange={(e) => update.mutate({ id: d.id, notify_suggestions: e.target.checked })}
+                  />
+                  {t.suggestions}
+                </label>
+              </div>
+              {d.last_error && d.enabled && <p className="mt-1 text-red-500">{trServer(d.last_error)}</p>}
+            </li>
+          ))}
+        </ul>
+      )}
+      <Button onClick={() => test.mutate()} disabled={test.isPending || list.length === 0}>
+        {t.test}
+      </Button>
+    </Card>
+  );
+}
+
 export default function SettingsPage() {
   const { m } = useI18n();
   const t = m.settings;
@@ -689,6 +793,8 @@ export default function SettingsPage() {
       </Card>
 
       <WebhooksCard />
+
+      <PushCard />
 
       <MinPriceCard />
 

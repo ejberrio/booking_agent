@@ -32,9 +32,14 @@ async def _sync_channel() -> None:
     try:
         async with SessionLocal() as session:
             today = date.today()
+            events: list = []
             run = await sync_service.import_remote(
-                session, adapter, today, today + timedelta(days=SYNC_DAYS)
+                session, adapter, today, today + timedelta(days=SYNC_DAYS), events=events
             )
+            # Avisos al celular de reservas que el webhook no informó (feature 025).
+            from app.services import push_service
+
+            await push_service.notify_booking_events(session, events)
             await session.commit()
             print(
                 f"scan_daily: sync #{run.id} {run.status.value} creadas={run.created_count} "
@@ -79,6 +84,10 @@ async def main() -> None:
                 date_from=today,
                 date_to=today + timedelta(days=HORIZON_DAYS),
             )
+            # Aviso de sugerencias nuevas (feature 025).
+            from app.services import push_service
+
+            await push_service.notify_suggestions(session, run.id, run.suggestions_created)
             await session.commit()
             print(
                 f"scan_daily: run #{run.id} {run.status.value} "

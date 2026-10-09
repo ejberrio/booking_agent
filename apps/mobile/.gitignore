@@ -1,0 +1,13 @@
+node_modules/
+# Secretos: NUNCA en el repo (es público). Se inyectan en CI desde secretos de GitHub.
+google-services.json
+*.keystore
+*.jks
+android/app/google-services.json
+android/keystore.properties
+# Builds
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/capacitor-cordova-android-plugins/build/

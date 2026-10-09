@@ -9,6 +9,7 @@ from app.api.routes import (
     pois,
     preferences,
     pricing,
+    push,
     secrets,
     status,
     suggestions,
@@ -28,3 +29,4 @@ api_router.include_router(secrets.router, prefix="/settings/secrets", tags=["sec
 api_router.include_router(pois.router, tags=["pois"])  # /pois y /scan-config
 api_router.include_router(hooks.router, prefix="/hooks", tags=["hooks"])  # feature 020
 api_router.include_router(preferences.router, prefix="/preferences", tags=["preferences"])  # 021
+api_router.include_router(push.router, prefix="/push", tags=["push"])  # 025

@@ -10,12 +10,15 @@ from app.models.market import Event, PointOfInterest, PriceSuggestion
 from app.models.pricing import NativeDeal, PricingRule, Promotion
 from app.models.preference import AppPreference
 from app.models.property import Channel, Property, UnitType
+from app.models.push import PushDevice, PushNotificationLog
 from app.models.secret import SecretChangeLog, SecretEntry
 from app.models.sync import ChannelManagerConnection, SyncIssue, SyncRun
 from app.models.webhook import WebhookEvent
 
 __all__ = [
     "AppPreference",
+    "PushDevice",
+    "PushNotificationLog",
     "WebhookEvent",
     "Property",
     "Channel",

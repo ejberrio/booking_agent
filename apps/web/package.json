@@ -9,6 +9,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@capacitor/app": "8.1.1",
+    "@capacitor/core": "8.5.2",
+    "@capacitor/device": "8.0.3",
+    "@capacitor/push-notifications": "8.1.2",
     "@sentry/nextjs": "^10.63.0",
     "@tanstack/react-query": "^5.62.0",
     "clsx": "^2.1.1",

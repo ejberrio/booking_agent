@@ -41,6 +41,26 @@ const es = {
     step6: (active: string) => `Con el próximo cambio de una reserva, aquí verás "${active}".`,
     loadError: "No se pudo cargar el estado de los avisos.",
   },
+  push: {
+    title: "Notificaciones en el celular",
+    description:
+      "Avisos de la app de StayLever: reservas nuevas, modificadas o canceladas, y sugerencias de precio nuevas. Instala la app (APK) e inicia sesión en ella; el teléfono aparece aquí al permitir los avisos.",
+    notConfigured:
+      "Falta la credencial de Firebase: pégala en Secretos → «Credencial de avisos (Firebase)». Sin ella no se envían avisos.",
+    configured: "Credencial de Firebase configurada",
+    noDevices: "Aún no hay teléfonos registrados. Abre la app en tu celular y permite los avisos.",
+    bookings: "Reservas",
+    suggestions: "Sugerencias",
+    lastSeen: (d: string) => `última vez ${d}`,
+    disabled: "desactivado (el teléfono ya no recibe avisos)",
+    remove: "Quitar",
+    confirmRemove: "¿Quitar este teléfono? Dejará de recibir avisos hasta que vuelva a abrir la app.",
+    test: "Enviar aviso de prueba",
+    testResult: (sent: number, failed: number) =>
+      `Aviso enviado a ${sent} teléfono${sent !== 1 ? "s" : ""}` + (failed ? ` · ${failed} con error` : ""),
+    testNotConfigured: "No se envió: falta la credencial de Firebase.",
+    androidVersion: (v: string) => `app ${v}`,
+  },
   minPrice: {
     title: "Precio mínimo por noche",
     description:
@@ -105,6 +125,7 @@ const es = {
       search_api_key: "Tavily API key",
       beds24_refresh_token: "Beds24 refresh token",
       beds24_webhook_key: "Clave de avisos de Beds24",
+      fcm_service_account: "Credencial de avisos (Firebase)",
     },
     services: {
       openai_api_key: "Agente de chat y extracción de eventos",
@@ -112,6 +133,7 @@ const es = {
       search_api_key: "Escaneo de eventos y mercado",
       beds24_refresh_token: "Todo el canal (precios, reservas, disponibilidad)",
       beds24_webhook_key: "Reservas en tiempo real (avisos de Beds24)",
+      fcm_service_account: "Avisos al celular (app de Android/iPhone)",
     },
     help: {
       openai_api_key:
@@ -122,6 +144,8 @@ const es = {
         'app.tavily.com → Overview → API Keys → copia la clave (o crea una con "+"). Empieza por "tvly-". El plan gratis (1.000 créditos/mes) alcanza para el escaneo diario.',
       beds24_webhook_key:
         'Se genera arriba, en la tarjeta "Avisos en tiempo real" → "Generar clave", y se pega en Beds24 (Booking Webhook → Custom Header). No hace falta pegarla aquí; para rotarla, genera una nueva allí.',
+      fcm_service_account:
+        "console.firebase.google.com → tu proyecto → ⚙️ Configuración del proyecto → Cuentas de servicio → «Generar nueva clave privada». Se descarga un archivo .json: ábrelo, copia TODO su contenido y pégalo aquí. Es secreto: no lo compartas ni lo subas a GitHub.",
     },
     sourceUnreadable: "guardado ilegible — se usa la variable de entorno",
     sourceApp: "guardado en la app",
@@ -197,6 +221,26 @@ const en: Shape = {
     step6: (active: string) => `On the next booking change, you'll see "${active}" here.`,
     loadError: "Couldn't load the notification status.",
   },
+  push: {
+    title: "Phone notifications",
+    description:
+      "Notifications from the StayLever app: new, changed or canceled bookings, and new price suggestions. Install the app (APK) and sign in; the phone shows up here once you allow notifications.",
+    notConfigured:
+      "The Firebase credential is missing: paste it in Secrets → “Notification credential (Firebase)”. Without it no notifications are sent.",
+    configured: "Firebase credential configured",
+    noDevices: "No phones registered yet. Open the app on your phone and allow notifications.",
+    bookings: "Bookings",
+    suggestions: "Suggestions",
+    lastSeen: (d: string) => `last seen ${d}`,
+    disabled: "disabled (the phone no longer receives notifications)",
+    remove: "Remove",
+    confirmRemove: "Remove this phone? It will stop receiving notifications until the app is opened again.",
+    test: "Send test notification",
+    testResult: (sent: number, failed: number) =>
+      `Notification sent to ${sent} phone${sent !== 1 ? "s" : ""}` + (failed ? ` · ${failed} failed` : ""),
+    testNotConfigured: "Not sent: the Firebase credential is missing.",
+    androidVersion: (v: string) => `app ${v}`,
+  },
   minPrice: {
     title: "Minimum price per night",
     description:
@@ -261,6 +305,7 @@ const en: Shape = {
       search_api_key: "Tavily API key",
       beds24_refresh_token: "Beds24 refresh token",
       beds24_webhook_key: "Beds24 notification key",
+      fcm_service_account: "Notification credential (Firebase)",
     },
     services: {
       openai_api_key: "Chat agent and event extraction",
@@ -268,6 +313,7 @@ const en: Shape = {
       search_api_key: "Event and market scan",
       beds24_refresh_token: "The whole channel (prices, bookings, availability)",
       beds24_webhook_key: "Real-time bookings (Beds24 notifications)",
+      fcm_service_account: "Phone notifications (Android/iPhone app)",
     },
     help: {
       openai_api_key:
@@ -278,6 +324,8 @@ const en: Shape = {
         'app.tavily.com → Overview → API Keys → copy the key (or create one with "+"). It starts with "tvly-". The free plan (1,000 credits/month) is enough for the daily scan.',
       beds24_webhook_key:
         'It\'s generated above, in the "Real-time notifications" card → "Generate key", and pasted into Beds24 (Booking Webhook → Custom Header). No need to paste it here; to rotate it, generate a new one there.',
+      fcm_service_account:
+        "console.firebase.google.com → your project → ⚙️ Project settings → Service accounts → “Generate new private key”. A .json file downloads: open it, copy ALL of its content and paste it here. It is secret: do not share it or upload it to GitHub.",
     },
     sourceUnreadable: "saved value unreadable — using the environment variable",
     sourceApp: "saved in the app",
@@ -351,6 +399,26 @@ const pt: Shape = {
     step6: (active: string) => `Na próxima alteração de uma reserva, você verá "${active}" aqui.`,
     loadError: "Não foi possível carregar o status dos avisos.",
   },
+  push: {
+    title: "Notificações no celular",
+    description:
+      "Avisos do app StayLever: reservas novas, alteradas ou canceladas, e novas sugestões de preço. Instale o app (APK) e entre nele; o telefone aparece aqui ao permitir as notificações.",
+    notConfigured:
+      "Falta a credencial do Firebase: cole-a em Segredos → «Credencial de avisos (Firebase)». Sem ela nenhum aviso é enviado.",
+    configured: "Credencial do Firebase configurada",
+    noDevices: "Ainda não há telefones registrados. Abra o app no celular e permita as notificações.",
+    bookings: "Reservas",
+    suggestions: "Sugestões",
+    lastSeen: (d: string) => `última vez ${d}`,
+    disabled: "desativado (o telefone não recebe mais avisos)",
+    remove: "Remover",
+    confirmRemove: "Remover este telefone? Ele deixará de receber avisos até o app ser aberto de novo.",
+    test: "Enviar aviso de teste",
+    testResult: (sent: number, failed: number) =>
+      `Aviso enviado para ${sent} telefone${sent !== 1 ? "s" : ""}` + (failed ? ` · ${failed} com erro` : ""),
+    testNotConfigured: "Não enviado: falta a credencial do Firebase.",
+    androidVersion: (v: string) => `app ${v}`,
+  },
   minPrice: {
     title: "Preço mínimo por noite",
     description:
@@ -415,6 +483,7 @@ const pt: Shape = {
       search_api_key: "Tavily API key",
       beds24_refresh_token: "Beds24 refresh token",
       beds24_webhook_key: "Chave de avisos do Beds24",
+      fcm_service_account: "Credencial de avisos (Firebase)",
     },
     services: {
       openai_api_key: "Agente de chat e extração de eventos",
@@ -422,6 +491,7 @@ const pt: Shape = {
       search_api_key: "Varredura de eventos e mercado",
       beds24_refresh_token: "Todo o canal (preços, reservas, disponibilidade)",
       beds24_webhook_key: "Reservas em tempo real (avisos do Beds24)",
+      fcm_service_account: "Notificações no celular (app Android/iPhone)",
     },
     help: {
       openai_api_key:
@@ -432,6 +502,8 @@ const pt: Shape = {
         'app.tavily.com → Overview → API Keys → copie a chave (ou crie uma com "+"). Começa com "tvly-". O plano gratuito (1.000 créditos/mês) basta para a varredura diária.',
       beds24_webhook_key:
         'É gerada acima, no cartão "Avisos em tempo real" → "Gerar chave", e colada no Beds24 (Booking Webhook → Custom Header). Não é preciso colá-la aqui; para fazer a rotação, gere uma nova lá.',
+      fcm_service_account:
+        "console.firebase.google.com → seu projeto → ⚙️ Configurações do projeto → Contas de serviço → «Gerar nova chave privada». Um arquivo .json é baixado: abra, copie TODO o conteúdo e cole aqui. É secreto: não compartilhe nem envie ao GitHub.",
     },
     sourceUnreadable: "valor salvo ilegível — usando a variável de ambiente",
     sourceApp: "salvo no app",

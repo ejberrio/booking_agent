@@ -1,0 +1,22 @@
+{
+  "name": "staylever-mobile",
+  "private": true,
+  "version": "1.0.0",
+  "description": "App móvil de StayLever (Capacitor): carga staylever.com con avisos nativos (feature 025).",
+  "scripts": {
+    "assets": "node scripts/make-icon.mjs && capacitor-assets generate --android --iconBackgroundColor '#0f172a' --iconBackgroundColorDark '#0f172a' --splashBackgroundColor '#0a0a0a' --splashBackgroundColorDark '#0a0a0a'",
+    "sync": "cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.2",
+    "@capacitor/app": "8.1.1",
+    "@capacitor/core": "8.5.2",
+    "@capacitor/device": "8.0.3",
+    "@capacitor/push-notifications": "8.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "3.0.5",
+    "@capacitor/cli": "8.5.2",
+    "typescript": "5.7.2"
+  }
+}
