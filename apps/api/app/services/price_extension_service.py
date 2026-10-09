@@ -10,6 +10,7 @@ bloqueó desde la app, se abre. Aplicación por mes en SAVEPOINT: auditoría loc
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from decimal import Decimal
@@ -27,13 +28,14 @@ from app.domain.price_extension import (
     night_price,
     propose_template,
 )
+from app.models.audit import PriceChangeLog
 from app.models.availability import AvailabilityChangeLog
 from app.models.calendar import CalendarDay, Rate
 from app.models.enums import ChangeOrigin, Relevance, SyncIssueKind
 from app.models.market import Event
 from app.models.property import UnitType
 from app.models.sync import SyncIssue
-from app.services import availability_service, booking_service, pricing_service
+from app.services import availability_service, pricing_service
 
 DEFAULT_MONTHS = 18
 MAX_MONTHS = 24
@@ -280,6 +282,75 @@ def _entries(items: list[ExtensionNight], num_avail: int) -> list[CalendarEntry]
     return [CalendarEntry(a, b, p, num_avail if o else None) for a, b, p, o in groups]
 
 
+async def _write_month_locally(
+    session: AsyncSession, unit: UnitType, items: list[ExtensionNight], target_avail: int
+) -> None:
+    """Precios + auditoría + aperturas del mes en lote (pocas consultas, un solo flush).
+
+    Noche a noche costaba ~0,5 s por noche contra la BD remota; con 15 meses la
+    petición superaba el tiempo del proxy y se cortaba a mitad (2026-10-09).
+    """
+    days = [n.date for n in items]
+    rates = {
+        r.date: r
+        for r in (
+            await session.execute(
+                select(Rate).where(Rate.unit_type_id == unit.id, Rate.date.in_(days))
+            )
+        ).scalars()
+    }
+    open_days = [n.date for n in items if n.open]
+    cds = (
+        {
+            c.date: c
+            for c in (
+                await session.execute(
+                    select(CalendarDay).where(
+                        CalendarDay.unit_type_id == unit.id, CalendarDay.date.in_(open_days)
+                    )
+                )
+            ).scalars()
+        }
+        if open_days
+        else {}
+    )
+    for n in items:
+        rate = rates.get(n.date)
+        old = rate.base_price if rate is not None and rate.base_price > 0 else None
+        if rate is None:
+            session.add(Rate(unit_type_id=unit.id, date=n.date, base_price=n.price))
+        else:
+            rate.base_price = n.price
+        session.add(
+            PriceChangeLog(
+                unit_type_id=unit.id,
+                date=n.date,
+                old_price=old,
+                new_price=n.price,
+                origin=ChangeOrigin.extension,
+            )
+        )
+        if n.open:
+            cd = cds.get(n.date)
+            if cd is None:
+                cd = CalendarDay(unit_type_id=unit.id, date=n.date, units_available=0)
+                session.add(cd)
+            session.add(
+                AvailabilityChangeLog(
+                    unit_type_id=unit.id,
+                    date=n.date,
+                    old_units_available=cd.units_available,
+                    new_units_available=target_avail,
+                    was_blocked=bool(cd.is_blocked),
+                    is_blocked=False,
+                    origin=ChangeOrigin.extension,
+                )
+            )
+            cd.units_available = target_avail
+            cd.is_blocked = False
+    await session.flush()
+
+
 async def apply(
     session: AsyncSession,
     channel: ChannelManager,
@@ -287,7 +358,10 @@ async def apply(
     fingerprint: str,
     *,
     today: date,
+    on_month_done: Callable[[], Awaitable[None]] | None = None,
 ) -> ExtensionResult:
+    """Aplica mes a mes. `on_month_done` (la ruta pasa `session.commit`) persiste cada
+    mes apenas el CM lo confirma: un corte posterior no deshace lo ya publicado."""
     prev = await preview(session, channel, params, today=today)
     if prev.fingerprint != fingerprint:
         return ExtensionResult(stale=True)
@@ -300,39 +374,16 @@ async def apply(
             result.months.append(MonthResult(m.month, "skipped", m.nights, 0))
             continue
         failure: str | None = None
+        warning: str | None = None
         try:
             async with session.begin_nested():
-                for n in m.items:
-                    await pricing_service.set_base_price(
-                        session,
-                        unit_type_id=unit.id,
-                        day=n.date,
-                        new_price=n.price,
-                        origin=ChangeOrigin.extension,
-                        property_id=unit.property_id,
-                        validate_rule=False,
-                    )
-                    if n.open:
-                        cd = await booking_service.ensure_calendar_day(session, unit, n.date)
-                        session.add(
-                            AvailabilityChangeLog(
-                                unit_type_id=unit.id,
-                                date=n.date,
-                                old_units_available=cd.units_available,
-                                new_units_available=target_avail,
-                                was_blocked=cd.is_blocked,
-                                is_blocked=False,
-                                origin=ChangeOrigin.extension,
-                            )
-                        )
-                        cd.units_available = target_avail
-                        cd.is_blocked = False
-                await session.flush()
+                await _write_month_locally(session, unit, m.items, target_avail)
                 res = await channel.set_calendar_entries(
                     unit.external_ref, _entries(m.items, target_avail)
                 )
                 if not (res.ok and res.verified):
                     raise _MonthNotPublished(res.detail or "escritura no verificada")
+                warning = res.detail  # precio confirmado; aviso p. ej. disponibilidad
         except _MonthNotPublished as exc:
             failure = str(exc)
         except ChannelError as exc:
@@ -348,11 +399,22 @@ async def apply(
             await session.flush()
             result.failed_months += 1
             result.months.append(MonthResult(m.month, "failed", len(m.items), 0, failure))
-            continue
-        opened = sum(1 for n in m.items if n.open)
-        result.applied_nights += len(m.items)
-        result.opened_nights += opened
-        result.months.append(MonthResult(m.month, "applied", len(m.items), opened))
+        else:
+            if warning:
+                session.add(
+                    SyncIssue(
+                        kind=SyncIssueKind.write_unverified,
+                        entity_ref=f"price-extension:{m.month}",
+                        detail=warning,
+                    )
+                )
+                await session.flush()
+            opened = sum(1 for n in m.items if n.open)
+            result.applied_nights += len(m.items)
+            result.opened_nights += opened
+            result.months.append(MonthResult(m.month, "applied", len(m.items), opened, warning))
+        if on_month_done is not None:
+            await on_month_done()
     return result
 
 

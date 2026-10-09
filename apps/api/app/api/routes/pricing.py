@@ -627,7 +627,12 @@ async def extension_apply(req: ExtensionApplyRequest, session: AsyncSession = De
     adapter = get_adapter()
     try:
         result = await price_extension_service.apply(
-            session, adapter, req.to_params(), req.fingerprint, today=date.today()
+            session,
+            adapter,
+            req.to_params(),
+            req.fingerprint,
+            today=date.today(),
+            on_month_done=session.commit,  # cada mes publicado queda guardado
         )
         if result.stale:
             raise HTTPException(

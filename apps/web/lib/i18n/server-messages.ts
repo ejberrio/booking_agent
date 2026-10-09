@@ -252,6 +252,16 @@ const PATTERNS: Pattern[] = [
   },
   // --- extender precios (feature 023) ---
   {
+    re: /^precio confirmado; la apertura no se confirmó en (\d+) noche\(s\)$/,
+    en: (m) => `price confirmed; opening not confirmed on ${m[1]} night(s)`,
+    pt: (m) => `preço confirmado; a abertura não foi confirmada em ${m[1]} noite(s)`,
+  },
+  {
+    re: /^el calendario no se confirmó al releer \(respuesta: (.*)\)$/s,
+    en: (m) => `the calendar couldn't be confirmed on re-read (response: ${m[1]})`,
+    pt: (m) => `o calendário não foi confirmado ao reler (resposta: ${m[1]})`,
+  },
+  {
     re: /^el precio de (\d{4}-\d{2}) debe ser mayor que 0$/,
     en: (m) => `the price for ${m[1]} must be greater than 0`,
     pt: (m) => `o preço de ${m[1]} deve ser maior que 0`,

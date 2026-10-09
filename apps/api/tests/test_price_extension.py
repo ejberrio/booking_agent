@@ -48,7 +48,8 @@ def day(n: int) -> date:
 class FakeCM:
     """CM falso: calendario remoto en memoria (precio, disponibilidad)."""
 
-    def __init__(self, *, priced_days=PRICED, horizon=800, fail_months=()):
+    def __init__(self, *, priced_days=PRICED, horizon=800, fail_months=(), ignore_avail=False):
+        self.ignore_avail = ignore_avail
         self.cal: dict[date, tuple[Decimal, int]] = {}
         for i in range(horizon):
             self.cal[day(i)] = (D("300000"), 1) if i < priced_days else (D("0"), 0)
@@ -71,8 +72,12 @@ class FakeCM:
             d = e.date_from
             while d <= e.date_to:
                 _, a = self.cal.get(d, (D("0"), 0))
-                self.cal[d] = (e.price, e.num_avail if e.num_avail is not None else a)
+                keep = self.ignore_avail or e.num_avail is None
+                self.cal[d] = (e.price, a if keep else e.num_avail)
                 d += timedelta(days=1)
+        if self.ignore_avail and any(e.num_avail is not None for e in entries):
+            # como Beds24 en producción: guarda el precio, no la apertura
+            return WriteResult(ok=True, verified=True, detail="precio confirmado; la apertura no se confirmó")
         return WriteResult(ok=True, verified=True)
 
     async def aclose(self):
@@ -202,6 +207,26 @@ async def test_fallo_de_un_mes_se_deshace_y_los_demas_siguen(session):
     assert [i.entity_ref for i in issues] == ["price-extension:2036-12"]
 
 
+async def test_apertura_no_confirmada_es_aviso_y_cada_mes_se_guarda(session):
+    prop, unit = await _seed(session)
+    cm = FakeCM(ignore_avail=True)
+    params = ExtensionParams(unit_type_id=unit.id, until=day(90))
+    p = await ext.preview(session, cm, params, today=TODAY)
+    commits: list[int] = []
+
+    async def done():
+        commits.append(await _count(session, PriceChangeLog))
+
+    r = await ext.apply(session, cm, params, p.fingerprint, today=TODAY, on_month_done=done)
+    assert [m.status for m in r.months] == ["applied"] * 3 and r.failed_months == 0
+    assert all(m.detail and "apertura" in m.detail for m in r.months)
+    # el callback corre tras CADA mes, con lo de ese mes ya escrito
+    assert len(commits) == 3 and commits[0] < commits[1] < commits[2]
+    issues = (await session.execute(select(SyncIssue))).scalars().all()
+    assert len(issues) == 3 and all(i.kind.value == "write_unverified" for i in issues)
+    assert await pricing_service.get_price(session, unit.id, day(40)) == D("300000")
+
+
 async def test_tramos_agrupados_por_precio_y_apertura(session):
     prop, unit = await _seed(session)
     cm = FakeCM()
@@ -310,6 +335,11 @@ async def test_adaptador_v2_un_post_y_una_relectura(monkeypatch):
     body = calls[0][2][0]["calendar"]
     assert body[0] == {"from": "2037-03-01", "to": "2037-03-05", "price1": 300000.0, "numAvail": 1}
     assert "numAvail" not in body[1]
+    # disponibilidad distinta pero precio OK → verificado con aviso
+    entries[0] = CalendarEntry(date(2037, 3, 1), date(2037, 3, 5), D("300000"), 0)
+    res = await a.set_calendar_entries("697411", entries)
+    assert res.verified and "apertura" in (res.detail or "")
+    entries[0] = CalendarEntry(date(2037, 3, 1), date(2037, 3, 5), D("300000"), 1)
     # si la relectura no coincide → no verificado
     entries[1] = CalendarEntry(date(2037, 3, 6), date(2037, 3, 6), D("340000"), None)
     assert (await a.set_calendar_entries("697411", entries)).verified is False
