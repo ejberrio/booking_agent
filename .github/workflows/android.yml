@@ -76,6 +76,9 @@ jobs:
           java-version: 21
 
       - uses: android-actions/setup-android@v3
+        with:
+          # El paquete por defecto "tools" ya no existe en el sdkmanager actual.
+          packages: platform-tools
 
       - run: npm ci
       # cap sync lee google-services.json para marcar " push" en el User-Agent.

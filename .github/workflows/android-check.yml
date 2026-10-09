@@ -25,6 +25,9 @@ jobs:
           distribution: temurin
           java-version: 21
       - uses: android-actions/setup-android@v3
+        with:
+          # El paquete por defecto "tools" ya no existe en el sdkmanager actual.
+          packages: platform-tools
       - run: npm ci
       - run: npx cap sync android
       - name: Compilar APK debug
