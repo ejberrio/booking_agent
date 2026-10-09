@@ -1,12 +1,14 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import { CalendarPlus, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PriceCalendar } from "@/components/calendar/price-calendar";
 import { RangeEditor } from "@/components/calendar/range-editor";
 import { DayInfoPanel } from "@/components/calendar/day-info-panel";
+import { ExtendPricesDialog } from "@/components/calendar/extend-prices-dialog";
+import { HorizonBanner } from "@/components/calendar/horizon-banner";
 import { OffersPanel } from "@/components/calendar/offers-panel";
 import { SuggestionPanel } from "@/components/calendar/suggestion-panel";
 import { Button } from "@/components/ui/button";
@@ -64,6 +66,16 @@ export default function CalendarPage() {
     queryKey: ["calendar-notes", unitTypeId],
     queryFn: () => api.listCalendarNotes(unitTypeId),
   });
+  // Horizonte de precios + diálogo "Extender precios" (feature 023). `?extend=1` lo abre.
+  const horizon = useQuery({
+    queryKey: ["horizon-status", unitTypeId],
+    queryFn: () => api.getHorizonStatus(unitTypeId),
+    staleTime: 5 * 60_000,
+  });
+  const [extendOpen, setExtendOpen] = useState(false);
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("extend") === "1") setExtendOpen(true);
+  }, []);
 
   // Sugerencias vigentes (proposed y con al menos un día no pasado) por fecha.
   const today = ymd(new Date());
@@ -160,9 +172,17 @@ export default function CalendarPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-semibold">{m.calendar.title}</h1>
         <div className="flex items-center gap-2">
+          <Button
+            className="bg-muted text-foreground"
+            onClick={() => setExtendOpen(true)}
+            title={m.extension.title}
+          >
+            <CalendarPlus size={16} />
+            <span className="ml-1 hidden lg:inline">{m.extension.extendCta}</span>
+          </Button>
           <Button
             className="bg-muted text-foreground"
             onClick={() => syncNow.mutate()}
@@ -183,6 +203,17 @@ export default function CalendarPage() {
           </Button>
         </div>
       </div>
+
+      <HorizonBanner status={horizon.data} onExtend={() => setExtendOpen(true)} />
+      {extendOpen && horizon.data && (
+        <ExtendPricesDialog
+          open
+          unitTypeId={unitTypeId}
+          defaultUntil={horizon.data.default_until}
+          maxUntil={horizon.data.max_until}
+          onClose={() => setExtendOpen(false)}
+        />
+      )}
 
       {isError ? (
         <Card>

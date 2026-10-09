@@ -102,11 +102,13 @@ async def _example_base(session: AsyncSession, today: date) -> Decimal:
     """Precio base de ejemplo: primera fecha >= hoy con precio; fallback fijo."""
     rate = (
         await session.execute(
-            select(Rate).where(Rate.date >= today).order_by(Rate.date).limit(1)
+            select(Rate).where(Rate.date >= today, Rate.base_price > 0).order_by(Rate.date).limit(1)
         )
     ).scalars().first()
     if rate is None:
-        rate = (await session.execute(select(Rate).order_by(Rate.date).limit(1))).scalars().first()
+        rate = (
+            await session.execute(select(Rate).where(Rate.base_price > 0).order_by(Rate.date).limit(1))
+        ).scalars().first()
     return Decimal(rate.base_price) if rate is not None else _EXAMPLE_FALLBACK
 
 

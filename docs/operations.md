@@ -436,3 +436,25 @@ La app refleja la realidad multi-canal del Channel Manager (Booking.com + Airbnb
   noches libres muestran un aviso para retirarlas. Al retirar una, la sugerencia queda "aplicada" y la
   retirada consta en el historial de la promoción.
 - El endpoint antiguo `POST /suggestions/{id}/apply` rechaza bajadas (deben pasar por la vista previa).
+
+## Extender precios (Feature 023)
+
+**Hallazgo (2026-10-08)**: en Beds24 había precio solo hasta el 12-feb-2027; desde el 13-feb las noches
+estaban sin precio y cerradas (`numAvail 0`), así que no se podían reservar. El aviso de Beds24
+("No price after 3 May 2027") no lo reflejaba.
+
+- **Dónde**: Calendario → "Extender precios" (o el aviso del panel/calendario cuando quedan < 12 meses con precio).
+- **Vista previa**: lee el calendario REAL de Beds24 desde hoy hasta la fecha final (por defecto hoy + 18 meses,
+  máximo 24). Noches con precio → no se tocan; reservadas → se omiten; sin precio → reciben el precio de la
+  plantilla; si además están cerradas se abren (1 disponible), salvo las que el host bloqueó desde la app.
+- **Plantilla**: un precio por año-mes, propuesto con la mediana del mismo mes conocido sin noches de evento
+  (si no hay, la mediana global), redondeada a miles. El host edita, excluye meses y puede sumar un % a viernes
+  y sábado. Todo precio queda dentro de [mínimo, máximo] de la regla (hoy mínimo 230.000).
+- **Confirmación**: huella de la vista previa (409 si algo cambió en Beds24) + casilla "Entiendo que se publicarán N noches".
+- **Aplicación por mes**: auditoría local (`origin=extension` en precios y disponibilidad) + UNA escritura de
+  calendario (`POST inventory/rooms/calendar` con varios tramos) + una relectura de verificación. Si un mes
+  falla se deshace en la app, queda `SyncIssue price-extension:YYYY-MM` y los demás meses siguen; volver a
+  extender lo reintenta (la vista previa vuelve a leer Beds24).
+- **Costo en Beds24**: ≈ 1 lectura + 2 llamadas por mes (~31 para 18 meses). Sin costo adicional.
+- **Precio 0**: la sincronización ya no guarda 0 para noches sin precio y la app muestra "—"; la migración
+  `d7e8f9a0b1c2` borró las filas basura.

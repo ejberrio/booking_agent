@@ -27,8 +27,9 @@ async def _get_rate(session: AsyncSession, unit_type_id: int, day: date) -> Rate
 
 
 async def get_price(session: AsyncSession, unit_type_id: int, day: date) -> Decimal | None:
+    """Precio base de la noche; None = sin precio (un valor ≤ 0 no es un precio, feature 023)."""
     rate = await _get_rate(session, unit_type_id, day)
-    return rate.base_price if rate else None
+    return rate.base_price if rate and rate.base_price > 0 else None
 
 
 async def _active_rule(session: AsyncSession, property_id: int) -> PricingRule | None:

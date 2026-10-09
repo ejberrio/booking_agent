@@ -3,6 +3,7 @@ import chat from "@/lib/i18n/catalog/chat";
 import common from "@/lib/i18n/catalog/common";
 import connection from "@/lib/i18n/catalog/connection";
 import dashboard from "@/lib/i18n/catalog/dashboard";
+import extension from "@/lib/i18n/catalog/extension";
 import offers from "@/lib/i18n/catalog/offers";
 import rationale from "@/lib/i18n/catalog/rationale";
 import settings from "@/lib/i18n/catalog/settings";
@@ -16,6 +17,7 @@ const AREAS = {
   shell,
   dashboard,
   calendar,
+  extension,
   chat,
   suggestions,
   rationale,

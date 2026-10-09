@@ -355,3 +355,62 @@ export interface WebhookStatus {
   endpoint_url: string;
   header_name: string;
 }
+
+// --- Extender precios (feature 023) ---
+export interface HorizonStatus {
+  first_unpriced_night: string | null;
+  months_covered: number;
+  needs_extension: boolean;
+  default_until: string;
+  max_until: string;
+}
+
+export interface ExtensionMonthInput {
+  month: string; // "YYYY-MM"
+  price?: number | null;
+  included?: boolean;
+}
+
+export interface ExtensionParams {
+  unit_type_id: number;
+  until?: string;
+  weekend_pct?: number;
+  open_closed?: boolean;
+  months?: ExtensionMonthInput[];
+}
+
+export interface ExtensionMonth {
+  month: string;
+  proposed_price: string | number | null;
+  price: string | number | null;
+  included: boolean;
+  nights: number;
+  weekend_nights: number;
+  weekday_price: string | number | null;
+  weekend_price: string | number | null;
+  to_open: number;
+  kept_closed: number;
+  clipped_min: number;
+  clipped_max: number;
+}
+
+export interface ExtensionPreview {
+  until: string;
+  first_target: string | null;
+  min_price: string | number | null;
+  max_price: string | number | null;
+  weekend_pct: string | number;
+  open_closed: boolean;
+  months: ExtensionMonth[];
+  total_nights: number;
+  total_to_open: number;
+  fingerprint: string;
+}
+
+export interface ExtensionResult {
+  stale: boolean;
+  months: { month: string; status: "applied" | "failed" | "skipped"; nights: number; opened: number; detail: string | null }[];
+  applied_nights: number;
+  opened_nights: number;
+  failed_months: number;
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { HorizonBanner } from "@/components/calendar/horizon-banner";
 import { PriceCalendar } from "@/components/calendar/price-calendar";
 import { Kpi } from "@/components/dashboard/kpi";
 import { Card } from "@/components/ui/card";
@@ -33,6 +34,11 @@ export default function DashboardPage() {
     queryKey: ["month-kpis", unitTypeId, from, to],
     queryFn: () => api.getKpis(unitTypeId, from, to),
     staleTime: 60_000,
+  });
+  const horizon = useQuery({
+    queryKey: ["horizon-status", unitTypeId],
+    queryFn: () => api.getHorizonStatus(unitTypeId),
+    staleTime: 5 * 60_000,
   });
   const deals = useQuery({
     queryKey: ["native-deals"],
@@ -81,6 +87,7 @@ export default function DashboardPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-5">
       <h1 className="text-xl font-semibold">{m.dashboard.title}</h1>
+      <HorizonBanner status={horizon.data} />
 
       {calendar.isLoading ? (
         <Skeleton className="h-24 w-full" />
