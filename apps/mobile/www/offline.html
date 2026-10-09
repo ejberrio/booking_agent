@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>StayLever</title>
+    <style>
+      :root { color-scheme: light dark; --bg: #ffffff; --fg: #0a0a0a; --muted: #71717a; --primary: #2563eb; }
+      @media (prefers-color-scheme: dark) { :root { --bg: #0a0a0a; --fg: #fafafa; --muted: #a1a1aa; --primary: #3b82f6; } }
+      html, body { height: 100%; margin: 0; }
+      body { background: var(--bg); color: var(--fg); font-family: ui-sans-serif, system-ui, -apple-system, Roboto, sans-serif;
+             display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box; text-align: center; }
+      .box { max-width: 320px; }
+      h1 { font-size: 20px; margin: 16px 0 8px; }
+      p { color: var(--muted); font-size: 15px; line-height: 1.4; margin: 0 0 24px; }
+      button { background: var(--primary); color: #fff; border: 0; border-radius: 10px; padding: 12px 24px; font-size: 16px; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <svg width="56" height="56" viewBox="0 0 64 64" aria-hidden="true">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#06b6d4"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#g)"/>
+  <path d="M13 31 32 15l19 16" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M19 28v16h26V28" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M32 29.5l1.7 4.8 4.8 1.7-4.8 1.7-1.7 4.8-1.7-4.8-4.8-1.7 4.8-1.7z" fill="#fde68a"/>
+  <path d="M12 52q5-4 10 0t10 0 10 0 10 0" fill="none" stroke="#a5f3fc" stroke-width="3.5" stroke-linecap="round"/>
+</svg>
+      <h1 id="t">Sin conexión</h1>
+      <p id="d">No pudimos abrir StayLever. Revisa tu conexión a internet e inténtalo de nuevo.</p>
+      <button id="b" type="button">Reintentar</button>
+    </div>
+    <script>
+      var T = {
+        es: ["Sin conexión", "No pudimos abrir StayLever. Revisa tu conexión a internet e inténtalo de nuevo.", "Reintentar"],
+        en: ["You're offline", "We couldn't open StayLever. Check your internet connection and try again.", "Try again"],
+        pt: ["Sem conexão", "Não conseguimos abrir o StayLever. Verifique sua conexão com a internet e tente de novo.", "Tentar de novo"]
+      };
+      var l = (navigator.language || "es").slice(0, 2);
+      var x = T[l] || T.es;
+      document.getElementById("t").textContent = x[0];
+      document.getElementById("d").textContent = x[1];
+      document.getElementById("b").textContent = x[2];
+      document.getElementById("b").onclick = function () { location.href = "https://staylever.com"; };
+    </script>
+  </body>
+</html>

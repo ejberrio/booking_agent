@@ -149,6 +149,19 @@ const EXACT: Record<string, Tr> = {
   "API no disponible": { en: "API unavailable", pt: "API indisponível" },
   "Idioma no soportado": { en: "Unsupported language", pt: "Idioma não suportado" },
   "Aviso demasiado grande": { en: "Notification too large", pt: "Aviso grande demais" },
+  // --- avisos al celular (feature 025) ---
+  "el teléfono ya no está registrado": {
+    en: "the phone is no longer registered",
+    pt: "o telefone não está mais registrado",
+  },
+  "credencial de avisos sin configurar": {
+    en: "notification credential not configured",
+    pt: "credencial de avisos não configurada",
+  },
+  "la credencial de avisos no es un JSON válido": {
+    en: "the notification credential is not valid JSON",
+    pt: "a credencial de avisos não é um JSON válido",
+  },
   // --- extender precios (feature 023) ---
   "la fecha final no puede ser anterior a hoy": {
     en: "the end date can't be before today",
@@ -249,6 +262,37 @@ const PATTERNS: Pattern[] = [
     re: /^el canal (\S+) está inactivo: el ajuste no tendrá efecto hasta reactivarlo$/,
     en: (m) => `the ${m[1]} channel is inactive: the adjustment won't take effect until it's reactivated`,
     pt: (m) => `o canal ${m[1]} está inativo: o ajuste só terá efeito quando for reativado`,
+  },
+  // --- avisos al celular (feature 025) ---
+  {
+    re: /^Firebase OK \(proyecto (.+)\)$/,
+    en: (m) => `Firebase OK (project ${m[1]})`,
+    pt: (m) => `Firebase OK (projeto ${m[1]})`,
+  },
+  {
+    re: /^Firebase respondió (\d+)$/,
+    en: (m) => `Firebase responded ${m[1]}`,
+    pt: (m) => `O Firebase respondeu ${m[1]}`,
+  },
+  {
+    re: /^Firebase rechazó la credencial de avisos \((\d+)\)$/,
+    en: (m) => `Firebase rejected the notification credential (${m[1]})`,
+    pt: (m) => `O Firebase rejeitou a credencial de avisos (${m[1]})`,
+  },
+  {
+    re: /^(?:Firebase no respondió|sin respuesta de Firebase) \((\w+)\)$/,
+    en: (m) => `Firebase didn't respond (${m[1]})`,
+    pt: (m) => `O Firebase não respondeu (${m[1]})`,
+  },
+  {
+    re: /^a la credencial de avisos le falta (\w+)$/,
+    en: (m) => `the notification credential is missing ${m[1]}`,
+    pt: (m) => `falta ${m[1]} na credencial de avisos`,
+  },
+  {
+    re: /^No existe el teléfono (\d+)$/,
+    en: (m) => `Phone ${m[1]} doesn't exist`,
+    pt: (m) => `O telefone ${m[1]} não existe`,
   },
   // --- extender precios (feature 023) ---
   {

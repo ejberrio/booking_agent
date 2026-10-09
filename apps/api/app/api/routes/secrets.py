@@ -166,6 +166,26 @@ async def _test_beds24() -> dict:
         await adapter.aclose()
 
 
+async def _test_push() -> dict:
+    """Credencial de Firebase: se prueba obteniendo un token de acceso (no envía avisos)."""
+    from app.push.fcm import FcmConfigError, FcmSender
+    from app.services.push_service import SECRET
+
+    try:
+        sender = FcmSender(get_secret(SECRET))
+    except FcmConfigError as exc:
+        return {"ok": False, "detail": str(exc)}
+    try:
+        await sender.check()
+        return {"ok": True, "detail": f"Firebase OK (proyecto {sender.info['project_id']})"}
+    except FcmConfigError as exc:
+        return {"ok": False, "detail": str(exc)}
+    except Exception as exc:  # noqa: BLE001 — solo el tipo, nunca el mensaje
+        return {"ok": False, "detail": f"Firebase no respondió ({type(exc).__name__})"}
+    finally:
+        await sender.aclose()
+
+
 async def _test_webhook(session: AsyncSession) -> dict:
     """La clave de avisos no se "prueba" contra un proveedor: se informa su actividad."""
     from app.services import webhook_service
@@ -190,4 +210,6 @@ async def test_secret(name: str, session: AsyncSession = Depends(get_session)):
         return await _test_search()
     if kind == "webhook":
         return await _test_webhook(session)
+    if kind == "push":
+        return await _test_push()
     return await _test_beds24()

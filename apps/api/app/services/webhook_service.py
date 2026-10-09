@@ -24,7 +24,7 @@ from app.core.config import settings
 from app.models.booking import Booking
 from app.models.enums import WebhookResult
 from app.models.webhook import WebhookEvent
-from app.services import secret_service, sync_service
+from app.services import push_service, secret_service, sync_service
 
 KEY_SECRET = "beds24_webhook_key"
 HEADER_NAME = "X-StayLever-Key"
@@ -138,9 +138,14 @@ async def handle(
 
     date_from, date_to = await _sync_range(session, hint, today)
     for attempt in range(2):
+        events: list = []
         try:
             async with session.begin_nested():
-                run = await sync_service.import_remote(session, adapter, date_from, date_to)
+                run = await sync_service.import_remote(
+                    session, adapter, date_from, date_to, events=events
+                )
+            # Avisos al celular (feature 025): tolerante a fallos, nunca rompe el webhook.
+            await push_service.notify_booking_events(session, events)
             return await _record(
                 session, WebhookResult.accepted, booking_ref=hint.booking_id, sync_run_id=run.id
             )

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { SESSION_COOKIE, SESSION_MAX_AGE, createSessionToken } from "@/lib/session";
+import { SESSION_COOKIE, createSessionToken, sessionMaxAgeFor } from "@/lib/session";
 
 export async function POST(request: Request) {
   const { password } = (await request.json()) as { password?: string };
@@ -15,12 +15,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Contraseña incorrecta" }, { status: 401 });
   }
 
+  // En la app móvil la sesión dura 90 días; en el navegador, 7 (feature 025).
+  const maxAge = sessionMaxAgeFor(request.headers.get("user-agent"));
   const res = NextResponse.json({ ok: true });
-  res.cookies.set(SESSION_COOKIE, await createSessionToken(expected), {
+  res.cookies.set(SESSION_COOKIE, await createSessionToken(expected, Date.now(), maxAge), {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
-    maxAge: SESSION_MAX_AGE,
+    maxAge,
     secure: process.env.NODE_ENV === "production",
   });
   return res;

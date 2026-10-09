@@ -4,6 +4,14 @@
 
 export const SESSION_COOKIE = "session";
 export const SESSION_MAX_AGE = 60 * 60 * 24 * 7; // 7 días
+/** Sesión iniciada desde la app móvil (feature 025): 90 días. */
+export const APP_SESSION_MAX_AGE = 60 * 60 * 24 * 90;
+/** Marca que la app de Capacitor añade al User-Agent (capacitor.config: appendUserAgent). */
+export const APP_USER_AGENT_MARK = "StayLeverApp/";
+
+export function sessionMaxAgeFor(userAgent: string | null | undefined): number {
+  return userAgent?.includes(APP_USER_AGENT_MARK) ? APP_SESSION_MAX_AGE : SESSION_MAX_AGE;
+}
 
 const enc = new TextEncoder();
 
@@ -24,8 +32,12 @@ async function sign(secret: string, payload: string): Promise<string> {
   return b64url(await crypto.subtle.sign("HMAC", key, enc.encode(payload)));
 }
 
-export async function createSessionToken(secret: string, now = Date.now()): Promise<string> {
-  const exp = String(Math.floor(now / 1000) + SESSION_MAX_AGE);
+export async function createSessionToken(
+  secret: string,
+  now = Date.now(),
+  maxAge = SESSION_MAX_AGE,
+): Promise<string> {
+  const exp = String(Math.floor(now / 1000) + maxAge);
   return `${exp}.${await sign(secret, exp)}`;
 }
 

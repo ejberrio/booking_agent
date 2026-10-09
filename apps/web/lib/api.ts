@@ -38,6 +38,7 @@ import type {
   ExtensionResult,
   ConversationSummary,
   ConversationDetail,
+  PushDevice,
 } from "@/lib/types";
 
 export interface PromotionInput {
@@ -237,6 +238,16 @@ export const api = {
     }),
 
   // Chat (no streaming)
+  // Avisos al celular (feature 025)
+  registerPushDevice: (body: { token: string; platform: "android" | "ios"; model?: string; app_version?: string }) =>
+    req<PushDevice>(`/push/devices`, { method: "POST", body: JSON.stringify(body) }),
+  listPushDevices: () => req<PushDevice[]>(`/push/devices`),
+  updatePushDevice: (id: number, body: { notify_bookings?: boolean; notify_suggestions?: boolean }) =>
+    req<PushDevice>(`/push/devices/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deletePushDevice: (id: number) => req<{ deleted: boolean }>(`/push/devices/${id}`, { method: "DELETE" }),
+  pushStatus: () => req<{ configured: boolean; devices: number }>(`/push/status`),
+  testPush: () => req<{ sent: number; failed: number; configured: boolean }>(`/push/test`, { method: "POST" }),
+
   // Historial de chat (feature 024)
   listConversations: (limit = 20) => req<ConversationSummary[]>(`/chat/conversations?limit=${limit}`),
   getConversation: (id: number) => req<ConversationDetail>(`/chat/conversations/${id}`),

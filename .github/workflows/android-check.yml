@@ -1,0 +1,32 @@
+name: Android check
+
+# Verifica que la app móvil compile (APK debug, sin firma ni secretos) en PRs que la tocan.
+on:
+  pull_request:
+    paths:
+      - "apps/mobile/**"
+      - ".github/workflows/android*.yml"
+
+jobs:
+  build-debug:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v3
+      - run: npm ci
+      - run: npx cap sync android
+      - name: Compilar APK debug
+        working-directory: apps/mobile/android
+        run: ./gradlew assembleDebug --no-daemon

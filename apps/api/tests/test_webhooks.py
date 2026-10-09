@@ -317,11 +317,11 @@ async def test_choque_por_alta_simultanea_reintenta_una_vez(session, monkeypatch
     real = sync_service.import_remote
     calls = {"n": 0}
 
-    async def flaky(s, adapter, df, dt):
+    async def flaky(s, adapter, df, dt, **kw):
         calls["n"] += 1
         if calls["n"] == 1:
             raise IntegrityError("insert booking", {}, Exception("uq_booking_external_ref"))
-        return await real(s, adapter, df, dt)
+        return await real(s, adapter, df, dt, **kw)
 
     monkeypatch.setattr(sync_service, "import_remote", flaky)
     hint = webhook_service.parse_hint(_body())

@@ -9,7 +9,7 @@ from app.channels.beds24 import Beds24Adapter
 from app.channels.beds24_v2 import Beds24V2Adapter
 from app.core.config import settings
 from app.db.session import get_session
-from app.services import sync_service
+from app.services import push_service, sync_service
 
 router = APIRouter()
 
@@ -63,7 +63,11 @@ async def import_remote(req: ImportRequest, session: AsyncSession = Depends(get_
     adapter = get_adapter()
     try:
         today = date.today()
-        run = await sync_service.import_remote(session, adapter, today, today + timedelta(days=req.days))
+        events: list = []
+        run = await sync_service.import_remote(
+            session, adapter, today, today + timedelta(days=req.days), events=events
+        )
+        await push_service.notify_booking_events(session, events)  # feature 025
         await session.commit()
         return {
             "run_id": run.id,

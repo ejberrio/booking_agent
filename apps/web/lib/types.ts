@@ -441,3 +441,16 @@ export interface ConversationDetail {
   messages: { role: "user" | "agent"; text: string; created_at: string }[];
   pending_action_id: number | null;
 }
+
+// --- Avisos al celular (feature 025) ---
+export interface PushDevice {
+  id: number;
+  platform: "android" | "ios";
+  model: string | null;
+  app_version: string | null;
+  notify_bookings: boolean;
+  notify_suggestions: boolean;
+  enabled: boolean;
+  last_seen_at: string;
+  last_error: string | null;
+}

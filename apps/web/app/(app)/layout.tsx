@@ -1,5 +1,6 @@
 import { FloatingChat } from "@/components/chat/floating-chat";
 import { Sidebar } from "@/components/layout/sidebar";
+import { NativeBridge } from "@/components/native/native-bridge";
 import { ChatProvider } from "@/lib/chat-store";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -11,6 +12,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
       {/* Asistente desde cualquier pantalla, con la misma conversación que la sección Chat (feature 024). */}
       <FloatingChat />
+      {/* Solo dentro de la app móvil: botón atrás y avisos (feature 025). */}
+      <NativeBridge />
     </ChatProvider>
   );
 }

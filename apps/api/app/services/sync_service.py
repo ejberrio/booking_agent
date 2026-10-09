@@ -10,6 +10,8 @@ Reutiliza los modelos de la feature 001. Reglas:
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from datetime import date
 
 from sqlalchemy import select
@@ -32,6 +34,19 @@ from app.core.config import settings
 from app.models.mixins import _now
 from app.models.property import Channel, Property, UnitType
 from app.models.sync import ChannelManagerConnection, SyncIssue, SyncRun
+
+
+@dataclass(frozen=True)
+class BookingEvent:
+    """Cambio de reserva detectado por la sync entrante (feature 025: avisos al celular).
+    Sin datos personales: solo tipo, referencia, canal y fechas."""
+
+    kind: str  # new | modified | cancelled
+    ref: str
+    channel: str
+    check_in: date
+    check_out: date
+    status: str
 
 
 def _map_channel(token: str | None) -> ChannelKind:
@@ -145,8 +160,28 @@ async def import_remote(
     adapter: ChannelManager,
     date_from: date,
     date_to: date,
+    events: list[BookingEvent] | None = None,
 ) -> SyncRun:
-    """Sincronización entrante: upsert local, baseline sin auditar, discrepancias → issue."""
+    """Sincronización entrante: upsert local, baseline sin auditar, discrepancias → issue.
+
+    Si se pasa `events`, se añaden los cambios de reservas detectados (nueva,
+    modificada, cancelada) para avisar al celular (feature 025).
+    """
+    today = date.today()
+
+    def _event(kind: str, b) -> None:
+        # Reservas ya terminadas no generan avisos (p. ej. histórico en la primera sync).
+        if events is not None and b.check_out >= today:
+            events.append(
+                BookingEvent(
+                    kind=kind,
+                    ref=str(b.external_ref),
+                    channel=b.channel_kind.value,
+                    check_in=b.check_in,
+                    check_out=b.check_out,
+                    status=b.status.value,
+                )
+            )
     run = SyncRun(direction=SyncDirection.inbound, status=SyncStatus.running)
     session.add(run)
     await session.flush()
@@ -246,20 +281,23 @@ async def import_remote(
             )
             existing_booking = res.scalar_one_or_none()
             if existing_booking is None:
-                session.add(
-                    Booking(
-                        unit_type_id=unit.id,
-                        channel_kind=kind,
-                        check_in=rb.check_in,
-                        check_out=rb.check_out,
-                        status=status,
-                        external_ref=rb.external_id,
-                        guest_name=rb.guest_name,
-                    )
+                new_booking = Booking(
+                    unit_type_id=unit.id,
+                    channel_kind=kind,
+                    check_in=rb.check_in,
+                    check_out=rb.check_out,
+                    status=status,
+                    external_ref=rb.external_id,
+                    guest_name=rb.guest_name,
                 )
+                session.add(new_booking)
                 created += 1
+                if status is BookingStatus.confirmed:
+                    _event("new", new_booking)
             else:
                 changed = False
+                was_status = existing_booking.status
+                was_dates = (existing_booking.check_in, existing_booking.check_out)
                 if existing_booking.channel_kind != kind:
                     existing_booking.channel_kind = kind
                     changed = True
@@ -279,6 +317,13 @@ async def import_remote(
                     changed = True
                 if changed:
                     updated += 1
+                if was_status != status and status is BookingStatus.cancelled:
+                    _event("cancelled", existing_booking)
+                elif status is BookingStatus.confirmed and (
+                    was_status != status
+                    or was_dates != (existing_booking.check_in, existing_booking.check_out)
+                ):
+                    _event("modified", existing_booking)
 
     run.created_count = created
     run.updated_count = updated
