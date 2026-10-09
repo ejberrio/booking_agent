@@ -322,6 +322,28 @@ class Beds24V2Adapter:
         detail = None if verified else "el precio no se confirmó al releer"
         return WriteResult(ok=ok, verified=verified, detail=detail)
 
+    async def _force_open(
+        self, room_external_id: str, ranges: list[tuple[date, date]], num_avail: int
+    ) -> None:
+        """Reapertura forzada 0 → N (2026-10-09). Beds24 ignora `numAvail: N` cuando su
+        calendario YA dice N aunque el inventario que envía a los canales esté en 0
+        (responde success sin "modified"); pasar por 0 obliga a recalcularlo. Solo
+        para ABRIR (N > 0): el paso por 0 deja la noche cerrada un instante, nunca abierta.
+        """
+        if num_avail <= 0 or not ranges:
+            return
+        for value in (0, num_avail):
+            body = [
+                {
+                    "roomId": int(room_external_id),
+                    "calendar": [
+                        {"from": a.isoformat(), "to": b.isoformat(), "numAvail": value}
+                        for a, b in ranges
+                    ],
+                }
+            ]
+            await self._request("POST", "inventory/rooms/calendar", json_body=body)
+
     async def set_availability_range(
         self, room_external_id: str, date_from: date, date_to: date, num_avail: int
     ) -> WriteResult:
@@ -347,8 +369,34 @@ class Beds24V2Adapter:
         rates = await self.get_rates(room_external_id, date_from, date_to)
         days = _days(date_from, date_to)
         verified = ok and len(rates) == len(days) and all(r.available == num_avail for r in rates)
+        if ok and not verified and num_avail > 0:
+            # Apertura ignorada por Beds24 → reintento forzado 0 → N y nueva relectura.
+            await self._force_open(room_external_id, [(date_from, date_to)], num_avail)
+            rates = await self.get_rates(room_external_id, date_from, date_to)
+            verified = len(rates) == len(days) and all(r.available == num_avail for r in rates)
         detail = None if verified else "la disponibilidad no se confirmó al releer"
         return WriteResult(ok=ok, verified=verified, detail=detail)
+
+    @staticmethod
+    def _check_entries(
+        entries: list[CalendarEntry], remote: dict, ok: bool
+    ) -> tuple[bool, int, list[tuple[date, date, int]]]:
+        """(precio verificado, noches con apertura no aplicada, tramos a forzar)."""
+        verified = ok
+        mismatch = 0
+        pending: list[tuple[date, date, int]] = []
+        for e in entries:
+            bad: list[date] = []
+            for day in _days(e.date_from, e.date_to):
+                r = remote.get(day)
+                if r is None or r.price != e.price:
+                    verified = False
+                elif e.num_avail is not None and r.available != e.num_avail:
+                    mismatch += 1
+                    bad.append(day)
+            if bad and e.num_avail and e.num_avail > 0:
+                pending.append((min(bad), max(bad), e.num_avail))
+        return verified, mismatch, pending
 
     async def set_calendar_entries(
         self, room_external_id: str, entries: list[CalendarEntry]
@@ -376,15 +424,15 @@ class Beds24V2Adapter:
         first = min(e.date_from for e in entries)
         last = max(e.date_to for e in entries)
         remote = {r.date: r for r in await self.get_rates(room_external_id, first, last)}
-        verified = ok
-        avail_mismatch = 0
-        for e in entries:
-            for day in _days(e.date_from, e.date_to):
-                r = remote.get(day)
-                if r is None or r.price != e.price:
-                    verified = False
-                elif e.num_avail is not None and r.available != e.num_avail:
-                    avail_mismatch += 1
+        verified, avail_mismatch, pending = self._check_entries(entries, remote, ok)
+        if verified and pending:
+            # Precio OK pero apertura ignorada → reintento forzado 0 → N y nueva relectura.
+            for value in sorted({n for _, _, n in pending}):
+                await self._force_open(
+                    room_external_id, [(a, b) for a, b, n in pending if n == value], value
+                )
+            remote = {r.date: r for r in await self.get_rates(room_external_id, first, last)}
+            verified, avail_mismatch, _ = self._check_entries(entries, remote, ok)
         if not verified:
             detail = f"el calendario no se confirmó al releer (respuesta: {str(result)[:300]})"
         elif avail_mismatch:

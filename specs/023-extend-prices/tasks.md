@@ -48,3 +48,4 @@ T001 → T002, T007. T003 → T007. T004 → T005, T006. T006 → T007 → T008 
 - [X] T016 `WriteResult.unconfirmed` (noches con disponibilidad no confirmada) en `apps/api/app/channels/base.py` y `beds24_v2.py`; `price_extension_service.apply`: relee el mes, corrige `CalendarDay`/`AvailabilityChangeLog` a lo real y devuelve `not_opened` por mes y `not_opened_nights`; tests
 - [X] T017 Preview `closed_priced`/`first_closed_priced` y status `closed_nights`/`first_closed_night`; tests
 - [X] T018 Web: aviso destacado en el resultado, nota en la vista previa, banner de noches cerradas, aviso en Abrir/Bloquear del calendario; textos es/en/pt
+- [X] T019 Adaptador V2: reapertura forzada 0 → N (`_force_open`) cuando la apertura no queda al releer, en `set_calendar_entries` y `set_availability_range` (solo N > 0); test con un Beds24 simulado
