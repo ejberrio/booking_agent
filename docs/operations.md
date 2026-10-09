@@ -462,3 +462,7 @@ estaban sin precio y cerradas (`numAvail 0`), así que no se podían reservar. E
   inventario (Channel Manager → Channel Inventory) siguió en 0; ticket Beds24 #1064511. La app relee tras extender,
   guarda la disponibilidad REAL, avisa cuántas noches quedaron sin abrir y el panel muestra "Noches con precio que no
   se pueden reservar". Las escrituras de Beds24 pueden aplicarse con retraso (el precio de julio-2027 apareció minutos después).
+- **Solución (2026-10-09)**: Beds24 ignora `numAvail: N` si su calendario YA dice N aunque el inventario que envía
+  a los canales esté en 0 (responde `success` sin `"modified"`). Pasar por 0 y luego N lo corrige (probado por el
+  host en el panel y luego por API para 2027-02-14..2028-04-09; Booking.com y Airbnb abrieron). El adaptador V2
+  ahora reintenta solo con 0 → N cuando una APERTURA no queda al releer (nunca al bloquear).

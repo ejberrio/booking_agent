@@ -414,3 +414,55 @@ async def test_rutas(client, session):
                               json={**body, "fingerprint": "nope"})).status_code == 409
     ap = await client.post("/pricing/extension/apply", json={**body, "fingerprint": data["fingerprint"]})
     assert ap.status_code == 200 and ap.json()["applied_nights"] == 31
+
+
+class _Beds24Like:
+    """Imita a Beds24 (2026-10-09): guarda el valor de calendario y, aparte, el inventario
+    efectivo. Un `numAvail` igual al valor de calendario se ignora (sin "modified")."""
+
+    def __init__(self, days, cal_value=1, inventory=0):
+        self.cal = {d: cal_value for d in days}
+        self.inv = {d: inventory for d in days}
+        self.price = {d: 300000.0 for d in days}
+        self.posts: list = []
+
+    async def request(self, method, path, params=None, json_body=None):
+        if method == "POST":
+            self.posts.append(json_body[0]["calendar"])
+            for item in json_body[0]["calendar"]:
+                d, end = date.fromisoformat(item["from"]), date.fromisoformat(item["to"])
+                while d <= end:
+                    if "price1" in item:
+                        self.price[d] = item["price1"]
+                    if "numAvail" in item and item["numAvail"] != self.cal[d]:
+                        self.cal[d] = self.inv[d] = item["numAvail"]
+                    d += timedelta(days=1)
+            return [{"success": True}]
+        start, end = date.fromisoformat(params["startDate"]), date.fromisoformat(params["endDate"])
+        cal, d = [], start
+        while d <= end:
+            cal.append({"from": d.isoformat(), "to": d.isoformat(), "numAvail": self.inv[d], "price1": self.price[d]})
+            d += timedelta(days=1)
+        return {"data": [{"roomId": 697411, "calendar": cal}]}
+
+
+async def test_adaptador_fuerza_apertura_ignorada(monkeypatch):
+    days = [date(2037, 3, 1) + timedelta(days=i) for i in range(10)]
+    fake = _Beds24Like(days)
+    a = Beds24V2Adapter(refresh_token="x", prop_id="337229", room_id="697411", base_url="http://b24")
+    monkeypatch.setattr(a, "_request", fake.request)
+    res = await a.set_calendar_entries(
+        "697411", [CalendarEntry(date(2037, 3, 1), date(2037, 3, 5), D("340000"), 1)]
+    )
+    assert res.verified and res.unconfirmed == 0 and res.detail is None
+    assert [p[0].get("numAvail") for p in fake.posts] == [1, 0, 1]  # escritura, 0, 1
+    assert all(fake.inv[d] == 1 for d in days[:5]) and fake.inv[days[6]] == 0
+
+    # Calendario → Abrir (set_availability_range) también se fuerza
+    r = await a.set_availability_range("697411", days[6], days[7], 1)
+    assert r.verified and fake.inv[days[6]] == 1
+    # Bloquear (0) nunca pasa por "abrir"
+    fake.posts.clear()
+    r = await a.set_availability_range("697411", days[8], days[9], 0)
+    assert r.verified and [p[0]["numAvail"] for p in fake.posts] == [0]
+    await a.aclose()
