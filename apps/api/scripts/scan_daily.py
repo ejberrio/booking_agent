@@ -20,7 +20,7 @@ from app.search.tavily import TavilyProvider
 from app.services import intelligence_service
 
 HORIZON_DAYS = 180
-SYNC_DAYS = 365
+SYNC_DAYS = 730  # 2 años: la app ve todo el horizonte cargado en Beds24 (feature 023)
 
 
 async def _sync_channel() -> None:

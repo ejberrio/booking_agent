@@ -37,7 +37,7 @@ def get_adapter():
 
 
 class ImportRequest(BaseModel):
-    days: int = 365
+    days: int = 730
 
 
 class PublishRequest(BaseModel):
