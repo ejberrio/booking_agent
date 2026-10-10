@@ -43,3 +43,10 @@ postgres-data/
 backups/
 *.dump
 *.tsbuildinfo
+
+# Credenciales (repo PÚBLICO): nunca subir archivos de Firebase / cuentas de servicio
+google-services.json
+*firebase-adminsdk*.json
+*service-account*.json
+*.jks
+*.keystore

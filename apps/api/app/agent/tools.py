@@ -16,8 +16,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.routes.sync import get_adapter
 from app.models.agent import AgentAction
+from app.models.audit import PriceChangeLog
 from app.models.enums import ChangeOrigin, PromotionType
 from app.models.pricing import Promotion
+from app.models.property import UnitType
 from app.schemas.pricing import RangeSelection
 from app.services import (
     availability_service,
@@ -286,7 +288,39 @@ def openai_tools(include_control: bool) -> list[dict]:
 # ---------- ejecución ----------
 
 
+def _int_or_zero(value: Any) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
+
+
+class UnitNotFound(ValueError):
+    """Unidad inexistente o de otra cuenta (feature 026: mismo mensaje en ambos casos)."""
+
+
+async def ensure_unit(session: AsyncSession, unit_type_id: Any) -> UnitType:
+    """La unidad que pide el LLM debe ser de la cuenta de la conversación (principio VI)."""
+    try:
+        uid = int(unit_type_id)
+    except (TypeError, ValueError):
+        raise UnitNotFound("unit_type_id inválido") from None
+    unit = await session.get(UnitType, uid)
+    if unit is None:
+        raise UnitNotFound(f"la unidad {uid} no existe")
+    return unit
+
+
 async def exec_read(session: AsyncSession, name: str, args: dict) -> Any:
+    if "unit_type_id" in args and args["unit_type_id"] is not None:
+        try:
+            await ensure_unit(session, args["unit_type_id"])
+        except UnitNotFound as exc:
+            return {"error": str(exc)}
+    return await _exec_read(session, name, args)
+
+
+async def _exec_read(session: AsyncSession, name: str, args: dict) -> Any:
     if name == "get_offer_promotions":
         promos = await offer_promotion_service.list_promotions(session, int(args["unit_type_id"]))
         return [
@@ -305,7 +339,7 @@ async def exec_read(session: AsyncSession, name: str, args: dict) -> Any:
             for p in promos
         ]
     if name == "get_channel_offsets":
-        adapter = get_adapter()
+        adapter = get_adapter(session)
         try:
             return await channel_pricing_service.get_offsets(session, adapter)
         finally:
@@ -339,7 +373,7 @@ async def exec_read(session: AsyncSession, name: str, args: dict) -> Any:
     if name == "sync_calendar":
         from app.services import sync_service
 
-        adapter = get_adapter()
+        adapter = get_adapter(session)
         try:
             today = date.today()
             run = await sync_service.import_remote(
@@ -426,6 +460,16 @@ def _variation_exceeds(items, new_price: Decimal) -> bool:
 
 
 async def build_proposal(session: AsyncSession, name: str, args: dict) -> Proposal:
+    # Feature 026: todo identificador que elija el LLM debe ser de la cuenta de la
+    # conversación; si no, "no existe" (ValueError → el agente lo explica y no propone).
+    if "unit_type_id" in args and args["unit_type_id"] is not None:
+        await ensure_unit(session, args["unit_type_id"])  # UnitNotFound es ValueError
+    if args.get("promotion_id") is not None:
+        if await session.get(Promotion, _int_or_zero(args["promotion_id"])) is None:
+            raise ValueError(f"la promoción {args['promotion_id']} no existe")
+    if name == "propose_rollback":
+        if await session.get(PriceChangeLog, _int_or_zero(args.get("change_id"))) is None:
+            raise ValueError(f"el cambio {args.get('change_id')} no existe")
     if name in ("propose_set_range", "propose_set_day"):
         uid = int(args["unit_type_id"])
         price = Decimal(str(args["price"]))
@@ -498,7 +542,7 @@ async def build_proposal(session: AsyncSession, name: str, args: dict) -> Propos
         return Proposal(name, args, {"first_night": first.isoformat(), "last_night": last.isoformat()}, None, summary, reinforced)
 
     if name == "propose_channel_offset":
-        adapter = get_adapter()
+        adapter = get_adapter(session)
         try:
             prev = await channel_pricing_service.preview_offset(
                 session, adapter, str(args["channel"]), Decimal(str(args["offset_pct"]))

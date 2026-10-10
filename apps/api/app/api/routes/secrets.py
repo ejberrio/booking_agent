@@ -7,15 +7,23 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.context import RequestContext, require_ctx
 from app.db.session import get_session
 from app.services import secret_service
-from app.services.secret_service import SECRET_NAMES, SecretError, get_secret
+from app.services.secret_service import PLATFORM, SECRET_NAMES, SecretError, get_secret
 
 router = APIRouter()
 
 
 class SecretValueRequest(BaseModel):
     value: str
+
+
+def _allowed(name: str, ctx: RequestContext) -> None:
+    """Secretos de plataforma: solo el administrador de plataforma (feature 026)."""
+    meta = SECRET_NAMES.get(name)
+    if meta is None or (meta["scope"] == PLATFORM and not ctx.is_platform_admin):
+        raise HTTPException(status_code=404, detail="Secreto no gestionable")
 
 
 async def _one_status(session: AsyncSession, name: str) -> dict:
@@ -26,19 +34,33 @@ async def _one_status(session: AsyncSession, name: str) -> dict:
 
 
 @router.get("")
-async def list_secrets(session: AsyncSession = Depends(get_session)):
-    return {"secrets": await secret_service.status(session)}
+async def list_secrets(
+    session: AsyncSession = Depends(get_session), ctx: RequestContext = Depends(require_ctx)
+):
+    return {
+        "secrets": await secret_service.status(session, include_platform=ctx.is_platform_admin)
+    }
 
 
 @router.get("/audit")
-async def audit(session: AsyncSession = Depends(get_session)):
-    return {"entries": await secret_service.list_audit(session)}
+async def audit(
+    session: AsyncSession = Depends(get_session), ctx: RequestContext = Depends(require_ctx)
+):
+    return {
+        "entries": await secret_service.list_audit(
+            session, include_platform=ctx.is_platform_admin
+        )
+    }
 
 
 @router.put("/{name}")
 async def set_secret(
-    name: str, req: SecretValueRequest, session: AsyncSession = Depends(get_session)
+    name: str,
+    req: SecretValueRequest,
+    session: AsyncSession = Depends(get_session),
+    ctx: RequestContext = Depends(require_ctx),
 ):
+    _allowed(name, ctx)
     try:
         await secret_service.set_secret(session, name, req.value)
         await session.commit()
@@ -83,7 +105,12 @@ async def redeem_beds24_invite(
 
 
 @router.delete("/{name}")
-async def delete_secret(name: str, session: AsyncSession = Depends(get_session)):
+async def delete_secret(
+    name: str,
+    session: AsyncSession = Depends(get_session),
+    ctx: RequestContext = Depends(require_ctx),
+):
+    _allowed(name, ctx)
     try:
         await secret_service.delete_secret(session, name)
         await session.commit()
@@ -144,11 +171,11 @@ async def _test_search() -> dict:
         await provider.aclose()
 
 
-async def _test_beds24() -> dict:
+async def _test_beds24(session: AsyncSession) -> dict:
     from app.api.routes.sync import get_adapter
     from app.channels.errors import AuthError
 
-    adapter = get_adapter()
+    adapter = get_adapter(session)
     try:
         info = await adapter.test_connection()
         if info.ok:
@@ -199,11 +226,13 @@ async def _test_webhook(session: AsyncSession) -> dict:
 
 
 @router.post("/{name}/test")
-async def test_secret(name: str, session: AsyncSession = Depends(get_session)):
-    meta = SECRET_NAMES.get(name)
-    if meta is None:
-        raise HTTPException(status_code=404, detail="Secreto no gestionable")
-    kind = meta["test"]
+async def test_secret(
+    name: str,
+    session: AsyncSession = Depends(get_session),
+    ctx: RequestContext = Depends(require_ctx),
+):
+    _allowed(name, ctx)
+    kind = SECRET_NAMES[name]["test"]
     if kind == "llm":
         return await _test_llm(name)
     if kind == "search":
@@ -212,4 +241,6 @@ async def test_secret(name: str, session: AsyncSession = Depends(get_session)):
         return await _test_webhook(session)
     if kind == "push":
         return await _test_push()
-    return await _test_beds24()
+    if kind == "beds24":
+        return await _test_beds24(session)
+    return {"ok": True, "detail": "sin prueba automática"}

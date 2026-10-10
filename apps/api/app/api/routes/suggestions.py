@@ -167,7 +167,7 @@ async def batch_preview(req: BatchRequest, session: AsyncSession = Depends(get_s
 async def batch_apply(req: BatchApplyRequest, session: AsyncSession = Depends(get_session)):
     """Aplica el lote revisado. Huella distinta → 409 sin escribir (Principio III)."""
     _require_ids(req.suggestion_ids)
-    adapter = get_adapter()
+    adapter = get_adapter(session)
     try:
         r = await suggestion_batch.apply_batch(
             session, adapter, req.suggestion_ids, req.fingerprint
@@ -210,7 +210,7 @@ async def reject(suggestion_id: int, session: AsyncSession = Depends(get_session
 @router.post("/{suggestion_id}/apply")
 async def apply(suggestion_id: int, session: AsyncSession = Depends(get_session)):
     """Acción única "Aprobar y aplicar" (feature 014): aprueba+aplica+publica+audita."""
-    adapter = get_adapter()
+    adapter = get_adapter(session)
     try:
         sug, applied_from, issues = await intelligence_service.apply_suggestion(
             session, adapter, suggestion_id

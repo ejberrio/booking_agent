@@ -17,11 +17,21 @@ import { trServer } from "@/lib/i18n/server-messages";
 import { EXTERNAL_LINKS } from "@/lib/links";
 import type { Messages } from "@/lib/i18n/messages";
 import type { NativeDeal, NativeDealInput, PromotionPreview } from "@/lib/types";
+import { UnitGate } from "@/components/account/unit-gate";
 
 const money = (v: string | null) =>
   v == null ? "—" : `${formatNumber(Number(v))} COP`;
 
+// Feature 026: sin unidades en la cuenta → estado vacío con el camino a Ajustes.
 export default function OffersPage() {
+  return (
+    <UnitGate>
+      <OffersPageContent />
+    </UnitGate>
+  );
+}
+
+function OffersPageContent() {
   const { m } = useI18n();
   const t = m.offers;
   const [unitTypeId] = useActiveUnit();

@@ -106,7 +106,7 @@ async def client(session):
 
 
 def _use(monkeypatch, cm):
-    monkeypatch.setattr(hook_routes, "get_adapter", lambda: cm)
+    monkeypatch.setattr(hook_routes, "get_adapter", lambda *_a, **_k: cm)
 
 
 async def _post(client, body, key=KEY):
@@ -136,15 +136,14 @@ async def test_sin_clave_configurada_503_sin_efectos(client, session, monkeypatc
 
 
 async def test_clave_ausente_o_incorrecta_401_rechazado(client, session, monkeypatch):
-    svc._cache[webhook_service.KEY_SECRET] = KEY
+    svc._cache[(1, webhook_service.KEY_SECRET)] = KEY
     cm = FakeCM([RemoteBooking("900", "697411", CI, CO)])
     _use(monkeypatch, cm)
     assert (await _post(client, _body(), key=None)).status_code == 401
     assert (await _post(client, _body(), key="otra")).status_code == 401
     assert await _bookings(session) == [] and cm.rate_ranges == []
-    evs = await _events(session)
-    assert [e.result for e in evs] == [WebhookResult.rejected] * 2
-    assert all(e.booking_ref is None for e in evs)  # sin contenido del aviso
+    # Feature 026: una clave que no es de ninguna cuenta no tiene cuenta donde registrarse.
+    assert await _events(session) == []
 
 
 async def test_rotacion_de_clave(client, session, monkeypatch):
@@ -161,7 +160,7 @@ async def test_rotacion_de_clave(client, session, monkeypatch):
 
 
 async def test_reserva_nueva_aparece_y_ocupa_calendario_sin_escribir(client, session, monkeypatch):
-    svc._cache[webhook_service.KEY_SECRET] = KEY
+    svc._cache[(1, webhook_service.KEY_SECRET)] = KEY
     cm = FakeCM([RemoteBooking("900", "697411", CI, CO, channel="booking", guest_name=GUEST)])
     _use(monkeypatch, cm)
     r = await _post(client, _body())
@@ -179,7 +178,7 @@ async def test_reserva_nueva_aparece_y_ocupa_calendario_sin_escribir(client, ses
 
 
 async def test_cancelacion_libera_y_respeta_bloqueo_manual(client, session, monkeypatch):
-    svc._cache[webhook_service.KEY_SECRET] = KEY
+    svc._cache[(1, webhook_service.KEY_SECRET)] = KEY
     cm = FakeCM([RemoteBooking("900", "697411", CI, CO)])
     _use(monkeypatch, cm)
     await _post(client, _body())
@@ -199,7 +198,7 @@ async def test_cancelacion_libera_y_respeta_bloqueo_manual(client, session, monk
 
 
 async def test_cambio_de_fechas_resincroniza_tambien_la_estancia_previa(client, session, monkeypatch):
-    svc._cache[webhook_service.KEY_SECRET] = KEY
+    svc._cache[(1, webhook_service.KEY_SECRET)] = KEY
     cm = FakeCM([RemoteBooking("900", "697411", CI, CO)])
     _use(monkeypatch, cm)
     await _post(client, _body())
@@ -212,7 +211,7 @@ async def test_cambio_de_fechas_resincroniza_tambien_la_estancia_previa(client, 
 
 
 async def test_otra_propiedad_ignorada(client, session, monkeypatch):
-    svc._cache[webhook_service.KEY_SECRET] = KEY
+    svc._cache[(1, webhook_service.KEY_SECRET)] = KEY
     cm = FakeCM([RemoteBooking("900", "697411", CI, CO)])
     _use(monkeypatch, cm)
     r = await _post(client, _body(prop=111))
@@ -223,7 +222,7 @@ async def test_otra_propiedad_ignorada(client, session, monkeypatch):
 
 
 async def test_duplicado_y_desorden_convergen(client, session, monkeypatch):
-    svc._cache[webhook_service.KEY_SECRET] = KEY
+    svc._cache[(1, webhook_service.KEY_SECRET)] = KEY
     # Beds24 ya tiene la reserva CANCELADA; llega primero un aviso viejo de "nueva".
     cm = FakeCM([RemoteBooking("900", "697411", CI, CO, status="cancelled")])
     _use(monkeypatch, cm)
@@ -235,7 +234,7 @@ async def test_duplicado_y_desorden_convergen(client, session, monkeypatch):
 
 
 async def test_aviso_incompleto_usa_ventana_corta(client, session, monkeypatch):
-    svc._cache[webhook_service.KEY_SECRET] = KEY
+    svc._cache[(1, webhook_service.KEY_SECRET)] = KEY
     cm = FakeCM()
     _use(monkeypatch, cm)
     r = await _post(client, b"esto no es json")
@@ -244,7 +243,7 @@ async def test_aviso_incompleto_usa_ventana_corta(client, session, monkeypatch):
 
 
 async def test_beds24_caido_failed_200_sin_cambios(client, session, monkeypatch):
-    svc._cache[webhook_service.KEY_SECRET] = KEY
+    svc._cache[(1, webhook_service.KEY_SECRET)] = KEY
     _use(monkeypatch, FakeCM([RemoteBooking("900", "697411", CI, CO)], fail=True))
     r = await _post(client, _body())
     assert r.status_code == 200 and r.json() == {"result": "failed"}
@@ -254,7 +253,7 @@ async def test_beds24_caido_failed_200_sin_cambios(client, session, monkeypatch)
 
 
 async def test_reserva_creada_por_otra_via_no_se_duplica(client, session, monkeypatch):
-    svc._cache[webhook_service.KEY_SECRET] = KEY
+    svc._cache[(1, webhook_service.KEY_SECRET)] = KEY
     session.add(Booking(unit_type_id=1, channel_kind="booking", check_in=CI, check_out=CO, external_ref="900"))
     await session.commit()
     _use(monkeypatch, FakeCM([RemoteBooking("900", "697411", CI, CO)]))
@@ -273,7 +272,7 @@ async def test_purga_eventos_viejos(session):
 
 
 async def test_privacidad_cuerpo_no_persistido_ni_logueado(client, session, monkeypatch, caplog):
-    svc._cache[webhook_service.KEY_SECRET] = KEY
+    svc._cache[(1, webhook_service.KEY_SECRET)] = KEY
     _use(monkeypatch, FakeCM([RemoteBooking("900", "697411", CI, CO)]))
     caplog.set_level(logging.DEBUG)
     await _post(client, _body())

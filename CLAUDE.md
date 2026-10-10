@@ -1,20 +1,22 @@
 <!-- SPECKIT START -->
-Feature activa: **025-mobile-app** (app móvil Android primero; issue #140).
-Plan: `specs/025-mobile-app/{plan,research,data-model,quickstart}.md` + `contracts/push-api.md`.
-Decisiones del host (2026-10-09): Capacitor (WebView remoto de staylever.com), Android ya (APK sin Play Store),
-iPhone cuando haya cuenta Apple; avisos de reservas (nueva/modificada/cancelada) y sugerencias nuevas vía FCM;
-sesión 90 días en la app (User-Agent StayLeverApp/). Repo PÚBLICO: llave de firma y google-services.json solo como
-secretos de GitHub (script del host); credencial FCM como secreto cifrado de la app. APK en GitHub Actions → Release.
+Feature activa: **026-multitenant-accounts** (multicliente mínimo; issue #143, épica #156 Comercial F0).
+Plan: `specs/026-multitenant-accounts/{plan,research,data-model,quickstart}.md` + `contracts/accounts-api.md`.
+Constitución v1.1.0: principio VI aislamiento por cuenta (NO NEGOCIABLE). Decisiones del host (2026-10-10): registro solo
+con código de invitación (interruptor para abrirlo), correo+contraseña Y Google, un usuario por cuenta. Diseño: account_id
+en todas las tablas del anfitrión + filtro automático del ORM (falla cerrado), sesiones opacas en la API (Bearer desde la
+cookie sl_session), Resend para correos, Google con PKCE (app: navegador del sistema → APK 1.1.0), cuenta nº 1 reclamada
+con la contraseña actual. Entrega en 4 PRs (PR1 aislamiento sin cambio visible → PR2 sesiones → PR3 invitaciones/admin → PR4 Google).
 <!-- SPECKIT END -->
 
 # Booking AI Agent
 
-Plataforma single-tenant para gestionar precios/promociones de Booking.com con un agente de IA.
+Plataforma multicliente (cuentas aisladas, feature 026) para gestionar precios/promociones de Booking.com y Airbnb con un agente de IA.
 
 ## Arquitectura
 - Monorepo: `apps/web` (Next.js + TS + Tailwind + shadcn) y `apps/api` (FastAPI + SQLAlchemy + LiteLLM). Postgres vía `docker-compose`.
 - Booking.com se integra **vía Channel Manager** (adaptador provider-agnostic), no API directa. Ver `docs/adr/0001-arquitectura.md`.
 - LLM multi-proveedor (LiteLLM), configurable. Principios en `.specify/memory/constitution.md`.
+- Multicliente: `account_id` + filtro automático del ORM (`app/db/tenancy.py`, falla cerrado); la cuenta sale solo de la sesión. Ver `docs/adr/0007-multitenancy.md`.
 
 ## Comandos
 - `make setup` — instala deps (api: `uv sync`, web: `npm install`)

@@ -88,8 +88,8 @@ async def test_probar_servicios_con_dobles(client, session, monkeypatch):
         return {"ok": False, "detail": "credencial rechazada por el proveedor"}
 
     monkeypatch.setattr(secrets_routes, "_test_llm", fake_ok)
-    monkeypatch.setattr(secrets_routes, "_test_search", lambda: fake_bad())
-    monkeypatch.setattr(secrets_routes, "_test_beds24", lambda: fake_ok())
+    monkeypatch.setattr(secrets_routes, "_test_search", lambda *_a: fake_bad())
+    monkeypatch.setattr(secrets_routes, "_test_beds24", lambda *_a: fake_ok())
 
     ok = await client.post("/settings/secrets/openai_api_key/test")
     assert ok.json() == {"ok": True, "detail": "conexión OK"}
@@ -126,7 +126,7 @@ async def test_canje_codigo_invitacion_beds24_sin_fugas(client, monkeypatch):
     assert res.status_code == 200
     assert SENTINEL not in res.text and "INVITE-OK" not in res.text
     assert res.json()["source"] == "app"
-    assert svc.get_secret("beds24_refresh_token") == SENTINEL  # rotación inmediata
+    assert svc.get_secret("beds24_refresh_token", 1) == SENTINEL  # rotación inmediata
 
     bad = await client.post(
         "/settings/secrets/beds24_refresh_token/invite", json={"code": "INVITE-BAD"}
@@ -136,7 +136,7 @@ async def test_canje_codigo_invitacion_beds24_sin_fugas(client, monkeypatch):
     assert empty.status_code == 422
 
 
-async def test_probar_beds24_token_rechazado_mensaje_claro(monkeypatch):
+async def test_probar_beds24_token_rechazado_mensaje_claro(session, monkeypatch):
     import app.api.routes.sync as sync_routes
     from app.channels.errors import AuthError
 
@@ -147,6 +147,6 @@ async def test_probar_beds24_token_rechazado_mensaje_claro(monkeypatch):
         async def aclose(self):
             pass
 
-    monkeypatch.setattr(sync_routes, "get_adapter", lambda: Rejected())
-    r = await secrets_routes._test_beds24()
+    monkeypatch.setattr(sync_routes, "get_adapter", lambda *_a, **_k: Rejected())
+    r = await secrets_routes._test_beds24(session)
     assert r["ok"] is False and "Canjear" in r["detail"]

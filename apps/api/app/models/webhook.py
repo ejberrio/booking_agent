@@ -11,11 +11,12 @@ from sqlalchemy import DateTime, Enum, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
+from app.models.account import AccountOwned
 from app.models.enums import WebhookResult
 from app.models.mixins import TimestampMixin, _now
 
 
-class WebhookEvent(Base, TimestampMixin):
+class WebhookEvent(Base, AccountOwned, TimestampMixin):
     __tablename__ = "webhook_event"
 
     received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, index=True)

@@ -454,3 +454,13 @@ export interface PushDevice {
   last_seen_at: string;
   last_error: string | null;
 }
+
+/** Unidad de la cuenta (feature 026: `GET /units`, solo las de la sesión). */
+export interface Unit {
+  id: number;
+  name: string;
+  property_id: number;
+  property_name: string;
+  city: string;
+  currency: string;
+}

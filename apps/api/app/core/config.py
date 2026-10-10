@@ -59,6 +59,9 @@ class Settings(BaseSettings):
     # API
     cors_origins: str = "http://localhost:3000"
     secret_key: str = "cambia-esto"
+    # Feature 026: "legacy" = sin sesiones de usuario, todo va a la cuenta nº 1 (transición
+    # hasta desplegar el acceso por usuario); "sessions" = cada petición trae su sesión.
+    auth_mode: str = "legacy"
 
     # LLM (multi-proveedor via LiteLLM)
     # Estrategia dos niveles: modelo barato para tareas de alto volumen

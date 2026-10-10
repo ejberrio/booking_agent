@@ -1,39 +1,16 @@
 from datetime import date, timedelta
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.channels.beds24 import Beds24Adapter
-from app.channels.beds24_v2 import Beds24V2Adapter
-from app.core.config import settings
+from app.channels.factory import get_adapter  # noqa: F401  -- re-exportado (feature 026)
 from app.db.session import get_session
+from app.db.cross_account import PropertyOwnedElsewhere
 from app.services import push_service, sync_service
 
 router = APIRouter()
-
-
-def get_adapter():
-    from app.services.secret_service import get_secret
-
-    # V2 (token) es obligatoria para escribir precios; V1 solo lee. Se elige por config.
-    # El refresh token se resuelve por secret_service (BD cifrada > entorno, feature 017):
-    # el adaptador se construye por petición, así una rotación aplica de inmediato.
-    if settings.beds24_api_version == "v2":
-        return Beds24V2Adapter(
-            refresh_token=get_secret("beds24_refresh_token"),
-            prop_id=settings.beds24_prop_id,
-            room_id=settings.beds24_room_id,
-            base_url=settings.beds24_v2_base_url,
-        )
-    return Beds24Adapter(
-        api_key=settings.beds24_api_key,
-        prop_key=settings.beds24_prop_key,
-        prop_id=settings.beds24_prop_id,
-        room_id=settings.beds24_room_id,
-        base_url=settings.beds24_base_url,
-    )
 
 
 class ImportRequest(BaseModel):
@@ -49,7 +26,7 @@ class PublishRequest(BaseModel):
 
 @router.post("/test")
 async def test_connection(session: AsyncSession = Depends(get_session)):
-    adapter = get_adapter()
+    adapter = get_adapter(session)
     try:
         conn = await sync_service.test_connection(session, adapter)
         await session.commit()
@@ -60,13 +37,16 @@ async def test_connection(session: AsyncSession = Depends(get_session)):
 
 @router.post("/import")
 async def import_remote(req: ImportRequest, session: AsyncSession = Depends(get_session)):
-    adapter = get_adapter()
+    adapter = get_adapter(session)
     try:
         today = date.today()
         events: list = []
-        run = await sync_service.import_remote(
-            session, adapter, today, today + timedelta(days=req.days), events=events
-        )
+        try:
+            run = await sync_service.import_remote(
+                session, adapter, today, today + timedelta(days=req.days), events=events
+            )
+        except PropertyOwnedElsewhere as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from None
         await push_service.notify_booking_events(session, events)  # feature 025
         await session.commit()
         return {
@@ -82,7 +62,7 @@ async def import_remote(req: ImportRequest, session: AsyncSession = Depends(get_
 
 @router.post("/publish")
 async def publish(req: PublishRequest, session: AsyncSession = Depends(get_session)):
-    adapter = get_adapter()
+    adapter = get_adapter(session)
     try:
         run = await sync_service.publish_price(
             session,

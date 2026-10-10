@@ -271,7 +271,7 @@ async def test_rutas_batch_preview_apply_y_409(session, client, monkeypatch):
     a = await _sug(session, prop, unit, day(3), day(4))
     await session.commit()
     cm = FakeCM()
-    monkeypatch.setattr(suggestion_routes, "get_adapter", lambda: cm)
+    monkeypatch.setattr(suggestion_routes, "get_adapter", lambda *_a, **_k: cm)
 
     assert (await client.post("/suggestions/batch/preview", json={"suggestion_ids": []})).status_code == 422
     prev = (await client.post("/suggestions/batch/preview", json={"suggestion_ids": [a.id]})).json()

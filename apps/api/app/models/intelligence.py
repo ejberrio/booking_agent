@@ -1,10 +1,11 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Date, DateTime, Enum, Integer, Numeric, String, Text
+from sqlalchemy import Date, DateTime, Enum, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
+from app.models.account import AccountOwned
 from app.models.enums import SyncStatus
 from app.models.mixins import TimestampMixin, _now
 
@@ -24,7 +25,7 @@ class MarketReference(Base, TimestampMixin):
     sample_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
-class IntelligenceRun(Base, TimestampMixin):
+class IntelligenceRun(Base, AccountOwned, TimestampMixin):
     """Una corrida del escaneo (eventos + mercado + sugerencias)."""
 
     __tablename__ = "intelligence_run"
@@ -37,13 +38,14 @@ class IntelligenceRun(Base, TimestampMixin):
     detail: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
-class ScanConfig(Base, TimestampMixin):
-    """Configuración del escaneo (fila única; feature 018).
+class ScanConfig(Base, AccountOwned, TimestampMixin):
+    """Configuración del escaneo (una fila por cuenta; features 018 y 026).
 
     zone NULL = usar city + address de la propiedad; event_kinds NULL = todos.
     """
 
     __tablename__ = "scan_config"
+    __table_args__ = (UniqueConstraint("account_id", name="uq_scan_config_account"),)
 
     zone: Mapped[str | None] = mapped_column(String(200), nullable=True)
     queries_per_scan: Mapped[int] = mapped_column(Integer, default=12)

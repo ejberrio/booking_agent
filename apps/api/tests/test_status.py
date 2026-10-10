@@ -7,7 +7,7 @@ client = TestClient(app)
 
 
 def _areturn(v):
-    async def f():
+    async def f(*_a):
         return v
     return f
 

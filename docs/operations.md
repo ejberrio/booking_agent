@@ -71,6 +71,11 @@ Catálogo completo en [`../specs/007-production-deploy/contracts/environment.md`
 
 - Servicio `scan`, Cron Schedule `0 13 * * *` (≈ 8:00 America/Bogota), comando `python -m scripts.scan_daily`.
 - Genera SOLO sugerencias (nunca cambia precios — Constitución III).
+- Feature 026 (multicliente): recorre **cada cuenta activa con channel manager**, cada una en su
+  propia sesión. El fallo de una cuenta se registra en ella (`intelligence_run` fallido / incidencia
+  de sync) y no detiene a las demás. Las consultas generales de eventos de una ciudad se hacen una
+  vez por corrida aunque varias cuentas estén en ella. Log por cuenta: `scan_daily: cuenta N …`.
+- `AUTH_MODE` (api): `legacy` (default, PR1: todo va a la cuenta nº 1) → `sessions` (PR2, acceso por usuario).
 
 ## Gotchas de Railway (ya resueltos en `main`)
 

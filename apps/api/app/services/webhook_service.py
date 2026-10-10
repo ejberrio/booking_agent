@@ -21,7 +21,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.db.tenancy import current_account_id
+from app.models.account import FIRST_ACCOUNT_ID
 from app.models.booking import Booking
+from app.models.property import Property
 from app.models.enums import WebhookResult
 from app.models.webhook import WebhookEvent
 from app.services import push_service, secret_service, sync_service
@@ -42,13 +45,20 @@ class BookingHint:
     departure: date | None = None
 
 
-def verify_key(presented: str | None) -> Literal["ok", "missing_config", "invalid"]:
-    expected = secret_service.get_secret(KEY_SECRET)
-    if not expected:
-        return "missing_config"
-    if not presented or not hmac.compare_digest(presented.encode(), expected.encode()):
-        return "invalid"
-    return "ok"
+def resolve_key(
+    presented: str | None,
+) -> tuple[Literal["ok", "missing_config", "invalid"], int | None]:
+    """La clave identifica la CUENTA del aviso (feature 026). Comparación en tiempo constante
+    contra todas las claves guardadas (sin cortocircuito por cuenta)."""
+    keys = secret_service.accounts_with(KEY_SECRET)
+    if not keys:
+        return "missing_config", None
+    found: int | None = None
+    raw = (presented or "").encode()
+    for account_id, expected in keys:
+        if hmac.compare_digest(raw, expected.encode()) and presented:
+            found = account_id
+    return ("ok", found) if found is not None else ("invalid", None)
 
 
 def _as_date(value) -> date | None:
@@ -108,6 +118,25 @@ async def record_rejected(session: AsyncSession) -> WebhookEvent:
     return await _record(session, WebhookResult.rejected, detail="clave inválida")
 
 
+async def _foreign_property(session: AsyncSession, property_id: str | None) -> bool:
+    """¿El aviso es de una propiedad que NO es de la cuenta? (se ignora)."""
+    if not property_id:
+        return False
+    refs = set(
+        (
+            await session.execute(
+                select(Property.external_ref).where(Property.external_ref.is_not(None))
+            )
+        ).scalars()
+    )
+    if refs:
+        return property_id not in refs
+    # Cuenta sin propiedades importadas: la nº 1 conserva su id de entorno.
+    if current_account_id(session) == FIRST_ACCOUNT_ID and settings.beds24_prop_id:
+        return property_id != str(settings.beds24_prop_id)
+    return False
+
+
 async def _sync_range(session: AsyncSession, hint: BookingHint, today: date) -> tuple[date, date]:
     """Rango a re-sincronizar: la estancia nueva ∪ la previa (si cambió de fechas)."""
     points: list[date] = [d for d in (hint.arrival, hint.departure) if d]
@@ -131,9 +160,7 @@ async def handle(
 ) -> WebhookEvent:
     """Procesa un aviso YA autenticado. Siempre deja un WebhookEvent; nunca lanza."""
     today = today or date.today()
-    if hint.property_id and settings.beds24_prop_id and hint.property_id != str(
-        settings.beds24_prop_id
-    ):
+    if await _foreign_property(session, hint.property_id):
         return await _record(session, WebhookResult.ignored, booking_ref=hint.booking_id)
 
     date_from, date_to = await _sync_range(session, hint, today)
@@ -172,7 +199,7 @@ async def handle(
 
 async def status(session: AsyncSession, *, now: datetime | None = None) -> dict:
     now = now or _now()
-    configured = bool(secret_service.get_secret(KEY_SECRET))
+    configured = bool(secret_service.get_secret(KEY_SECRET, current_account_id(session)))
     since = now - timedelta(days=IDLE_AFTER_DAYS)
     counts = {r.value: 0 for r in WebhookResult}
     for result, n in (

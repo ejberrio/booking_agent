@@ -22,7 +22,7 @@ from app.models.calendar import CalendarDay
 from app.models.enums import Relevance, SuggestionStatus
 from app.models.market import Event, PriceSuggestion
 from app.models.property import Property, UnitType
-from app.services import pricing_service
+from app.services import event_service, pricing_service
 
 _REL_ORDER = {Relevance.low: 0, Relevance.medium: 1, Relevance.high: 2}
 _OCC_WINDOW = 7  # ±días para la señal de ocupación de la zona propia
@@ -191,7 +191,12 @@ async def generate_suggestions(
 
     events = list(
         (
-            await session.execute(select(Event).where(Event.start_date <= date_to))
+            await session.execute(
+                select(Event).where(
+                    Event.start_date <= date_to,
+                    Event.city == event_service.normalize_city(prop.city),
+                )
+            )
         ).scalars()
     )
     occupied = {

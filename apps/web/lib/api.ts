@@ -39,6 +39,7 @@ import type {
   ConversationSummary,
   ConversationDetail,
   PushDevice,
+  Unit,
 } from "@/lib/types";
 
 export interface PromotionInput {
@@ -242,6 +243,8 @@ export const api = {
   registerPushDevice: (body: { token: string; platform: "android" | "ios"; model?: string; app_version?: string }) =>
     req<PushDevice>(`/push/devices`, { method: "POST", body: JSON.stringify(body) }),
   listPushDevices: () => req<PushDevice[]>(`/push/devices`),
+  // Cuentas (feature 026)
+  listUnits: () => req<Unit[]>(`/units`),
   updatePushDevice: (id: number, body: { notify_bookings?: boolean; notify_suggestions?: boolean }) =>
     req<PushDevice>(`/push/devices/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   deletePushDevice: (id: number) => req<{ deleted: boolean }>(`/push/devices/${id}`, { method: "DELETE" }),
