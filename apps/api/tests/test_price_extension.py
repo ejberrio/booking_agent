@@ -376,7 +376,7 @@ async def test_adaptador_v2_un_post_y_una_relectura(monkeypatch):
 async def client(session, monkeypatch):
     holder = {"cm": FakeCM()}
 
-    def _override_adapter():
+    def _override_adapter(*_a, **_k):
         return holder["cm"]
 
     async def _override():

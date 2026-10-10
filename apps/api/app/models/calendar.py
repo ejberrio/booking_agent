@@ -5,10 +5,11 @@ from sqlalchemy import Boolean, Date, ForeignKey, Integer, Numeric, String, Uniq
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
+from app.models.account import AccountOwned
 from app.models.mixins import TimestampMixin
 
 
-class CalendarDay(Base, TimestampMixin):
+class CalendarDay(Base, AccountOwned, TimestampMixin):
     """Disponibilidad por unidad y día. Compartida entre canales (no por canal)."""
 
     __tablename__ = "calendar_day"
@@ -20,7 +21,7 @@ class CalendarDay(Base, TimestampMixin):
     is_blocked: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
-class CalendarNote(Base, TimestampMixin):
+class CalendarNote(Base, AccountOwned, TimestampMixin):
     """Nota de texto libre del host sobre un día o rango (feature 016).
 
     Memoria local del host (típico: el porqué de un bloqueo). Nunca toca el
@@ -35,7 +36,7 @@ class CalendarNote(Base, TimestampMixin):
     text: Mapped[str] = mapped_column(String(500))
 
 
-class Rate(Base, TimestampMixin):
+class Rate(Base, AccountOwned, TimestampMixin):
     """Precio base por noche, por unidad y día. El efectivo se deriva (no se persiste)."""
 
     __tablename__ = "rate"

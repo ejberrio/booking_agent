@@ -283,7 +283,7 @@ async def delete_native_deal(deal_id: int, session: AsyncSession = Depends(get_s
 
 @router.post("/day")
 async def set_day(req: DayPriceRequest, session: AsyncSession = Depends(get_session)):
-    adapter = get_adapter()
+    adapter = get_adapter(session)
     try:
         result = await pricing_app_service.set_day_price(
             session, adapter, unit_type_id=req.unit_type_id, day=req.day, price=req.price
@@ -304,7 +304,7 @@ async def range_preview(req: RangePreviewRequest, session: AsyncSession = Depend
 
 @router.post("/range/apply")
 async def range_apply(req: RangeApplyRequest, session: AsyncSession = Depends(get_session)):
-    adapter = get_adapter()
+    adapter = get_adapter(session)
     try:
         result = await pricing_app_service.apply_range(
             session,
@@ -343,7 +343,7 @@ async def availability_preview(
 async def availability_apply(
     req: AvailabilityApplyRequest, session: AsyncSession = Depends(get_session)
 ):
-    adapter = get_adapter()
+    adapter = get_adapter(session)
     try:
         result = await availability_service.apply(
             session,
@@ -361,7 +361,7 @@ async def availability_apply(
 
 @router.post("/rollback")
 async def rollback(req: RollbackRequest, session: AsyncSession = Depends(get_session)):
-    adapter = get_adapter()
+    adapter = get_adapter(session)
     try:
         result = await pricing_app_service.rollback_and_publish(
             session, adapter, req.change_id, confirm=req.confirm
@@ -370,6 +370,8 @@ async def rollback(req: RollbackRequest, session: AsyncSession = Depends(get_ses
         return asdict(result)
     except RollbackConflict as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except (LookupError, ValueError) as exc:  # inexistente o de otra cuenta (feature 026)
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
     finally:
         await adapter.aclose()
 
@@ -402,7 +404,7 @@ async def list_promotions(unit_type_id: int, session: AsyncSession = Depends(get
 async def promotion_preview(
     req: OfferPromoPreviewRequest, session: AsyncSession = Depends(get_session)
 ):
-    adapter = get_adapter()
+    adapter = get_adapter(session)
     try:
         prev = await offer_promotion_service.preview(
             session,
@@ -428,7 +430,7 @@ async def promotion_preview(
 async def promotion_apply(
     req: OfferPromoApplyRequest, session: AsyncSession = Depends(get_session)
 ):
-    adapter = get_adapter()
+    adapter = get_adapter(session)
     try:
         result = await offer_promotion_service.apply(
             session,
@@ -457,7 +459,7 @@ async def promotion_apply(
 async def promotion_retire(
     req: OfferPromoRetireRequest, session: AsyncSession = Depends(get_session)
 ):
-    adapter = get_adapter()
+    adapter = get_adapter(session)
     try:
         result = await offer_promotion_service.retire(
             session, adapter, req.id, confirm=req.confirm
@@ -472,7 +474,7 @@ async def promotion_retire(
 
 @router.get("/channel-offsets")
 async def get_channel_offsets(session: AsyncSession = Depends(get_session)):
-    adapter = get_adapter()
+    adapter = get_adapter(session)
     try:
         offsets = await channel_pricing_service.get_offsets(session, adapter)
         return {"offsets": offsets}
@@ -484,7 +486,7 @@ async def get_channel_offsets(session: AsyncSession = Depends(get_session)):
 async def channel_offset_preview(
     req: ChannelOffsetPreviewRequest, session: AsyncSession = Depends(get_session)
 ):
-    adapter = get_adapter()
+    adapter = get_adapter(session)
     try:
         return await channel_pricing_service.preview_offset(
             session, adapter, req.channel, req.offset_pct
@@ -499,7 +501,7 @@ async def channel_offset_preview(
 async def channel_offset_apply(
     req: ChannelOffsetApplyRequest, session: AsyncSession = Depends(get_session)
 ):
-    adapter = get_adapter()
+    adapter = get_adapter(session)
     try:
         result = await channel_pricing_service.apply_offset(
             session,
@@ -522,7 +524,7 @@ async def channel_offset_apply(
 
 @router.post("/promotions/legacy")
 async def create_promotion(req: PromotionRequest, session: AsyncSession = Depends(get_session)):
-    adapter = get_adapter()
+    adapter = get_adapter(session)
     try:
         promo = await promotion_service.create_promotion(
             session,
@@ -543,7 +545,7 @@ async def create_promotion(req: PromotionRequest, session: AsyncSession = Depend
 
 @router.delete("/promotions/{promotion_id}")
 async def delete_promotion(promotion_id: int, session: AsyncSession = Depends(get_session)):
-    adapter = get_adapter()
+    adapter = get_adapter(session)
     try:
         await promotion_service.delete_promotion(session, adapter, promotion_id)
         await session.commit()
@@ -606,7 +608,7 @@ async def extension_status(unit_type_id: int, session: AsyncSession = Depends(ge
 async def extension_preview(
     req: ExtensionPreviewRequest, session: AsyncSession = Depends(get_session)
 ):
-    adapter = get_adapter()
+    adapter = get_adapter(session)
     try:
         preview = await price_extension_service.preview(
             session, adapter, req.to_params(), today=date.today()
@@ -624,7 +626,7 @@ async def extension_preview(
 
 @router.post("/extension/apply")
 async def extension_apply(req: ExtensionApplyRequest, session: AsyncSession = Depends(get_session)):
-    adapter = get_adapter()
+    adapter = get_adapter(session)
     try:
         result = await price_extension_service.apply(
             session,

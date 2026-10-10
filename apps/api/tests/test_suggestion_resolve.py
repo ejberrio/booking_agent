@@ -176,7 +176,7 @@ async def test_reject_aplicada_conflicto(session):
 @pytest.fixture()
 def fake_cm(monkeypatch):
     cm = FakeCM()
-    monkeypatch.setattr(suggestion_routes, "get_adapter", lambda: cm)
+    monkeypatch.setattr(suggestion_routes, "get_adapter", lambda *_a, **_k: cm)
     return cm
 
 
@@ -228,7 +228,7 @@ async def test_endpoint_apply_canal_caido_502_con_incidencia(client, session, mo
     unit, sug = await _seed(session)
     sug_id, unit_id = sug.id, unit.id
     await session.commit()  # como en producción: la sugerencia ya existe commiteada
-    monkeypatch.setattr(suggestion_routes, "get_adapter", lambda: FakeCM(fail=True))
+    monkeypatch.setattr(suggestion_routes, "get_adapter", lambda *_a, **_k: FakeCM(fail=True))
     res = await client.post(f"/suggestions/{sug_id}/apply")
     assert res.status_code == 502
     issues = (

@@ -12,7 +12,8 @@ from datetime import date, timedelta
 
 from app.channels.beds24 import Beds24Adapter
 from app.core.config import settings
-from app.db.session import SessionLocal
+from app.db.tenancy import tenant_session
+from app.models.account import FIRST_ACCOUNT_ID
 from app.services import sync_service
 
 HORIZON_DAYS = 365
@@ -26,7 +27,7 @@ async def main() -> None:
         base_url=settings.beds24_base_url,
     )
     try:
-        async with SessionLocal() as session:
+        async with tenant_session(FIRST_ACCOUNT_ID) as session:  # feature 026
             today = date.today()
             run = await sync_service.import_remote(
                 session, adapter, today, today + timedelta(days=HORIZON_DAYS)

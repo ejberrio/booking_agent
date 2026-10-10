@@ -35,6 +35,9 @@ class ChatResponse(BaseModel):
 
 async def _ensure_conversation(session: AsyncSession, conversation_id: int | None) -> int:
     if conversation_id is not None:
+        # Feature 026: una conversación de otra cuenta "no existe" (filtro por cuenta).
+        if await session.get(Conversation, conversation_id) is None:
+            raise HTTPException(status_code=404, detail="Conversación no encontrada")
         return conversation_id
     conv = Conversation()
     session.add(conv)
@@ -44,7 +47,7 @@ async def _ensure_conversation(session: AsyncSession, conversation_id: int | Non
 
 @router.post("", response_model=ChatResponse)
 async def chat(req: ChatRequest, session: AsyncSession = Depends(get_session)):
-    adapter = get_adapter()
+    adapter = get_adapter(session)
     try:
         conv_id = await _ensure_conversation(session, req.conversation_id)
         reply = await run_turn(
@@ -66,7 +69,7 @@ async def chat(req: ChatRequest, session: AsyncSession = Depends(get_session)):
 @router.post("/stream")
 async def chat_stream(req: ChatRequest, session: AsyncSession = Depends(get_session)):
     """Streaming SSE: emite el estado de las herramientas y el resultado final."""
-    adapter = get_adapter()
+    adapter = get_adapter(session)
     conv_id = await _ensure_conversation(session, req.conversation_id)
     reply = await run_turn(
         session, adapter, default_llm(), conversation_id=conv_id,

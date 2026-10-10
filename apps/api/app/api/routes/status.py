@@ -10,12 +10,15 @@ from __future__ import annotations
 import asyncio
 import time
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from sqlalchemy import func, select, text
 
 from app.api.routes.sync import get_adapter
+from app.channels.factory import has_credentials
 from app.core.config import settings
+from app.core.context import RequestContext, require_ctx
 from app.db.session import SessionLocal
+from app.db.tenancy import tenant_session
 from app.models.booking import Booking
 from app.models.enums import BookingStatus, ChannelKind
 from app.models.property import Channel
@@ -25,7 +28,8 @@ router = APIRouter()
 
 VERSION = "0.1.2"
 _BEDS24_TTL = 300  # 5 min
-_beds24_cache: dict[str, object] = {"value": "unknown", "at": 0.0}
+# Caché por cuenta (feature 026): {account_id: (valor, instante)}.
+_beds24_cache: dict[int, tuple[str, float]] = {}
 
 
 async def _db_status() -> str:
@@ -38,33 +42,35 @@ async def _db_status() -> str:
         return "down"
 
 
-async def _beds24_status() -> str:
+async def _beds24_status(account_id: int) -> str:
     now = time.time()
-    if _beds24_cache["value"] != "unknown" and now - float(_beds24_cache["at"]) < _BEDS24_TTL:
-        return str(_beds24_cache["value"])
+    cached = _beds24_cache.get(account_id)
+    if cached and now - cached[1] < _BEDS24_TTL:
+        return cached[0]
     result = "error"
-    adapter = get_adapter()
     try:
         async with asyncio.timeout(8):
-            async with SessionLocal() as session:
-                conn = await sync_service.test_connection(session, adapter)
-            result = "connected" if conn.status.value == "connected" else "error"
+            async with tenant_session(account_id) as session:
+                if not has_credentials(session):
+                    result = "unconfigured"  # cuenta sin channel manager (feature 026)
+                else:
+                    adapter = get_adapter(session)
+                    try:
+                        conn = await sync_service.test_connection(session, adapter)
+                        await session.commit()
+                    finally:
+                        await adapter.aclose()
+                    result = "connected" if conn.status.value == "connected" else "error"
     except Exception:
         result = "error"
-    finally:
-        try:
-            await adapter.aclose()
-        except Exception:
-            pass
-    _beds24_cache["value"] = result
-    _beds24_cache["at"] = now
+    _beds24_cache[account_id] = (result, now)
     return result
 
 
-async def _open_issues() -> int:
+async def _open_issues(account_id: int) -> int:
     try:
         async with asyncio.timeout(3):
-            async with SessionLocal() as session:
+            async with tenant_session(account_id) as session:
                 return len(await sync_service.list_open_issues(session))
     except Exception:
         return -1  # desconocido
@@ -73,7 +79,7 @@ async def _open_issues() -> int:
 _CHANNEL_ORDER = [ChannelKind.booking, ChannelKind.airbnb, ChannelKind.direct]
 
 
-async def _channels_status() -> list[dict]:
+async def _channels_status(account_id: int) -> list[dict]:
     """Canales registrados + reservas confirmadas por canal (feature 012).
 
     Mismo patrón resiliente del endpoint: si falla, [] y la respuesta sigue.
@@ -81,7 +87,7 @@ async def _channels_status() -> list[dict]:
     """
     try:
         async with asyncio.timeout(3):
-            async with SessionLocal() as session:
+            async with tenant_session(account_id) as session:
                 ch_rows = (await session.execute(select(Channel))).scalars().all()
                 cnt_rows = (
                     await session.execute(
@@ -106,10 +112,11 @@ async def _channels_status() -> list[dict]:
 
 
 @router.get("/status")
-async def status():
+async def status(ctx: RequestContext = Depends(require_ctx)):
     # Checks concurrentes: la latencia total es la del más lento, no la suma.
+    acc = ctx.account_id
     db, beds24, open_issues, channels = await asyncio.gather(
-        _db_status(), _beds24_status(), _open_issues(), _channels_status()
+        _db_status(), _beds24_status(acc), _open_issues(acc), _channels_status(acc)
     )
     return {
         "version": VERSION,

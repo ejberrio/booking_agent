@@ -57,7 +57,7 @@ async def test_clave_rotada_ilegible_y_fallback(session, monkeypatch):
     # load_cache no lanza; marca ilegible y cae al entorno
     svc._cache.clear()
     await svc.load_cache(session)
-    assert "openai_api_key" in svc._unreadable
+    assert (None, "openai_api_key") in svc._unreadable
     assert svc.get_secret("openai_api_key") == "sk-env-fallback"
     st = {s["name"]: s for s in await svc.status(session)}
     assert st["openai_api_key"]["unreadable"] is True

@@ -33,9 +33,9 @@ from app.models.availability import AvailabilityChangeLog
 from app.models.calendar import CalendarDay, Rate
 from app.models.enums import ChangeOrigin, Relevance, SyncIssueKind
 from app.models.market import Event
-from app.models.property import UnitType
+from app.models.property import Property, UnitType
 from app.models.sync import SyncIssue
-from app.services import availability_service, pricing_service
+from app.services import availability_service, event_service, pricing_service
 
 DEFAULT_MONTHS = 18
 MAX_MONTHS = 24
@@ -157,12 +157,16 @@ async def _known_prices(session: AsyncSession, unit_type_id: int) -> dict[date, 
     return {d: Decimal(p) for d, p in rows}
 
 
-async def _event_days(session: AsyncSession) -> set[date]:
-    """Noches con evento de relevancia ALTA (los de relevancia media/baja cubren casi
-    todo el calendario y dejarían la plantilla sin datos)."""
+async def _event_days(session: AsyncSession, unit: UnitType) -> set[date]:
+    """Noches con evento de relevancia ALTA en la ciudad de la propiedad (los de relevancia
+    media/baja cubren casi todo el calendario y dejarían la plantilla sin datos)."""
+    prop = await session.get(Property, unit.property_id)
+    city = event_service.normalize_city(prop.city if prop else None)
     out: set[date] = set()
     for ev in (
-        await session.execute(select(Event).where(Event.relevance == Relevance.high))
+        await session.execute(
+            select(Event).where(Event.relevance == Relevance.high, Event.city == city)
+        )
     ).scalars():
         out.update(_days(ev.start_date, ev.end_date or ev.start_date))
     return out
@@ -229,7 +233,7 @@ async def preview(
     for d, (p, _) in remote.items():
         if p > 0:
             known.setdefault(d, p)
-    proposed = propose_template(known, await _event_days(session), month_keys, fallback=min_price)
+    proposed = propose_template(known, await _event_days(session, unit), month_keys, fallback=min_price)
     overrides = {m.month: m for m in params.months or []}
 
     months: dict[str, ExtensionMonth] = {}

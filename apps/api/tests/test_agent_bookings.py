@@ -97,7 +97,7 @@ async def test_sync_calendar_tool(session, monkeypatch):
         async def aclose(self):
             return None
 
-    monkeypatch.setattr(tools_mod, "get_adapter", lambda: FakeCM())
+    monkeypatch.setattr(tools_mod, "get_adapter", lambda *_a, **_k: FakeCM())
     assert any(t.name == "sync_calendar" for t in READ_TOOLS)
     out = await exec_read(session, "sync_calendar", {})
     assert out["status"] == "success"

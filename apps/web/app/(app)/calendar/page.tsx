@@ -19,13 +19,23 @@ import { api } from "@/lib/api";
 import { formatNumber, monthLabel, monthRange, ymd } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import type { NativeDeal, Suggestion } from "@/lib/types";
+import { UnitGate } from "@/components/account/unit-gate";
 
 function dealCoversDay(deal: NativeDeal, day: string): boolean {
   // Extremos abiertos: sin fecha = cubre por ese lado.
   return (!deal.date_from || deal.date_from <= day) && (!deal.date_to || deal.date_to >= day);
 }
 
+// Feature 026: sin unidades en la cuenta → estado vacío con el camino a Ajustes.
 export default function CalendarPage() {
+  return (
+    <UnitGate>
+      <CalendarPageContent />
+    </UnitGate>
+  );
+}
+
+function CalendarPageContent() {
   const { m } = useI18n();
   const [unitTypeId] = useActiveUnit();
   const qc = useQueryClient();

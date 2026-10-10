@@ -5,11 +5,12 @@ from sqlalchemy import Boolean, Date, Enum, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
+from app.models.account import AccountOwned
 from app.models.enums import ChannelKind, PromotionStatus, PromotionType
 from app.models.mixins import JSONBType, TimestampMixin
 
 
-class PricingRule(Base, TimestampMixin):
+class PricingRule(Base, AccountOwned, TimestampMixin):
     __tablename__ = "pricing_rule"
 
     property_id: Mapped[int] = mapped_column(ForeignKey("property.id"), index=True)
@@ -20,7 +21,7 @@ class PricingRule(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
-class Promotion(Base, TimestampMixin):
+class Promotion(Base, AccountOwned, TimestampMixin):
     __tablename__ = "promotion"
 
     property_id: Mapped[int] = mapped_column(ForeignKey("property.id"), index=True)
@@ -45,7 +46,7 @@ class Promotion(Base, TimestampMixin):
     external_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
-class NativeDeal(Base, TimestampMixin):
+class NativeDeal(Base, AccountOwned, TimestampMixin):
     """Registro informativo de un deal nativo gestionado en el panel del canal.
 
     Los deals nativos (badge de Booking, semanal/mensual de Airbnb) no tienen API:
