@@ -198,3 +198,15 @@ async def test_cuenta_nueva_no_ve_la_cuenta_1(client, mail, session):
     async with session.info["maker"]() as s:
         mark_platform(s)
         assert len((await s.execute(select(Account))).scalars().all()) == 2
+
+
+async def test_cambiar_mi_nombre_y_el_de_la_cuenta(client, mail):
+    admin = await _admin(client)
+    r = await client.patch("/auth/me", headers=_auth(admin), json={"name": "  Ever  "})
+    assert r.status_code == 200 and r.json()["user"]["name"] == "Ever"
+    r = await client.patch("/account", headers=_auth(admin), json={"name": "Apto Laureles"})
+    assert r.json()["name"] == "Apto Laureles"
+    me = (await client.get("/auth/me", headers=_auth(admin))).json()
+    assert me["user"]["name"] == "Ever" and me["account"]["name"] == "Apto Laureles"
+    assert (await client.patch("/auth/me", headers=_auth(admin), json={"name": "   "})).status_code == 400
+    assert (await client.patch("/auth/me", json={"name": "X"})).status_code == 401

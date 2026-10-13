@@ -108,6 +108,16 @@ export function Sidebar() {
             </Link>
           )}
         </nav>
+        {me.data && (
+          <Link
+            href="/settings"
+            onClick={() => setOpen(false)}
+            className="mb-1 block rounded-md px-3 py-2 hover:bg-muted"
+          >
+            <span className="block truncate text-sm font-medium">{me.data.account.name}</span>
+            <span className="block truncate text-xs text-muted-foreground">{me.data.user.email}</span>
+          </Link>
+        )}
         <LanguageSwitcher className="px-3 pt-2" />
         <button
           onClick={logout}

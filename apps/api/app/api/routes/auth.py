@@ -182,6 +182,25 @@ async def me(session: AsyncSession = Depends(get_session), ctx: RequestContext =
     return auth_service.me(user, account)
 
 
+class MePatch(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+
+
+@router.patch("/me")
+async def patch_me(
+    req: MePatch,
+    session: AsyncSession = Depends(get_session),
+    ctx: RequestContext = Depends(require_ctx),
+):
+    user, account = await _current(session, ctx)
+    name = req.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Escribe tu nombre")
+    user.name = name
+    await session.commit()
+    return auth_service.me(user, account)
+
+
 @router.post("/logout", status_code=204)
 async def logout(request: Request, session: AsyncSession = Depends(get_session)):
     token = bearer_token(request)

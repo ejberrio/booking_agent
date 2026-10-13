@@ -17,6 +17,7 @@ export function AccountCard() {
   const qc = useQueryClient();
   const me = useQuery({ queryKey: ["me"], queryFn: api.me });
   const [name, setName] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -24,8 +25,17 @@ export function AccountCard() {
   const rename = useMutation({
     mutationFn: (v: string) => api.renameAccount(v),
     onSuccess: () => {
-      toast.success(m.common.save);
+      toast.success(t.nameSaved);
       setName(null);
+      qc.invalidateQueries({ queryKey: ["me"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const renameUser = useMutation({
+    mutationFn: (v: string) => api.renameUser(v),
+    onSuccess: () => {
+      toast.success(t.nameSaved);
+      setUserName(null);
       qc.invalidateQueries({ queryKey: ["me"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -65,7 +75,7 @@ export function AccountCard() {
         {u.is_platform_admin && <Badge>{t.admin}</Badge>}
       </div>
       <p className="text-sm">
-        {u.name} · {u.email}{" "}
+        {u.email}{" "}
         <Badge variant={u.email_verified ? "success" : "warning"}>
           {u.email_verified ? t.verified : t.unverified}
         </Badge>
@@ -76,16 +86,39 @@ export function AccountCard() {
           {t.sendVerification}
         </Button>
       )}
-      <div className="flex gap-2">
-        <Input
-          aria-label={t.accountName}
-          value={name ?? account.name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <Button onClick={() => name && rename.mutate(name)} disabled={!name || rename.isPending}>
-          {t.saveName}
-        </Button>
-      </div>
+      <label className="block space-y-1">
+        <span className="text-sm font-medium">{t.yourName}</span>
+        <div className="flex gap-2">
+          <Input
+            value={userName ?? u.name}
+            onChange={(e) => setUserName(e.target.value)}
+            maxLength={120}
+          />
+          <Button
+            onClick={() => userName?.trim() && renameUser.mutate(userName.trim())}
+            disabled={!userName?.trim() || userName.trim() === u.name || renameUser.isPending}
+          >
+            {t.saveName}
+          </Button>
+        </div>
+      </label>
+      <label className="block space-y-1">
+        <span className="text-sm font-medium">{t.accountName}</span>
+        <div className="flex gap-2">
+          <Input
+            value={name ?? account.name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={120}
+          />
+          <Button
+            onClick={() => name?.trim() && rename.mutate(name.trim())}
+            disabled={!name?.trim() || name.trim() === account.name || rename.isPending}
+          >
+            {t.saveName}
+          </Button>
+        </div>
+        <span className="block text-xs text-muted-foreground">{t.accountNameHint}</span>
+      </label>
       <div className="space-y-2">
         <p className="text-sm font-medium">{t.changePassword}</p>
         {u.has_password && (

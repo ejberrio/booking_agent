@@ -68,7 +68,10 @@ const es = {
   account: {
     title: "Mi cuenta",
     description: "Tu usuario, tu contraseña y tus sesiones.",
+    yourName: "Tu nombre",
     accountName: "Nombre de la cuenta",
+    accountNameHint: "Así aparece tu cuenta en StayLever (por ejemplo, el nombre de tu negocio).",
+    nameSaved: "Nombre guardado",
     saveName: "Guardar nombre",
     verified: "Correo verificado",
     unverified: "Correo sin verificar",
@@ -156,7 +159,10 @@ const en: Shape = {
   account: {
     title: "My account",
     description: "Your user, your password and your sessions.",
+    yourName: "Your name",
     accountName: "Account name",
+    accountNameHint: "How your account appears in StayLever (for example, your business name).",
+    nameSaved: "Name saved",
     saveName: "Save name",
     verified: "Email confirmed",
     unverified: "Email not confirmed",
@@ -242,7 +248,10 @@ const pt: Shape = {
   account: {
     title: "Minha conta",
     description: "Seu usuário, sua senha e suas sessões.",
+    yourName: "Seu nome",
     accountName: "Nome da conta",
+    accountNameHint: "Como sua conta aparece no StayLever (por exemplo, o nome do seu negócio).",
+    nameSaved: "Nome salvo",
     saveName: "Salvar nome",
     verified: "E-mail confirmado",
     unverified: "E-mail não confirmado",

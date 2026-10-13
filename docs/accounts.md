@@ -9,7 +9,8 @@ StayLever tiene **cuentas aisladas** (cada anfitrión ve solo lo suyo) y **acces
   la sesión dura 90 días (7 en el navegador).
 - **Olvidé mi contraseña:** en la pantalla de entrada. Llega un enlace de `no-reply@mail.staylever.com`
   que vence en 1 hora y sirve una vez. Al cambiarla se cierran tus otras sesiones.
-- **Ajustes → Mi cuenta:** verificar el correo, renombrar la cuenta, cambiar la contraseña y
+- **Ajustes → Mi cuenta:** verificar el correo, cambiar tu nombre y el de la cuenta (el que se ve
+  en el menú lateral), cambiar la contraseña y
   "Cerrar todas mis sesiones" (por ejemplo, si pierdes el teléfono).
 
 ## Primera vez (reclamar la cuenta nº 1)

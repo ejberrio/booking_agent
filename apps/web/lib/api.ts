@@ -259,6 +259,8 @@ export const api = {
   // Cuentas (feature 026)
   listUnits: () => req<Unit[]>(`/units`),
   me: () => req<Me>(`/auth/me`),
+  renameUser: (name: string) =>
+    req<Me>(`/auth/me`, { method: "PATCH", body: JSON.stringify({ name }) }),
   renameAccount: (name: string) =>
     req<{ name: string }>(`/account`, { method: "PATCH", body: JSON.stringify({ name }) }),
   changePassword: (current: string, next: string) =>
