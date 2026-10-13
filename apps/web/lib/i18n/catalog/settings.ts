@@ -126,6 +126,9 @@ const es = {
       beds24_refresh_token: "Beds24 refresh token",
       beds24_webhook_key: "Clave de avisos de Beds24",
       fcm_service_account: "Credencial de avisos (Firebase)",
+      email_api_key: "Correo (Resend API key)",
+      google_oauth_client_id: "Google OAuth — ID de cliente",
+      google_oauth_client_secret: "Google OAuth — secreto de cliente",
     },
     services: {
       openai_api_key: "Agente de chat y extracción de eventos",
@@ -134,6 +137,9 @@ const es = {
       beds24_refresh_token: "Todo el canal (precios, reservas, disponibilidad)",
       beds24_webhook_key: "Reservas en tiempo real (avisos de Beds24)",
       fcm_service_account: "Avisos al celular (app de Android/iPhone)",
+      email_api_key: "Correos de verificación y recuperación de contraseña",
+      google_oauth_client_id: "Entrar con Google",
+      google_oauth_client_secret: "Entrar con Google",
     },
     help: {
       openai_api_key:
@@ -146,6 +152,7 @@ const es = {
         'Se genera arriba, en la tarjeta "Avisos en tiempo real" → "Generar clave", y se pega en Beds24 (Booking Webhook → Custom Header). No hace falta pegarla aquí; para rotarla, genera una nueva allí.',
       fcm_service_account:
         "console.firebase.google.com → tu proyecto → ⚙️ Configuración del proyecto → Cuentas de servicio → «Generar nueva clave privada». Se descarga un archivo .json: ábrelo, copia TODO su contenido y pégalo aquí. Es secreto: no lo compartas ni lo subas a GitHub.",
+      email_api_key: 'resend.com → API Keys → "Create API key" (permiso: Sending access, dominio mail.staylever.com). Empieza por "re_" y solo se muestra una vez: cópiala y pégala aquí.',
     },
     sourceUnreadable: "guardado ilegible — se usa la variable de entorno",
     sourceApp: "guardado en la app",
@@ -306,6 +313,9 @@ const en: Shape = {
       beds24_refresh_token: "Beds24 refresh token",
       beds24_webhook_key: "Beds24 notification key",
       fcm_service_account: "Notification credential (Firebase)",
+      email_api_key: "Email (Resend API key)",
+      google_oauth_client_id: "Google OAuth — client ID",
+      google_oauth_client_secret: "Google OAuth — client secret",
     },
     services: {
       openai_api_key: "Chat agent and event extraction",
@@ -314,6 +324,9 @@ const en: Shape = {
       beds24_refresh_token: "The whole channel (prices, bookings, availability)",
       beds24_webhook_key: "Real-time bookings (Beds24 notifications)",
       fcm_service_account: "Phone notifications (Android/iPhone app)",
+      email_api_key: "Confirmation and password recovery emails",
+      google_oauth_client_id: "Sign in with Google",
+      google_oauth_client_secret: "Sign in with Google",
     },
     help: {
       openai_api_key:
@@ -326,6 +339,7 @@ const en: Shape = {
         'It\'s generated above, in the "Real-time notifications" card → "Generate key", and pasted into Beds24 (Booking Webhook → Custom Header). No need to paste it here; to rotate it, generate a new one there.',
       fcm_service_account:
         "console.firebase.google.com → your project → ⚙️ Project settings → Service accounts → “Generate new private key”. A .json file downloads: open it, copy ALL of its content and paste it here. It is secret: do not share it or upload it to GitHub.",
+      email_api_key: 'resend.com → API Keys → "Create API key" (permission: Sending access, domain mail.staylever.com). It starts with "re_" and is shown only once: copy it and paste it here.',
     },
     sourceUnreadable: "saved value unreadable — using the environment variable",
     sourceApp: "saved in the app",
@@ -484,6 +498,9 @@ const pt: Shape = {
       beds24_refresh_token: "Beds24 refresh token",
       beds24_webhook_key: "Chave de avisos do Beds24",
       fcm_service_account: "Credencial de avisos (Firebase)",
+      email_api_key: "E-mail (Resend API key)",
+      google_oauth_client_id: "Google OAuth — ID do cliente",
+      google_oauth_client_secret: "Google OAuth — segredo do cliente",
     },
     services: {
       openai_api_key: "Agente de chat e extração de eventos",
@@ -492,6 +509,9 @@ const pt: Shape = {
       beds24_refresh_token: "Todo o canal (preços, reservas, disponibilidade)",
       beds24_webhook_key: "Reservas em tempo real (avisos do Beds24)",
       fcm_service_account: "Notificações no celular (app Android/iPhone)",
+      email_api_key: "E-mails de confirmação e recuperação de senha",
+      google_oauth_client_id: "Entrar com Google",
+      google_oauth_client_secret: "Entrar com Google",
     },
     help: {
       openai_api_key:
@@ -504,6 +524,7 @@ const pt: Shape = {
         'É gerada acima, no cartão "Avisos em tempo real" → "Gerar chave", e colada no Beds24 (Booking Webhook → Custom Header). Não é preciso colá-la aqui; para fazer a rotação, gere uma nova lá.',
       fcm_service_account:
         "console.firebase.google.com → seu projeto → ⚙️ Configurações do projeto → Contas de serviço → «Gerar nova chave privada». Um arquivo .json é baixado: abra, copie TODO o conteúdo e cole aqui. É secreto: não compartilhe nem envie ao GitHub.",
+      email_api_key: 'resend.com → API Keys → "Create API key" (permissão: Sending access, domínio mail.staylever.com). Começa com "re_" e só aparece uma vez: copie e cole aqui.',
     },
     sourceUnreadable: "valor salvo ilegível — usando a variável de ambiente",
     sourceApp: "salvo no app",

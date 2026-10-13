@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { AccountCard } from "@/components/account/account-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
@@ -776,6 +777,8 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-xl space-y-4">
       <h1 className="text-xl font-semibold">{t.title}</h1>
+
+      <AccountCard />
 
       <Card className="space-y-2">
         <CardTitle>{t.beds24.title}</CardTitle>

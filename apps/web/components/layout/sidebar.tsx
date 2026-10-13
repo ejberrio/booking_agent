@@ -35,7 +35,7 @@ export function Sidebar() {
   const { m } = useI18n();
 
   async function logout() {
-    await fetch("/api/logout", { method: "POST" });
+    await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
     router.refresh();
   }

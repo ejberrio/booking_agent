@@ -6,11 +6,11 @@ from sqlalchemy import Boolean, DateTime, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
-from app.models.account import AccountOwned
+from app.models.account import AccountOwned, UserStamped
 from app.models.mixins import TimestampMixin, _now
 
 
-class PushDevice(Base, AccountOwned, TimestampMixin):
+class PushDevice(Base, AccountOwned, UserStamped, TimestampMixin):
     """Teléfono con la app instalada. El token es el identificador de avisos (FCM)."""
 
     __tablename__ = "push_device"

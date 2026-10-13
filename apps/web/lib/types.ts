@@ -464,3 +464,17 @@ export interface Unit {
   city: string;
   currency: string;
 }
+
+/** Usuario y cuenta de la sesión (feature 026: `GET /auth/me`). */
+export interface Me {
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    email_verified: boolean;
+    language: string;
+    is_platform_admin: boolean;
+    has_password: boolean;
+  };
+  account: { id: number; name: string };
+}

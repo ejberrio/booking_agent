@@ -1,24 +1,48 @@
 import { NextRequest } from "next/server";
+import { SESSION_COOKIE } from "@/lib/session";
 
 // Proxy server-side hacia la API privada (red interna de Railway).
-// El navegador llama a "/api/proxy/<path>"; aquí se reenvía a la API.
+// El navegador llama a "/api/proxy/<path>"; aquí se reenvía a la API con la sesión del
+// usuario (cookie httpOnly → `Authorization: Bearer`). Feature 026.
 // API_INTERNAL_URL se lee SOLO en servidor (nunca NEXT_PUBLIC_*).
 const API = process.env.API_INTERNAL_URL ?? "http://localhost:8000";
 
-// Headers hop-by-hop que no deben reenviarse.
-const HOP = new Set(["host", "connection", "content-length", "transfer-encoding", "cookie"]);
+// Cabeceras que el navegador NO puede imponer: hop-by-hop e identidad.
+const DROP = new Set([
+  "host",
+  "connection",
+  "content-length",
+  "transfer-encoding",
+  "cookie",
+  "authorization",
+  "x-forwarded-for",
+  "x-real-ip",
+]);
+// Rutas de acceso SIN sesión: solo las llaman las rutas /api/auth/* de la web.
+const BLOCKED = /^auth\/(login|claim|claim-status|verify-email|resend-verification|forgot-password|reset-password|logout)$/;
+
+function json(status: number, body: unknown, clearCookie = false): Response {
+  const headers = new Headers({ "content-type": "application/json" });
+  if (clearCookie) headers.append("set-cookie", `${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax`);
+  return new Response(JSON.stringify(body), { status, headers });
+}
 
 async function handle(
   req: NextRequest,
   ctx: { params: Promise<{ path: string[] }> },
 ): Promise<Response> {
   const { path } = await ctx.params;
-  const target = `${API}/${(path ?? []).join("/")}${req.nextUrl.search}`;
+  const joined = (path ?? []).join("/");
+  if (BLOCKED.test(joined)) return json(404, { detail: "No encontrado" });
+  const target = `${API}/${joined}${req.nextUrl.search}`;
 
   const headers = new Headers();
   req.headers.forEach((value, key) => {
-    if (!HOP.has(key.toLowerCase())) headers.set(key, value);
+    const k = key.toLowerCase();
+    if (!DROP.has(k) && !k.startsWith("x-staylever")) headers.set(key, value);
   });
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
+  if (token) headers.set("authorization", `Bearer ${token}`);
 
   const init: RequestInit & { duplex?: "half" } = {
     method: req.method,
@@ -34,10 +58,11 @@ async function handle(
   try {
     upstream = await fetch(target, init);
   } catch {
-    return new Response(JSON.stringify({ error: "API no disponible" }), {
-      status: 502,
-      headers: { "content-type": "application/json" },
-    });
+    return json(502, { error: "API no disponible" });
+  }
+  // Sesión vencida o revocada: se borra la cookie y la web lleva a /login.
+  if (upstream.status === 401) {
+    return json(401, { detail: "Sesión no válida" }, true);
   }
 
   // Reenvía status y cuerpo tal cual; soporta streaming (SSE) sin bufferizar.

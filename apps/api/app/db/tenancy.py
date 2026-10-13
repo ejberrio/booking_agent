@@ -21,7 +21,7 @@ from sqlalchemy import event, inspect
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import ORMExecuteState, Session, with_loader_criteria
 
-from app.models.account import AccountOwned
+from app.models.account import AccountOwned, UserStamped
 
 ACCOUNT_KEY = "account_id"
 USER_KEY = "user_id"
@@ -109,6 +109,11 @@ def _assign_account(session: Session, _flush_context, _instances) -> None:
             raise CrossTenantWrite(f"{type(obj).__name__} de otra cuenta")
         elif account_id is None and not platform:
             raise TenantContextMissing(f"{type(obj).__name__} nuevo sin contexto")
+    user_id = info.get(USER_KEY)
+    if user_id is not None:
+        for obj in session.new:
+            if isinstance(obj, UserStamped) and obj.user_id is None:
+                obj.user_id = user_id
     for obj in session.dirty:
         if not isinstance(obj, AccountOwned):
             continue

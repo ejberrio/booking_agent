@@ -59,9 +59,11 @@ class Settings(BaseSettings):
     # API
     cors_origins: str = "http://localhost:3000"
     secret_key: str = "cambia-esto"
-    # Feature 026: "legacy" = sin sesiones de usuario, todo va a la cuenta nº 1 (transición
-    # hasta desplegar el acceso por usuario); "sessions" = cada petición trae su sesión.
+    # Feature 026: "legacy" = transición: con sesión (Bearer) se usa esa cuenta; sin ella,
+    # la cuenta nº 1 (la web antigua). "sessions" = toda petición exige sesión válida.
     auth_mode: str = "legacy"
+    # Dirección pública de la web (enlaces de los correos). Staging pone la suya.
+    public_base_url: str = "https://staylever.com"
     # Feature 026 — ambiente de pruebas: "simulated" = el Channel Manager se simula con la
     # base local (NUNCA habla con Beds24/Booking/Airbnb) y no se envían avisos al celular.
     # Producción: "real" (por defecto).
