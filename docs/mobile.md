@@ -65,5 +65,6 @@ Play Protect puede advertir "app de un desarrollador desconocido": es normal fue
 
 ## 6. Cómo funciona por dentro
 - `apps/mobile/capacitor.config.ts`: `server.url = https://staylever.com`, `errorPath = offline.html`, User-Agent `StayLeverApp/<versión>` (+ ` push` si el APK incluye Firebase).
+- **Entrar con Google (1.1.0, feature 026):** Google no permite entrar dentro de un WebView. El botón abre `…/api/auth/google/start?client=app&challenge=…` en el navegador del sistema (`@capacitor/browser`); al terminar, la web redirige a `com.staylever.app://auth?code=…` (intent-filter en `AndroidManifest.xml`), la app cierra el navegador y canjea el código en `/api/auth/handoff` con su verificador PKCE (un solo uso, 2 minutos). Con la app 1.0.0 la web oculta el botón y pide actualizar; el correo y la contraseña siguen funcionando.
 - Web: `components/native/native-bridge.tsx` (solo dentro de la app): botón atrás, permiso y registro de avisos (`POST /push/devices`), tocar un aviso abre su pantalla (`/calendar?month=…`, `/suggestions`).
 - API: `push_service` envía con deduplicación (`push_notification_log`), desactiva teléfonos con token inválido; avisos de reservas desde la sincronización entrante (webhook de Beds24, botón Sincronizar, sync diaria) y de sugerencias desde el escaneo diario. Los avisos nunca llevan el nombre del huésped.

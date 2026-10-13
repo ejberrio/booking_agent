@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { AuthShell, FormNote, postJson } from "@/components/auth/auth-shell";
+import { GoogleButton, useGoogleError } from "@/components/auth/google-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n";
@@ -24,6 +25,7 @@ function RegisterForm() {
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const googleError = useGoogleError(params.get("error"));
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm({ ...form, [k]: e.target.value });
 
@@ -92,6 +94,8 @@ function RegisterForm() {
           <Button type="submit" className="w-full" disabled={loading}>
             {t.register.submit}
           </Button>
+          {googleError && !error && <FormNote kind="error">{googleError}</FormNote>}
+          <GoogleButton mode="register" invite={open ? undefined : form.invite_code} />
         </form>
       )}
     </AuthShell>

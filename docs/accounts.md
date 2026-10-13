@@ -1,7 +1,7 @@
 # Cuentas y acceso (feature 026)
 
 StayLever tiene **cuentas aisladas** (cada anfitrión ve solo lo suyo) y **acceso por usuario**
-(correo y contraseña; Google llega en la entrega 4). Diseño: [ADR 0007](adr/0007-multitenancy.md).
+(correo y contraseña, o Google). Diseño: [ADR 0007](adr/0007-multitenancy.md).
 
 ## Para el host
 
@@ -41,6 +41,21 @@ la contraseña de siempre ya no sirve para entrar.
   correos (verificación y recuperación) y el resto de la app funciona igual.
 - `PUBLIC_BASE_URL` (api) define la dirección de los enlaces: producción `https://staylever.com`
   (por defecto); pruebas, el dominio de staging.
+
+## Entrar con Google
+
+- **Para los anfitriones:** botón **"Entrar con Google"** en la entrada y **"Crear cuenta con Google"**
+  en el registro (con el código de invitación mientras el registro esté cerrado). Si su correo de
+  Google ya tiene cuenta en StayLever, se vincula solo (Google confirma el correo). En la app de
+  Android requiere la **versión 1.1.0**: Google se abre en el navegador del teléfono y vuelve a la app.
+- **Para el administrador (una sola vez):** Google Cloud, proyecto `staylever` → Google Auth
+  Platform: pantalla de consentimiento "StayLever" (usuarios externos, solo `openid email profile`,
+  sin verificación de Google) y cliente web **"StayLever web"** con los URI de retorno
+  `https://staylever.com/api/auth/google/callback` y el de staging. El **ID** y el **secreto** se
+  pegan en **Ajustes → Secretos** ("Google OAuth client ID/secret", secretos de plataforma) en cada
+  ambiente. Sin ellos el botón no aparece. Si el secreto se pierde, se genera otro en el mismo cliente.
+- **Publicación:** mientras la pantalla de Google esté "En prueba", solo entran los usuarios de
+  prueba que agregues en Público; al **publicarla** ("En producción") entra cualquiera.
 
 ## Interruptor de transición (`AUTH_MODE`, servicio api)
 

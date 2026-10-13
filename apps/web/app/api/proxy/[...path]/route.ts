@@ -19,7 +19,7 @@ const DROP = new Set([
   "x-real-ip",
 ]);
 // Rutas de acceso SIN sesión: solo las llaman las rutas /api/auth/* de la web.
-const BLOCKED = /^auth\/(login|register|registration-status|claim|claim-status|verify-email|resend-verification|forgot-password|reset-password|logout)$/;
+const BLOCKED = /^auth\/(login|register|registration-status|claim|claim-status|verify-email|resend-verification|forgot-password|reset-password|logout|providers|handoff|google\/start|google\/callback)$/;
 
 function json(status: number, body: unknown, clearCookie = false): Response {
   const headers = new Headers({ "content-type": "application/json" });

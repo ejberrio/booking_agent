@@ -26,6 +26,14 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Entrar con Google (feature 026, app 1.1.0): Google se abre en el navegador del
+                 sistema y vuelve a la app por com.staylever.app://auth?code=… -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="com.staylever.app" android:host="auth" />
+            </intent-filter>
         </activity>
 
         <provider

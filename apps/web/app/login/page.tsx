@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { AuthShell, FormNote, postJson } from "@/components/auth/auth-shell";
+import { GoogleButton, useGoogleError } from "@/components/auth/google-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n";
@@ -19,6 +20,7 @@ function LoginForm() {
   const [code, setCode] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const googleError = useGoogleError(params.get("error"));
 
   // La cuenta del host original aún sin usuario → configurar el acceso (feature 026).
   useEffect(() => {
@@ -72,6 +74,7 @@ function LoginForm() {
         </div>
       }
     >
+      {googleError && !error && <FormNote kind="error">{googleError}</FormNote>}
       <form onSubmit={onSubmit} className="space-y-3">
         <Input
           type="email"
@@ -101,6 +104,7 @@ function LoginForm() {
           {loading ? t.login.submitting : t.login.submit}
         </Button>
       </form>
+      <GoogleButton mode="login" />
     </AuthShell>
   );
 }
