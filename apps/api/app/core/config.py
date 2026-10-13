@@ -70,6 +70,10 @@ class Settings(BaseSettings):
     anthropic_api_key: str | None = None
     openai_api_key: str | None = None
     llm_max_usd_per_day: float = 5.0
+    # Modelos de razonamiento (gpt-5.x / gpt-6 Luna/Sol): esfuerzo de razonamiento. En Chat
+    # Completions, las herramientas (agente) solo funcionan con "none". Vacío = no se envía
+    # (modelos clásicos como gpt-4o, que no lo aceptan).
+    llm_reasoning_effort: str | None = None
 
     # Channel Manager (Beds24, API V1 con API Key de cuenta)
     channel_manager: str | None = None
