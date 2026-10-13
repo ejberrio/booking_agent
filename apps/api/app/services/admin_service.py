@@ -17,11 +17,11 @@ from app.models.mixins import _now
 from app.models.property import Property
 
 
-def _connected(account_id: int) -> bool:
+def _connected(account_id: int, properties: int) -> bool:
     from app.services.secret_service import get_secret
 
-    if settings.sandbox:
-        return True
+    if settings.sandbox:  # canal simulado: "conectada" = ya tiene propiedades importadas
+        return properties > 0
     return bool(get_secret("beds24_refresh_token", account_id))
 
 
@@ -56,7 +56,7 @@ async def list_accounts() -> list[dict]:
             "status": a.status.value,
             "created_at": _iso(a.created_at),
             "last_seen_at": _iso(a.last_seen_at),
-            "connected": _connected(a.id),
+            "connected": _connected(a.id, int(props.get(a.id, 0))),
             "properties": int(props.get(a.id, 0)),
         }
         for a in accounts

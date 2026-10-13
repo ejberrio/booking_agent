@@ -164,6 +164,7 @@ async def test_panel_solo_admin_y_cuentas_sin_datos_privados(client, mail):
     assert set(accounts[0]) == {"id", "name", "owner_email", "status", "created_at",
                                 "last_seen_at", "connected", "properties"}
     ana = next(a for a in accounts if a["name"] == "Ana")
+    assert ana["last_seen_at"] is not None  # entrar cuenta como uso
     # desactivar → sus sesiones dejan de valer; reactivar
     r = await client.post(f"/admin/accounts/{ana['id']}/disable", headers=_auth(admin))
     assert r.json()["status"] == "disabled"

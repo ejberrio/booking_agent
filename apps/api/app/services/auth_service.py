@@ -89,6 +89,10 @@ async def create_session(
         )
     )
     user.last_login_at = _now()
+    member = await _membership(session, user.id)
+    account = await session.get(Account, member.account_id) if member else None
+    if account is not None:
+        account.last_seen_at = _now()
     await session.flush()
     return token, expires
 
