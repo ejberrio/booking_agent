@@ -9,7 +9,8 @@ StayLever tiene **cuentas aisladas** (cada anfitrión ve solo lo suyo) y **acces
   la sesión dura 90 días (7 en el navegador).
 - **Olvidé mi contraseña:** en la pantalla de entrada. Llega un enlace de `no-reply@mail.staylever.com`
   que vence en 1 hora y sirve una vez. Al cambiarla se cierran tus otras sesiones.
-- **Ajustes → Mi cuenta:** verificar el correo, renombrar la cuenta, cambiar la contraseña y
+- **Ajustes → Mi cuenta:** verificar el correo, cambiar tu nombre y el de la cuenta (el que se ve
+  en el menú lateral), cambiar la contraseña y
   "Cerrar todas mis sesiones" (por ejemplo, si pierdes el teléfono).
 
 ## Primera vez (reclamar la cuenta nº 1)
@@ -18,6 +19,19 @@ Al desplegar la entrega 2, tus datos están en la cuenta nº 1 sin usuario. Al a
 **"Configura tu acceso"**: escribe la contraseña de siempre (`APP_PASSWORD` de la web), tu nombre,
 tu correo y una contraseña nueva. Quedas como dueño y **administrador de la plataforma**. Después,
 la contraseña de siempre ya no sirve para entrar.
+
+## Invitar anfitriones (beta)
+
+- **Administración → Invitaciones:** escribe para quién es (p. ej. "Ana, Cartagena") y pulsa
+  "Crear código". El código `SL-XXXX-XXXX` se muestra **una sola vez**: copia el código o el
+  enlace de registro (`staylever.com/register?code=…`) y compártelo. Vence en 30 días (ajustable)
+  y sirve una vez; puedes revocarlo mientras no se use.
+- El anfitrión crea su cuenta (nombre, correo, contraseña dos veces), confirma su correo y entra a
+  una StayLever vacía que le indica conectar su Beds24 en Ajustes.
+- **Administración → Cuentas:** ves cada cuenta (dueño, uso, si tiene channel manager, nº de
+  propiedades), sin sus precios, reservas ni conversaciones. "Desactivar" cierra sus sesiones y
+  el escaneo la omite; sus datos se conservan y "Reactivar" lo deshace.
+- **Registro abierto:** apagado (beta) = solo con código; encendido = cualquiera con un correo.
 
 ## Correo (Resend)
 

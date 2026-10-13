@@ -89,6 +89,10 @@ async def create_session(
         )
     )
     user.last_login_at = _now()
+    member = await _membership(session, user.id)
+    account = await session.get(Account, member.account_id) if member else None
+    if account is not None:
+        account.last_seen_at = _now()
     await session.flush()
     return token, expires
 
@@ -306,6 +310,73 @@ async def change_password(
     user.password_hash = passwords.hash_password(new)
     await revoke_all(session, user.id, keep_token=keep_token)
     await session.commit()
+
+
+# --------- registro (entrega 3) ---------
+
+
+async def register(
+    session: AsyncSession,
+    *,
+    name: str,
+    email: str,
+    password: str,
+    invite_code: str | None = None,
+    language: str = "es",
+    sender: EmailSender | None = None,
+) -> None:
+    """Crea cuenta + usuario dueño. Con el registro cerrado exige un código vigente.
+
+    La respuesta es la misma exista o no el correo: si ya existe se le avisa por correo y el
+    código NO se consume. El usuario entra tras verificar su correo.
+    """
+    from app.services import invite_service
+
+    sender = sender or get_email_sender()
+    if sender is None:
+        raise AuthError("email_unavailable", "El registro no está disponible por ahora", 503)
+    email = normalize_email(email)
+    name = (name or "").strip()
+    if "@" not in email or len(email) > 254 or not name:
+        raise AuthError("invalid_data", "Revisa el nombre y el correo", 400)
+    passwords.check_policy(password)
+    open_reg = await invite_service.registration_open(session)
+    invite = None
+    if not open_reg:
+        invite = await invite_service.find_valid(session, invite_code or "")
+        if invite is None:
+            code = "invite_required" if not (invite_code or "").strip() else "invite_invalid"
+            raise AuthError(
+                code,
+                "StayLever está en beta por invitación"
+                if code == "invite_required"
+                else "El código de invitación no es válido, venció o ya se usó",
+                400,
+            )
+    existing = await _user_by_email(session, email)
+    lang = language if language in LANGS else "es"
+    if existing is not None:
+        await sender.send(
+            templates.already_registered(email, lang, f"{settings.public_base_url.rstrip('/')}/login")
+        )
+        return
+    account = Account(name=name[:120])
+    session.add(account)
+    await session.flush()
+    if invite is not None and not await invite_service.consume(session, invite, account.id):
+        await session.rollback()
+        raise AuthError("invite_invalid", "El código de invitación no es válido, venció o ya se usó", 400)
+    user = AppUser(
+        email=email,
+        name=name[:120],
+        password_hash=passwords.hash_password(password),
+        language=lang,
+    )
+    session.add(user)
+    await session.flush()
+    session.add(Membership(user_id=user.id, account_id=account.id, role="owner"))
+    await session.commit()
+    await send_verification(session, user, sender)
 
 
 # --------- reclamar la cuenta nº 1 ---------

@@ -48,7 +48,7 @@ export function I18nProvider({ initialLang, children }: { initialLang: Lang; chi
 
   // Con sesión, la preferencia guardada en el servidor manda (otro dispositivo).
   useEffect(() => {
-    if (/^\/(login|claim|forgot|reset|verify)/.test(window.location.pathname)) return;
+    if (/^\/(login|register|claim|forgot|reset|verify)/.test(window.location.pathname)) return;
     fetch("/api/proxy/preferences", { redirect: "manual", cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((p) => {

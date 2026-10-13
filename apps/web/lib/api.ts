@@ -38,6 +38,8 @@ import type {
   ExtensionResult,
   ConversationSummary,
   ConversationDetail,
+  AdminAccount,
+  Invite,
   Me,
   PushDevice,
   Unit,
@@ -69,7 +71,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   if (
     res.status === 401 &&
     typeof window !== "undefined" &&
-    !/^\/(login|claim|forgot|reset|verify)/.test(window.location.pathname)
+    !/^\/(login|register|claim|forgot|reset|verify)/.test(window.location.pathname)
   ) {
     // Sesión vencida o cerrada (feature 026): a entrar de nuevo, volviendo a esta página.
     const next = window.location.pathname + window.location.search;
@@ -257,12 +259,33 @@ export const api = {
   // Cuentas (feature 026)
   listUnits: () => req<Unit[]>(`/units`),
   me: () => req<Me>(`/auth/me`),
+  renameUser: (name: string) =>
+    req<Me>(`/auth/me`, { method: "PATCH", body: JSON.stringify({ name }) }),
   renameAccount: (name: string) =>
     req<{ name: string }>(`/account`, { method: "PATCH", body: JSON.stringify({ name }) }),
   changePassword: (current: string, next: string) =>
     req<{ status: string }>(`/auth/change-password`, {
       method: "POST",
       body: JSON.stringify({ current, new: next }),
+    }),
+  // Panel del administrador de plataforma (feature 026, entrega 3)
+  listInvites: () => req<Invite[]>(`/admin/invites`),
+  createInvite: (note: string, days: number) =>
+    req<{ id: number; code: string; expires_at: string }>(`/admin/invites`, {
+      method: "POST",
+      body: JSON.stringify({ note: note || null, days }),
+    }),
+  revokeInvite: (id: number) => req<{ revoked: boolean }>(`/admin/invites/${id}`, { method: "DELETE" }),
+  listAccounts: () => req<AdminAccount[]>(`/admin/accounts`),
+  setAccountEnabled: (id: number, enabled: boolean) =>
+    req<{ id: number; status: string }>(`/admin/accounts/${id}/${enabled ? "enable" : "disable"}`, {
+      method: "POST",
+    }),
+  adminSettings: () => req<{ registration_open: boolean }>(`/admin/settings`),
+  setRegistrationOpen: (open: boolean) =>
+    req<{ registration_open: boolean }>(`/admin/settings`, {
+      method: "PATCH",
+      body: JSON.stringify({ registration_open: open }),
     }),
   sendVerification: () => req<{ sent: boolean }>(`/auth/send-verification`, { method: "POST" }),
   logoutAll: () =>

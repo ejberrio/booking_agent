@@ -1,7 +1,15 @@
 """Modelos ORM del dominio. Importar todo aquí para que Alembic detecte la metadata."""
 
 from app.models.account import Account
-from app.models.auth import AppUser, AuthAttempt, AuthToken, Membership, UserSession
+from app.models.auth import (
+    AppUser,
+    AuthAttempt,
+    AuthToken,
+    InviteCode,
+    Membership,
+    PlatformSetting,
+    UserSession,
+)
 from app.models.agent import AgentAction, Conversation, LLMConfig, Message
 from app.models.intelligence import IntelligenceRun, MarketReference, ScanConfig
 from app.models.audit import PriceChangeLog, PromotionChangeLog
@@ -22,6 +30,8 @@ __all__ = [
     "AppUser",
     "AuthAttempt",
     "AuthToken",
+    "InviteCode",
+    "PlatformSetting",
     "Membership",
     "UserSession",
     "AppPreference",

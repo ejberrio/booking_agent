@@ -5,6 +5,7 @@ import { SESSION_COOKIE, looksLikeSessionToken } from "@/lib/session";
 // Páginas y rutas sin sesión (feature 026). hooks: avisos de Beds24 (auth por clave propia).
 const PUBLIC = [
   "/login",
+  "/register",
   "/claim",
   "/forgot",
   "/reset",

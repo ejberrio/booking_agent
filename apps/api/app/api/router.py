@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 
 from app.api.routes import (
     account,
+    admin,
     auth,
     bookings,
     calendar_notes,
@@ -39,3 +40,4 @@ api_router.include_router(preferences.router, prefix="/preferences", tags=["pref
 api_router.include_router(push.router, prefix="/push", tags=["push"], dependencies=_ctx)  # 025
 api_router.include_router(account.router, tags=["account"], dependencies=_ctx)  # 026
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])  # 026: sin ctx global
+api_router.include_router(admin.router, prefix="/admin", tags=["admin"], dependencies=_ctx)  # 026

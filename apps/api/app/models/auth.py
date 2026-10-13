@@ -77,3 +77,28 @@ class AuthAttempt(Base, TimestampMixin):
     email_hash: Mapped[str] = mapped_column(String(64), index=True)
     ip: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     success: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class InviteCode(Base, TimestampMixin):
+    """Código de invitación de un solo uso (beta por invitación, feature 026). Solo se guarda
+    el hash y los últimos 4 caracteres: el código completo se muestra una vez al crearlo."""
+
+    __tablename__ = "invite_code"
+
+    code_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    last4: Mapped[str] = mapped_column(String(4))
+    note: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"), nullable=True)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    used_by_account_id: Mapped[int | None] = mapped_column(ForeignKey("account.id"), nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class PlatformSetting(Base):
+    """Ajustes de la plataforma (clave → valor). Hoy: registration_open."""
+
+    __tablename__ = "platform_setting"
+
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[dict | None] = mapped_column(JSON, nullable=True)

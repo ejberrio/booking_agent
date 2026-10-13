@@ -1,4 +1,5 @@
 import account from "@/lib/i18n/catalog/account";
+import admin from "@/lib/i18n/catalog/admin";
 import auth from "@/lib/i18n/catalog/auth";
 import calendar from "@/lib/i18n/catalog/calendar";
 import chat from "@/lib/i18n/catalog/chat";
@@ -17,6 +18,7 @@ import type { Lang } from "@/lib/i18n/core";
 const AREAS = {
   common,
   account,
+  admin,
   auth,
   shell,
   dashboard,
