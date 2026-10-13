@@ -106,17 +106,18 @@ async def _test_llm(name: str) -> dict:
     import litellm
 
     # Petición mínima con un modelo barato del proveedor correspondiente.
-    model = (
-        "anthropic/claude-haiku-4-5-20251001"
-        if name == "anthropic_api_key"
-        else "openai/gpt-4o-mini"
-    )
+    from app.core.config import settings
+    from app.llm.client import reasoning_kwargs
+
+    openai = name != "anthropic_api_key"
+    model = f"openai/{settings.llm_model}" if openai else "anthropic/claude-haiku-4-5-20251001"
     try:
         await litellm.acompletion(
             model=model,
             messages=[{"role": "user", "content": "ping"}],
-            max_tokens=1,
+            max_tokens=16,
             api_key=api_key,
+            **(reasoning_kwargs() if openai else {}),
         )
         return {"ok": True, "detail": _OK}
     except Exception as exc:  # mensajes categorizados, jamás la excepción cruda
