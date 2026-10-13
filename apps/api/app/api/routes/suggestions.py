@@ -2,10 +2,12 @@ from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.routes.sync import get_adapter
 from app.db.session import get_session
+from app.models.calendar import Rate
 from app.models.enums import SuggestionStatus, SyncIssueKind
 from app.models.sync import SyncIssue
 from app.domain.suggestion_blocks import BlockInput, build_blocks
@@ -54,7 +56,35 @@ async def list_suggestions(
         st = SuggestionStatus(status) if status else None
         items = await intelligence_service.list_suggestions(session, status=st)
     today = date.today()
-    return [await _with_current_price(session, s, today) for s in items]
+    # Precio vigente de todas en UNA consulta (antes una por sugerencia: con el historial
+    # completo, cientos de idas y vueltas a la base → minutos).
+    prices = await _current_prices(session, items, today)
+    out = []
+    for s in items:
+        data = _serialize(s)
+        price = prices.get((s.unit_type_id, _price_day(s, today)))
+        data["current_price"] = str(price) if price is not None else None
+        out.append(data)
+    return out
+
+
+def _price_day(s, today: date) -> date:
+    """Día cuyo precio se muestra: el primer día no pasado del rango (FR-004)."""
+    return min(max(s.date_from, today), s.date_to)
+
+
+async def _current_prices(session: AsyncSession, items, today: date) -> dict:
+    keys = {(s.unit_type_id, _price_day(s, today)) for s in items if s.unit_type_id is not None}
+    if not keys:
+        return {}
+    units = {u for u, _ in keys}
+    days = {d for _, d in keys}
+    rows = await session.execute(
+        select(Rate.unit_type_id, Rate.date, Rate.base_price).where(
+            Rate.unit_type_id.in_(units), Rate.date.in_(days), Rate.base_price > 0
+        )
+    )
+    return {(u, d): p for u, d, p in rows if (u, d) in keys}
 
 
 # --------- sugerencias accionables (feature 019) ---------
