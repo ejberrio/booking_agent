@@ -203,11 +203,17 @@ async def pending_views(
             continue
         future = [d for d in _days(s.date_from, s.date_to) if d >= today]
         busy = occ.get(s.unit_type_id, {})
+        # Precios del rango en una consulta (antes una por noche).
+        prices = (
+            await pricing_service.get_prices(session, s.unit_type_id, future[0], future[-1])
+            if future
+            else {}
+        )
         nights = [
             SellableNight(
                 date=d,
                 suggestion_id=s.id,
-                current_price=await pricing_service.get_price(session, s.unit_type_id, d),
+                current_price=prices.get(d),
                 suggested_price=s.suggested_price,
             )
             for d in future
@@ -275,12 +281,13 @@ async def preview_batch(
         if bounds and bounds[0] is not None:
             min_price = bounds[0]
         busy = occ.get(s.unit_type_id, {}) if s.unit_type_id is not None else {}
+        prices = (
+            await pricing_service.get_prices(session, s.unit_type_id, s.date_from, s.date_to)
+            if s.unit_type_id is not None
+            else {}
+        )
         for d in _days(s.date_from, s.date_to):
-            old = (
-                await pricing_service.get_price(session, s.unit_type_id, d)
-                if s.unit_type_id is not None
-                else None
-            )
+            old = prices.get(d)
             # Feature 022: una bajada se aplica como promoción (el base no baja) y su
             # piso lo pone el precio mínimo con los descuentos que siempre se acumulan.
             is_down = old is not None and s.suggested_price < old

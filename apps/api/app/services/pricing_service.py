@@ -32,6 +32,21 @@ async def get_price(session: AsyncSession, unit_type_id: int, day: date) -> Deci
     return rate.base_price if rate and rate.base_price > 0 else None
 
 
+async def get_prices(
+    session: AsyncSession, unit_type_id: int, date_from: date, date_to: date
+) -> dict[date, Decimal]:
+    """Precios base de un rango en UNA consulta (solo noches con precio > 0)."""
+    rows = await session.execute(
+        select(Rate.date, Rate.base_price).where(
+            Rate.unit_type_id == unit_type_id,
+            Rate.date >= date_from,
+            Rate.date <= date_to,
+            Rate.base_price > 0,
+        )
+    )
+    return {d: p for d, p in rows}
+
+
 async def _active_rule(session: AsyncSession, property_id: int) -> PricingRule | None:
     res = await session.execute(
         select(PricingRule).where(
