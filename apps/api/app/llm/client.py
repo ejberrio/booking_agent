@@ -45,6 +45,18 @@ def _has_key() -> bool:
     return bool(get_secret("anthropic_api_key") or get_secret("openai_api_key"))
 
 
+def reasoning_kwargs() -> dict[str, Any]:
+    """Esfuerzo de razonamiento (gpt-5.x / gpt-6 Luna/Sol). En Chat Completions, las
+    herramientas del agente solo funcionan con "none". LiteLLM aún no conoce los modelos
+    más nuevos, así que se le permite pasar el parámetro explícitamente."""
+    if not settings.llm_reasoning_effort:
+        return {}
+    return {
+        "reasoning_effort": settings.llm_reasoning_effort,
+        "allowed_openai_params": ["reasoning_effort"],
+    }
+
+
 def _qualify(model: str) -> str:
     if settings.llm_provider and "/" not in model:
         return f"{settings.llm_provider}/{model}"
@@ -63,6 +75,7 @@ class LiteLLMClient:
 
         qualified = _qualify(model)
         kwargs: dict[str, Any] = {"model": qualified, "messages": messages}
+        kwargs.update(reasoning_kwargs())
         # LiteLLM lee la key del ENTORNO del proceso: para que una rotación guardada
         # en la app aplique de inmediato, se pasa explícita por llamada (feature 017).
         key_name = "anthropic_api_key" if qualified.startswith("anthropic/") else "openai_api_key"
@@ -98,11 +111,13 @@ async def complete(message: str) -> str:
         )
     import litellm
 
+    extra = reasoning_kwargs()
     response = await litellm.acompletion(
         model=_qualify(settings.llm_model),
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": message},
         ],
+        **extra,
     )
     return response.choices[0].message.content or ""
