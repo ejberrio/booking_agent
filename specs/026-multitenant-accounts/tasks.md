@@ -71,15 +71,15 @@
 
 ## Phase 7: US4 — Entrar con Google en web y app (P2, PR4)
 
-- [ ] T040 [US4] `apps/api/app/services/google_auth_service.py`: `start` (estado en `auth_token` con verificador PKCE, modo, invitación, cliente, challenge de la app), `callback` (canje del código con transporte inyectable, lectura de `sub/email/email_verified/name`, vincular por `google_sub` o correo verificado, crear con invitación), `handoff` (código de 2 min ligado al challenge S256) + rutas en `routes/auth.py`
-- [ ] T041 [US4] Web: `app/api/auth/google/{start,callback}/route.ts`, `app/api/auth/handoff/route.ts`; botón "Entrar con Google" en login/registro (oculto sin credenciales; en app < 1.1.0 muestra "actualiza la app")
-- [ ] T042 [US4] App 1.1.0: `@capacitor/browser` en `apps/mobile` y `apps/web`, intent-filter `com.staylever.app://auth` en `AndroidManifest.xml`, `native-bridge.tsx` (abrir Google en el navegador del sistema con verificador, `appUrlOpen` → cerrar navegador → `/api/auth/handoff`), publicar `android-v1.1.0`
-- [ ] T043 [P] [US4] Tests `apps/api/tests/test_google_auth.py`: estado inválido/vencido; PKCE; vincula por correo verificado; correo no verificado no vincula; registro requiere invitación con registro cerrado; handoff con verificador correcto/incorrecto/reusado
+- [X] T040 [US4] `apps/api/app/services/google_auth_service.py`: `start` (estado en `auth_token` con verificador PKCE, modo, invitación, cliente, challenge de la app), `callback` (canje del código con transporte inyectable, lectura de `sub/email/email_verified/name`, vincular por `google_sub` o correo verificado, crear con invitación), `handoff` (código de 2 min ligado al challenge S256) + rutas en `routes/auth.py`
+- [X] T041 [US4] Web: `app/api/auth/google/{start,callback}/route.ts`, `app/api/auth/handoff/route.ts`; botón "Entrar con Google" en login/registro (oculto sin credenciales; en app < 1.1.0 muestra "actualiza la app")
+- [X] T042 [US4] App 1.1.0: `@capacitor/browser` en `apps/mobile` y `apps/web`, intent-filter `com.staylever.app://auth` en `AndroidManifest.xml`, `native-bridge.tsx` (abrir Google en el navegador del sistema con verificador, `appUrlOpen` → cerrar navegador → `/api/auth/handoff`), publicar `android-v1.1.0`
+- [X] T043 [P] [US4] Tests `apps/api/tests/test_google_auth.py`: estado inválido/vencido; PKCE; vincula por correo verificado; correo no verificado no vincula; registro requiere invitación con registro cerrado; handoff con verificador correcto/incorrecto/reusado
 
 ## Phase 8: Polish
 
-- [ ] T044 [P] `docs/accounts.md` (reclamar la cuenta, configurar Resend y Google, invitar, administrar, desactivar) + `docs/operations.md` (cron por cuenta) + `docs/mobile.md` (APK 1.1.0)
-- [ ] T045 Revisión de logs: sin correos completos, tokens ni datos de huéspedes; `ruff`, `pytest`, `tsc`, `eslint`, `build` verdes
+- [X] T044 [P] `docs/accounts.md` (reclamar la cuenta, configurar Resend y Google, invitar, administrar, desactivar) + `docs/operations.md` (cron por cuenta) + `docs/mobile.md` (APK 1.1.0)
+- [X] T045 Revisión de logs: sin correos completos, tokens ni datos de huéspedes; `ruff`, `pytest`, `tsc`, `eslint`, `build` verdes
 - [ ] T046 Verificación en producción con el host (quickstart completo) y cierre de #143
 
 ## Dependencies

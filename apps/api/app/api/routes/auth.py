@@ -136,6 +136,78 @@ async def registration_status(session: AsyncSession = Depends(get_session)):
     return {"open": await invite_service.registration_open(session)}
 
 
+@router.get("/providers")
+async def providers():
+    from app.services import google_auth_service
+
+    return {"google": google_auth_service.is_configured()}
+
+
+class GoogleStartRequest(BaseModel):
+    mode: Literal["login", "register"] = "login"
+    client: Kind = "web"
+    invite_code: str | None = Field(default=None, max_length=40)
+    challenge: str | None = Field(default=None, max_length=128)
+    language: str = "es"
+
+
+@router.post("/google/start")
+async def google_start(req: GoogleStartRequest, session: AsyncSession = Depends(get_session)):
+    from app.services import google_auth_service
+
+    try:
+        url = await google_auth_service.start(
+            session, mode=req.mode, client=req.client, invite_code=req.invite_code,
+            challenge=req.challenge, language=req.language,
+        )
+    except AuthError as exc:
+        return _error(exc)
+    return {"url": url}
+
+
+class GoogleCallbackRequest(BaseModel):
+    code: str = Field(max_length=2048)
+    state: str = Field(max_length=200)
+
+
+@router.post("/google/callback")
+async def google_callback(
+    req: GoogleCallbackRequest, request: Request, session: AsyncSession = Depends(get_session)
+):
+    from app.services import google_auth_service
+
+    try:
+        r = await google_auth_service.callback(
+            session, code=req.code, state=req.state, user_agent=request.headers.get("user-agent")
+        )
+    except AuthError as exc:
+        return _error(exc)
+    if r.client == "app":
+        return {"client": "app", "handoff_code": r.handoff_code}
+    return {"client": "web", "token": r.token, "expires_at": r.expires.isoformat()}
+
+
+class HandoffRequest(BaseModel):
+    code: str = Field(max_length=200)
+    verifier: str = Field(max_length=200)
+
+
+@router.post("/handoff")
+async def app_handoff(
+    req: HandoffRequest, request: Request, session: AsyncSession = Depends(get_session)
+):
+    from app.services import google_auth_service
+
+    try:
+        token, expires, user = await google_auth_service.handoff(
+            session, code=req.code, verifier=req.verifier,
+            user_agent=request.headers.get("user-agent"),
+        )
+    except AuthError as exc:
+        return _error(exc)
+    return _session_out(token, expires, user)
+
+
 @router.get("/claim-status")
 async def claim_status(session: AsyncSession = Depends(get_session)):
     return {"claimable": await auth_service.claim_status(session)}
