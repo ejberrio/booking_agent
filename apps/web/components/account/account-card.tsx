@@ -95,6 +95,7 @@ export function AccountCard() {
             maxLength={120}
           />
           <Button
+            className="shrink-0"
             onClick={() => userName?.trim() && renameUser.mutate(userName.trim())}
             disabled={!userName?.trim() || userName.trim() === u.name || renameUser.isPending}
           >
@@ -111,6 +112,7 @@ export function AccountCard() {
             maxLength={120}
           />
           <Button
+            className="shrink-0"
             onClick={() => name?.trim() && rename.mutate(name.trim())}
             disabled={!name?.trim() || name.trim() === account.name || rename.isPending}
           >
