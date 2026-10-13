@@ -1,0 +1,44 @@
+# Cuentas y acceso (feature 026)
+
+StayLever tiene **cuentas aisladas** (cada anfitrión ve solo lo suyo) y **acceso por usuario**
+(correo y contraseña; Google llega en la entrega 4). Diseño: [ADR 0007](adr/0007-multitenancy.md).
+
+## Para el host
+
+- **Entrar:** staylever.com/login con tu correo y tu contraseña. En la app de Android, igual;
+  la sesión dura 90 días (7 en el navegador).
+- **Olvidé mi contraseña:** en la pantalla de entrada. Llega un enlace de `no-reply@mail.staylever.com`
+  que vence en 1 hora y sirve una vez. Al cambiarla se cierran tus otras sesiones.
+- **Ajustes → Mi cuenta:** verificar el correo, renombrar la cuenta, cambiar la contraseña y
+  "Cerrar todas mis sesiones" (por ejemplo, si pierdes el teléfono).
+
+## Primera vez (reclamar la cuenta nº 1)
+
+Al desplegar la entrega 2, tus datos están en la cuenta nº 1 sin usuario. Al abrir la web aparece
+**"Configura tu acceso"**: escribe la contraseña de siempre (`APP_PASSWORD` de la web), tu nombre,
+tu correo y una contraseña nueva. Quedas como dueño y **administrador de la plataforma**. Después,
+la contraseña de siempre ya no sirve para entrar.
+
+## Correo (Resend)
+
+- Dominio de envío `mail.staylever.com` (registros DKIM/SPF en Cloudflare, región sa-east-1).
+- La clave (`re_…`, permiso *Sending access*) se pega en **Ajustes → Secretos → "Correo (Resend
+  API key)"** — es un secreto de plataforma: solo lo ve el administrador. Sin clave, no salen
+  correos (verificación y recuperación) y el resto de la app funciona igual.
+- `PUBLIC_BASE_URL` (api) define la dirección de los enlaces: producción `https://staylever.com`
+  (por defecto); pruebas, el dominio de staging.
+
+## Interruptor de transición (`AUTH_MODE`, servicio api)
+
+- `legacy` (por defecto): con sesión, la cuenta de la sesión; sin sesión, la cuenta nº 1. Permite
+  desplegar web y API por separado sin cortar el servicio.
+- `sessions`: toda petición exige sesión. Se activa cuando el host ya entró con su usuario en la
+  web y en la app.
+
+## Seguridad
+
+- Contraseñas con Argon2id; sesiones y enlaces guardados solo como hash; mensajes de error
+  genéricos (no revelan si un correo existe); 10 fallos por correo o 50 por IP en 15 minutos
+  bloquean temporalmente.
+- La web guarda la sesión en una cookie httpOnly y el proxy la envía a la API; el navegador no
+  puede llamar a las rutas de acceso de la API ni imponer cabeceras de identidad.
