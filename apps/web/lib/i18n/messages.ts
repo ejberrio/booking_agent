@@ -11,6 +11,7 @@ import offers from "@/lib/i18n/catalog/offers";
 import rationale from "@/lib/i18n/catalog/rationale";
 import settings from "@/lib/i18n/catalog/settings";
 import shell from "@/lib/i18n/catalog/shell";
+import site from "@/lib/i18n/catalog/site";
 import suggestions from "@/lib/i18n/catalog/suggestions";
 import type { Lang } from "@/lib/i18n/core";
 
@@ -21,6 +22,7 @@ const AREAS = {
   admin,
   auth,
   shell,
+  site,
   dashboard,
   calendar,
   extension,

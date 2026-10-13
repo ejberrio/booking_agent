@@ -4,6 +4,17 @@ import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
+import { useI18n } from "@/lib/i18n";
+
+function SiteLinks() {
+  const { m } = useI18n();
+  return (
+    <div className="mt-4 flex justify-center gap-3 text-[11px] text-muted-foreground">
+      <Link href="/welcome" className="hover:underline">StayLever</Link>
+      <Link href="/privacy" className="hover:underline">{m.site.nav.privacy}</Link>
+    </div>
+  );
+}
 
 /** Marco común de las pantallas de acceso (feature 026). */
 export function AuthShell({
@@ -30,6 +41,7 @@ export function AuthShell({
         {description && <CardDescription>{description}</CardDescription>}
         <div className="mt-4">{children}</div>
         {footer && <div className="mt-4 text-center text-xs text-muted-foreground">{footer}</div>}
+        <SiteLinks />
       </Card>
     </main>
   );

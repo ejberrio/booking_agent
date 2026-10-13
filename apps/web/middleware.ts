@@ -10,6 +10,8 @@ const PUBLIC = [
   "/forgot",
   "/reset",
   "/verify",
+  "/welcome",
+  "/privacy",
   "/api/auth/",
   "/api/hooks/",
 ];
