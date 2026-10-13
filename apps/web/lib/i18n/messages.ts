@@ -1,3 +1,4 @@
+import account from "@/lib/i18n/catalog/account";
 import calendar from "@/lib/i18n/catalog/calendar";
 import chat from "@/lib/i18n/catalog/chat";
 import common from "@/lib/i18n/catalog/common";
@@ -14,6 +15,7 @@ import type { Lang } from "@/lib/i18n/core";
 // Compone los catálogos por área en un objeto por idioma (feature 021).
 const AREAS = {
   common,
+  account,
   shell,
   dashboard,
   calendar,

@@ -3,6 +3,7 @@ from collections.abc import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.config import settings
+from app.db import tenancy  # noqa: F401  -- registra el filtro por cuenta (feature 026)
 
 # El engine se crea de forma perezosa al primer uso; el scaffold arranca sin DB.
 # La URL se normaliza para asyncpg (Neon usa ?sslmode=require, que asyncpg no acepta)

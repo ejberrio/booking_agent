@@ -28,7 +28,7 @@ def fake_cm(monkeypatch):
         return None
 
     cm.aclose = _noop_close
-    monkeypatch.setattr(pricing_routes, "get_adapter", lambda: cm)
+    monkeypatch.setattr(pricing_routes, "get_adapter", lambda *_a, **_k: cm)
     return cm
 
 

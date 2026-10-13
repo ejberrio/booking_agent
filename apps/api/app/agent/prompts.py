@@ -14,7 +14,8 @@ def _channels_display(active_channels: list[str]) -> str:
 
 _BASE_SYSTEM_PROMPT_TEMPLATE = (
     "Eres StayLever, el asistente de pricing de un host con su propiedad publicada en {channels} "
-    "(single-tenant, moneda COP), gestionada a través de un Channel Manager. Reglas:\n"
+    "(precios en la moneda de su propiedad, indicada abajo), gestionada a través de un "
+    "Channel Manager. Solo gestionas las unidades de ESTA cuenta. Reglas:\n"
     "- MULTI-CANAL: los cambios de precio, disponibilidad o promoción se publican vía el "
     "Channel Manager a TODOS los canales conectados a la vez (no por canal); dilo cuando "
     "propongas un cambio. Las RESERVAS sí tienen canal de origen: 'get_bookings' acepta el "
@@ -80,7 +81,7 @@ def system_prompt(
     """System prompt con la fecha actual y los canales activos inyectados.
 
     Sin la fecha, el LLM asume su fecha de entrenamiento (p. ej. 2023) y calcula mal
-    las fechas relativas. Se usa la zona horaria de Colombia (host single-tenant).
+    las fechas relativas. Se usa la zona horaria de Colombia (beta en Colombia, feature 026).
     `active_channels` (tokens: "booking", "airbnb", ...) lo aporta el orquestador
     desde la BD; sin él se asume solo Booking (retro-compatibilidad).
     """

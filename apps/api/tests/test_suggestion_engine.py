@@ -57,7 +57,7 @@ def _event(name="Concierto inaugural", start=E1, end=E3, rel=Relevance.high):
     return Event(
         name=name, start_date=start, end_date=end, kind=EventKind.concert,
         relevance=rel, location="Daviarena", source_url="https://x.co/e",
-        dedup_key=f"{name}|{start}",
+        dedup_key=f"{name}|{start}", city="sabaneta",
     )
 
 

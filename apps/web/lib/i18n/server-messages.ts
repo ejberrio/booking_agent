@@ -175,6 +175,13 @@ const EXACT: Record<string, Tr> = {
     en: "the weekend % must be between 0 and 50",
     pt: "o % de fim de semana deve estar entre 0 e 50",
   },
+  // --- cuentas (feature 026) ---
+  "Unidad no encontrada": { en: "Unit not found", pt: "Unidade não encontrada" },
+  "Conversación no encontrada": { en: "Conversation not found", pt: "Conversa não encontrada" },
+  "Esta propiedad ya está conectada a otra cuenta de StayLever": {
+    en: "This property is already connected to another StayLever account",
+    pt: "Esta propriedade já está conectada a outra conta do StayLever",
+  },
   "unidad no encontrada o sin mapear al Channel Manager": {
     en: "unit not found or not mapped to the Channel Manager",
     pt: "unidade não encontrada ou não mapeada no Channel Manager",

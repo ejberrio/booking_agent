@@ -73,24 +73,31 @@ _ROLE = {
 
 
 async def _units_context(session: AsyncSession) -> str:
-    """Lista las unidades del host para que el agente no pregunte por IDs técnicos."""
+    """Lista las unidades de la cuenta (filtro automático por cuenta, feature 026) con su
+    ciudad y moneda, para que el agente no pregunte por IDs técnicos."""
     rows = (
         await session.execute(
-            select(UnitType.id, UnitType.name, Property.id, Property.name)
+            select(UnitType.id, UnitType.name, Property.id, Property.name, Property.city,
+                   Property.currency)
             .join(Property, UnitType.property_id == Property.id)
             .order_by(UnitType.id)
         )
     ).all()
     if not rows:
-        return ""
+        return (
+            "\n- Esta cuenta aún no tiene unidades: explica que primero debe conectar su "
+            "Channel Manager en Ajustes."
+        )
     if len(rows) == 1:
-        uid, uname, pid, pname = rows[0]
+        uid, uname, pid, pname, city, currency = rows[0]
         return (
             f"\n- El host tiene UNA sola unidad: unit_type_id={uid} «{uname}», "
-            f"property_id={pid} («{pname}»). Usa esos identificadores en todas las "
-            "herramientas SIN preguntar al host por IDs."
+            f"property_id={pid} («{pname}», {city}, moneda {currency}). Usa esos "
+            "identificadores en todas las herramientas SIN preguntar al host por IDs."
         )
-    listing = "; ".join(f"unit_type_id={r[0]} «{r[1]}» (property_id={r[2]})" for r in rows)
+    listing = "; ".join(
+        f"unit_type_id={r[0]} «{r[1]}» (property_id={r[2]}, {r[4]}, moneda {r[5]})" for r in rows
+    )
     return f"\n- Unidades del host: {listing}. Usa el unit_type_id correcto sin preguntar por IDs."
 
 

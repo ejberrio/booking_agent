@@ -12,7 +12,8 @@ import asyncio
 from datetime import date
 from decimal import Decimal
 
-from app.db.session import SessionLocal
+from app.db.tenancy import tenant_session
+from app.models.account import FIRST_ACCOUNT_ID
 from app.models.enums import ChannelKind, EventKind, PromotionType
 from app.models.pricing import Promotion
 from app.models.property import Channel, Property, UnitType
@@ -20,7 +21,7 @@ from app.services import event_service, pricing_service
 
 
 async def seed() -> None:
-    async with SessionLocal() as session:
+    async with tenant_session(FIRST_ACCOUNT_ID) as session:  # feature 026
         prop = Property(name="Apartamento El Poblado", city="Medellín", currency="COP")
         session.add(prop)
         await session.flush()

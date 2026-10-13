@@ -1,9 +1,10 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
+from app.models.account import AccountOwned
 from app.models.enums import (
     ConnectionStatus,
     IssueStatus,
@@ -15,10 +16,11 @@ from app.models.enums import (
 from app.models.mixins import TimestampMixin, _now
 
 
-class ChannelManagerConnection(Base, TimestampMixin):
-    """Cuenta de Channel Manager conectada (single-tenant: una activa)."""
+class ChannelManagerConnection(Base, AccountOwned, TimestampMixin):
+    """Channel Manager conectado: uno por cuenta (feature 026)."""
 
     __tablename__ = "channel_manager_connection"
+    __table_args__ = (UniqueConstraint("account_id", name="uq_cm_connection_account"),)
 
     provider: Mapped[Provider] = mapped_column(Enum(Provider), default=Provider.beds24)
     status: Mapped[ConnectionStatus] = mapped_column(
@@ -31,9 +33,12 @@ class ChannelManagerConnection(Base, TimestampMixin):
         DateTime(timezone=True), nullable=True
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Feature 026: antes en variables de entorno (BEDS24_PROP_ID / BEDS24_PROMO_OFFER_ID).
+    default_prop_ref: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    promo_offer_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
-class SyncRun(Base, TimestampMixin):
+class SyncRun(Base, AccountOwned, TimestampMixin):
     __tablename__ = "sync_run"
 
     direction: Mapped[SyncDirection] = mapped_column(Enum(SyncDirection))
@@ -46,7 +51,7 @@ class SyncRun(Base, TimestampMixin):
     cursor: Mapped[str | None] = mapped_column(String(120), nullable=True)
 
 
-class SyncIssue(Base, TimestampMixin):
+class SyncIssue(Base, AccountOwned, TimestampMixin):
     __tablename__ = "sync_issue"
 
     sync_run_id: Mapped[int | None] = mapped_column(ForeignKey("sync_run.id"), nullable=True)

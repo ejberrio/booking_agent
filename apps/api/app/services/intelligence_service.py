@@ -34,22 +34,34 @@ async def get_or_create_scan_config(session: AsyncSession):
     return cfg
 
 
+async def property_city(session: AsyncSession) -> str:
+    """Ciudad de la (primera) propiedad de la cuenta (feature 026; antes Medellín fijo)."""
+    from app.models.property import Property
+
+    prop = (await session.execute(select(Property).order_by(Property.id))).scalars().first()
+    return (prop.city if prop and prop.city else None) or event_service.DEFAULT_CITY
+
+
 async def effective_zone(session: AsyncSession, cfg) -> str:
     """Zona de búsqueda: override de config, o city+address de la propiedad."""
     from app.models.property import Property
 
     if cfg.zone:
         return cfg.zone
-    prop = (await session.execute(select(Property))).scalars().first()
+    prop = (await session.execute(select(Property).order_by(Property.id))).scalars().first()
     if prop is None:
-        return "Medellín"
+        return event_service.DEFAULT_CITY
     return ", ".join(p for p in (prop.city, prop.address) if p)
 
 
-async def build_scan_queries(session: AsyncSession, today: date) -> tuple[list[str], dict]:
+async def build_scan_queries(
+    session: AsyncSession, today: date, *, include_city_queries: bool = True
+) -> tuple[list[str], dict]:
     """Consultas dirigidas del scan: zona + POIs activos/vigentes + tipos de evento.
 
     Respeta el presupuesto (queries_per_scan) y reporta qué se usó (detail del run).
+    `include_city_queries=False` (feature 026): la ciudad ya se escaneó en esta corrida
+    para otra cuenta; solo quedan las consultas de los POIs propios.
     """
     from app.models.market import PointOfInterest
 
@@ -57,10 +69,14 @@ async def build_scan_queries(session: AsyncSession, today: date) -> tuple[list[s
     zone = await effective_zone(session, cfg)
     kinds = cfg.event_kinds or "conciertos ferias convenciones festivales"
 
-    queries = [
-        f"eventos {kinds} {zone} este mes y próximos meses",
-        f"eventos importantes agenda {zone}",
-    ]
+    queries = (
+        [
+            f"eventos {kinds} {zone} este mes y próximos meses",
+            f"eventos importantes agenda {zone}",
+        ]
+        if include_city_queries
+        else []
+    )
     pois = [
         p
         for p in (await session.execute(select(PointOfInterest))).scalars()
@@ -83,11 +99,14 @@ async def build_scan_queries(session: AsyncSession, today: date) -> tuple[list[s
     return queries[:budget], detail
 
 
-async def scan_events(session: AsyncSession, search, llm, *, queries: list[str]) -> int:
+async def scan_events(
+    session: AsyncSession, search, llm, *, queries: list[str], city: str | None = None
+) -> int:
+    city = city or await property_city(session)
     found = 0
     for query in queries:
         results = await search.search(query)
-        for cand in await extract_events(llm, results):
+        for cand in await extract_events(llm, results, city):
             await event_service.upsert_event(
                 session,
                 name=cand.name,
@@ -96,6 +115,7 @@ async def scan_events(session: AsyncSession, search, llm, *, queries: list[str])
                 end_date=cand.end_date,
                 relevance=cand.relevance,
                 location=cand.location,
+                city=city,
             )
             found += 1
     return found
@@ -111,6 +131,7 @@ async def scan(
     date_from: date,
     date_to: date,
     queries: list[str] | None = None,
+    include_city_queries: bool = True,
 ) -> IntelligenceRun:
     """Corrida completa: eventos (consultas dirigidas) + mercado + sugerencias v2.
 
@@ -123,7 +144,9 @@ async def scan(
 
     detail: dict = {}
     if queries is None:
-        queries, detail = await build_scan_queries(session, date_from)
+        queries, detail = await build_scan_queries(
+            session, date_from, include_city_queries=include_city_queries
+        )
 
     run.events_found = await scan_events(session, search, llm, queries=queries)
     suggestions = await suggestion_engine.generate_suggestions(

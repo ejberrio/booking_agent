@@ -6,6 +6,7 @@ from sqlalchemy import Boolean, Enum, ForeignKey, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.models.account import AccountOwned
 from app.models.enums import AgentActionStatus, MessageRole
 from app.models.mixins import JSONBType, TimestampMixin
 
@@ -21,7 +22,7 @@ class LLMConfig(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
-class Conversation(Base, TimestampMixin):
+class Conversation(Base, AccountOwned, TimestampMixin):
     __tablename__ = "conversation"
 
     title: Mapped[str | None] = mapped_column(String(300), nullable=True)
@@ -31,7 +32,7 @@ class Conversation(Base, TimestampMixin):
     )
 
 
-class Message(Base, TimestampMixin):
+class Message(Base, AccountOwned, TimestampMixin):
     __tablename__ = "message"
 
     conversation_id: Mapped[int] = mapped_column(ForeignKey("conversation.id"), index=True)
@@ -41,7 +42,7 @@ class Message(Base, TimestampMixin):
     conversation: Mapped[Conversation] = relationship(back_populates="messages")
 
 
-class AgentAction(Base, TimestampMixin):
+class AgentAction(Base, AccountOwned, TimestampMixin):
     """Acción de escritura propuesta por el agente, a la espera de confirmación."""
 
     __tablename__ = "agent_action"

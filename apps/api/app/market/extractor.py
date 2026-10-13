@@ -16,7 +16,7 @@ from app.models.enums import EventKind, Relevance
 from app.search.base import SearchResult
 
 _EXTRACT_PROMPT = (
-    "Extrae eventos de Medellín de los siguientes resultados de búsqueda. "
+    "Extrae eventos de {city} de los siguientes resultados de búsqueda. "
     "Devuelve SOLO un array JSON; cada elemento: "
     '{"name","start_date":"YYYY-MM-DD","end_date":null,"kind":'
     '"concert|fair|convention|holiday|festival|other","relevance":"low|medium|high","location"}. '
@@ -41,13 +41,15 @@ def _parse_date(value) -> date | None:
         return None
 
 
-async def extract_events(llm, results: list[SearchResult]) -> list[EventCandidate]:
+async def extract_events(
+    llm, results: list[SearchResult], city: str = "Medellín"
+) -> list[EventCandidate]:
     if not results:
         return []
     blob = "\n\n".join(f"{r.title}\n{r.content}" for r in results)
     resp = await llm.chat(
         messages=[
-            {"role": "system", "content": _EXTRACT_PROMPT},
+            {"role": "system", "content": _EXTRACT_PROMPT.replace("{city}", city)},
             {"role": "user", "content": blob},
         ],
         tools=[],

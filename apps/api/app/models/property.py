@@ -6,12 +6,17 @@ from sqlalchemy import Boolean, Enum, ForeignKey, Numeric, String, UniqueConstra
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.models.account import AccountOwned
 from app.models.enums import ChannelKind, PropertyStatus
 from app.models.mixins import TimestampMixin
 
 
-class Property(Base, TimestampMixin):
+class Property(Base, AccountOwned, TimestampMixin):
     __tablename__ = "property"
+    # Una propiedad del channel manager pertenece a UNA sola cuenta (feature 026, FR-022).
+    __table_args__ = (
+        UniqueConstraint("provider", "external_ref", name="uq_property_provider_external_ref"),
+    )
 
     name: Mapped[str] = mapped_column(String(200))
     city: Mapped[str] = mapped_column(String(120), default="Medellín")
@@ -21,6 +26,7 @@ class Property(Base, TimestampMixin):
     latitude: Mapped[Decimal | None] = mapped_column(Numeric(9, 6), nullable=True)
     longitude: Mapped[Decimal | None] = mapped_column(Numeric(9, 6), nullable=True)
     external_ref: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    provider: Mapped[str | None] = mapped_column(String(20), nullable=True, default="beds24")
     status: Mapped[PropertyStatus] = mapped_column(
         Enum(PropertyStatus), default=PropertyStatus.active
     )
@@ -33,7 +39,7 @@ class Property(Base, TimestampMixin):
     )
 
 
-class Channel(Base, TimestampMixin):
+class Channel(Base, AccountOwned, TimestampMixin):
     __tablename__ = "channel"
     __table_args__ = (UniqueConstraint("property_id", "kind", name="uq_channel_property_kind"),)
 
@@ -47,7 +53,7 @@ class Channel(Base, TimestampMixin):
     property: Mapped[Property] = relationship(back_populates="channels")
 
 
-class UnitType(Base, TimestampMixin):
+class UnitType(Base, AccountOwned, TimestampMixin):
     __tablename__ = "unit_type"
 
     property_id: Mapped[int] = mapped_column(ForeignKey("property.id"))

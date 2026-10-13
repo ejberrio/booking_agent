@@ -15,6 +15,8 @@ from datetime import date
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
+from app.db.cross_account import release_push_token
 from app.models.mixins import _now
 from app.models.preference import AppPreference
 from app.models.push import PushDevice, PushNotificationLog
@@ -75,6 +77,8 @@ def get_sender() -> PushSender | None:
     """Adaptador vigente o None si no hay credencial válida."""
     from app.push.fcm import FcmConfigError, FcmSender
 
+    if settings.sandbox:
+        return None  # ambiente de pruebas: nunca avisos a teléfonos reales (feature 026)
     try:
         return FcmSender(secret_service.get_secret(SECRET))
     except FcmConfigError:
@@ -84,6 +88,8 @@ def get_sender() -> PushSender | None:
 def configured() -> bool:
     from app.push.fcm import FcmConfigError, parse_service_account
 
+    if settings.sandbox:
+        return False
     try:
         parse_service_account(secret_service.get_secret(SECRET))
         return True
@@ -105,6 +111,8 @@ async def register_device(
     token = token.strip()
     if not token:
         raise ValueError("token vacío")
+    # Feature 026: el teléfono deja de recibir avisos de otras cuentas.
+    await release_push_token(session, token)
     dev = (
         await session.execute(select(PushDevice).where(PushDevice.token == token))
     ).scalar_one_or_none()
@@ -159,7 +167,7 @@ async def delete_device(session: AsyncSession, device_id: int) -> None:
 
 
 async def _lang(session: AsyncSession) -> str:
-    pref = await session.get(AppPreference, 1)
+    pref = (await session.execute(select(AppPreference).limit(1))).scalars().first()
     return pref.language if pref and pref.language in _TEXTS else "es"
 
 

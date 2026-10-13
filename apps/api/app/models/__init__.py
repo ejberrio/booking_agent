@@ -1,5 +1,6 @@
 """Modelos ORM del dominio. Importar todo aquí para que Alembic detecte la metadata."""
 
+from app.models.account import Account
 from app.models.agent import AgentAction, Conversation, LLMConfig, Message
 from app.models.intelligence import IntelligenceRun, MarketReference, ScanConfig
 from app.models.audit import PriceChangeLog, PromotionChangeLog
@@ -16,6 +17,7 @@ from app.models.sync import ChannelManagerConnection, SyncIssue, SyncRun
 from app.models.webhook import WebhookEvent
 
 __all__ = [
+    "Account",
     "AppPreference",
     "PushDevice",
     "PushNotificationLog",

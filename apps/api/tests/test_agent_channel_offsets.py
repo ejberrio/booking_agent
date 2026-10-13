@@ -45,7 +45,7 @@ async def test_get_channel_offsets_output(session, monkeypatch):
     import app.agent.tools as tools_mod
 
     await _seed(session, offset=D("8"))
-    monkeypatch.setattr(tools_mod, "get_adapter", lambda: _closable(FakeCM()))
+    monkeypatch.setattr(tools_mod, "get_adapter", lambda *_a, **_k: _closable(FakeCM()))
     out = await exec_read(session, "get_channel_offsets", {})
     by = {o["channel"]: o for o in out}
     assert by["airbnb"]["offset_pct"] == 8.0
@@ -66,7 +66,7 @@ def test_propose_channel_offset_declared_as_write_tool():
 def fake_adapter(monkeypatch):
     import app.agent.tools as tools_mod
 
-    monkeypatch.setattr(tools_mod, "get_adapter", lambda: _closable(FakeCM()))
+    monkeypatch.setattr(tools_mod, "get_adapter", lambda *_a, **_k: _closable(FakeCM()))
     return None
 
 

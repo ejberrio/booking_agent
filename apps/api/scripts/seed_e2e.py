@@ -10,7 +10,8 @@ from decimal import Decimal
 
 from sqlalchemy import select
 
-from app.db.session import SessionLocal
+from app.db.tenancy import tenant_session
+from app.models.account import FIRST_ACCOUNT_ID
 from app.models.agent import LLMConfig
 from app.models.calendar import CalendarDay
 from app.models.enums import ChannelKind, EventKind, Relevance
@@ -21,7 +22,7 @@ from app.services import pricing_service
 
 
 async def main() -> None:
-    async with SessionLocal() as session:
+    async with tenant_session(FIRST_ACCOUNT_ID) as session:  # feature 026
         existing = (await session.execute(select(Property))).scalars().first()
         if existing:
             print("Ya hay datos; nada que sembrar.")

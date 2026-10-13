@@ -31,6 +31,7 @@ from app.models.enums import (
     SyncStatus,
 )
 from app.core.config import settings
+from app.db.cross_account import PropertyOwnedElsewhere, property_taken_elsewhere
 from app.models.mixins import _now
 from app.models.property import Channel, Property, UnitType
 from app.models.sync import ChannelManagerConnection, SyncIssue, SyncRun
@@ -102,6 +103,11 @@ async def _upsert_property(session: AsyncSession, rp) -> Property:
     res = await session.execute(select(Property).where(Property.external_ref == rp.external_id))
     prop = res.scalar_one_or_none()
     if prop is None:
+        # Feature 026 (FR-022): una propiedad del channel manager es de UNA sola cuenta.
+        if await property_taken_elsewhere(session, "beds24", str(rp.external_id)):
+            raise PropertyOwnedElsewhere(
+                "Esta propiedad ya está conectada a otra cuenta de StayLever"
+            )
         prop = Property(name=rp.name, currency=rp.currency, external_ref=rp.external_id)
         session.add(prop)
         await session.flush()

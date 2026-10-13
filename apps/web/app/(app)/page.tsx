@@ -10,8 +10,18 @@ import { useActiveUnit } from "@/lib/active-unit";
 import { api } from "@/lib/api";
 import { formatCOP, monthLabel, monthRange } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
+import { UnitGate } from "@/components/account/unit-gate";
 
+// Feature 026: sin unidades en la cuenta → estado vacío con el camino a Ajustes.
 export default function DashboardPage() {
+  return (
+    <UnitGate>
+      <DashboardPageContent />
+    </UnitGate>
+  );
+}
+
+function DashboardPageContent() {
   const { m } = useI18n();
   const [unitTypeId] = useActiveUnit();
   const now = new Date();
