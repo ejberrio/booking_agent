@@ -10,6 +10,7 @@ from sqlalchemy import DateTime, ForeignKey, Index, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
+from app.models.account import UserStamped
 from app.models.mixins import TimestampMixin, _now
 
 
@@ -44,7 +45,7 @@ class SecretEntry(Base, TimestampMixin):
     hint: Mapped[str] = mapped_column(String(8), default="")
 
 
-class SecretChangeLog(Base, TimestampMixin):
+class SecretChangeLog(Base, UserStamped, TimestampMixin):
     """Auditoría append-only de cambios de secretos. SIN valores, jamás."""
 
     __tablename__ = "secret_change_log"

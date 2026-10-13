@@ -4,12 +4,12 @@ from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
-from app.models.account import AccountOwned
+from app.models.account import AccountOwned, UserStamped
 from app.models.enums import ChangeOrigin
 from app.models.mixins import TimestampMixin, _now
 
 
-class AvailabilityChangeLog(Base, AccountOwned, TimestampMixin):
+class AvailabilityChangeLog(Base, AccountOwned, UserStamped, TimestampMixin):
     """Bitácora append-only de cambios de disponibilidad (bloquear/abrir). Nunca se actualiza."""
 
     __tablename__ = "availability_change_log"

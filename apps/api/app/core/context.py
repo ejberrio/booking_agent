@@ -28,14 +28,32 @@ class RequestContext:
     session_kind: str | None = None  # "web" | "app" (sesiones de usuario)
 
 
+def bearer_token(request: Request) -> str | None:
+    auth = request.headers.get("authorization") or ""
+    return auth[7:].strip() or None if auth.lower().startswith("bearer ") else None
+
+
 async def current_identity(
     request: Request, session: AsyncSession = Depends(get_session)
 ) -> RequestContext:
-    """Quién hace la petición. Las pruebas de aislamiento sustituyen SOLO esta pieza."""
+    """Quién hace la petición, SOLO desde su sesión. Las pruebas de aislamiento sustituyen
+    únicamente esta pieza."""
+    from app.services import auth_service
+
+    token = bearer_token(request)
+    if token:
+        resolved = await auth_service.resolve_session(session, token)
+        if resolved is None:
+            raise HTTPException(status_code=401, detail="Sesión no válida")
+        return RequestContext(
+            account_id=resolved.account_id,
+            user_id=resolved.user.id,
+            is_platform_admin=resolved.user.is_platform_admin,
+            session_kind=resolved.kind,
+        )
     if settings.auth_mode == "legacy":
-        # Transición (PR1): la web aún valida la contraseña única; todo es de la cuenta 1.
+        # Transición: la web antigua (contraseña compartida) no envía sesión → cuenta nº 1.
         return RequestContext(account_id=FIRST_ACCOUNT_ID, is_platform_admin=True)
-    # pragma: no cover — se implementa con las sesiones de usuario (PR2)
     raise HTTPException(status_code=401, detail="Sesión no válida")
 
 

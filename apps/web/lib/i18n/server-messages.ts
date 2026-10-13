@@ -175,6 +175,20 @@ const EXACT: Record<string, Tr> = {
     en: "the weekend % must be between 0 and 50",
     pt: "o % de fim de semana deve estar entre 0 e 50",
   },
+  // --- acceso (feature 026, entrega 2) ---
+  "Sesión no válida": { en: "Session expired", pt: "Sessão expirada" },
+  "La contraseña actual no es correcta": {
+    en: "The current password is not correct",
+    pt: "A senha atual não está correta",
+  },
+  "La contraseña debe tener al menos 10 caracteres": {
+    en: "The password must have at least 10 characters",
+    pt: "A senha deve ter pelo menos 10 caracteres",
+  },
+  "Esa contraseña es demasiado común; elige otra": {
+    en: "That password is too common; choose another one",
+    pt: "Essa senha é muito comum; escolha outra",
+  },
   // --- cuentas (feature 026) ---
   "Unidad no encontrada": { en: "Unit not found", pt: "Unidade não encontrada" },
   "Conversación no encontrada": { en: "Conversation not found", pt: "Conversa não encontrada" },

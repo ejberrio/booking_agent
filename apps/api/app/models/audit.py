@@ -5,12 +5,12 @@ from sqlalchemy import Date, DateTime, Enum, ForeignKey, Numeric
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
-from app.models.account import AccountOwned
+from app.models.account import AccountOwned, UserStamped
 from app.models.enums import ChangeOrigin, PromotionAction
 from app.models.mixins import JSONBType, TimestampMixin, _now
 
 
-class PriceChangeLog(Base, AccountOwned, TimestampMixin):
+class PriceChangeLog(Base, AccountOwned, UserStamped, TimestampMixin):
     """Bitácora append-only de cambios de precio. Nunca se actualiza ni borra."""
 
     __tablename__ = "price_change_log"
@@ -30,7 +30,7 @@ class PriceChangeLog(Base, AccountOwned, TimestampMixin):
     changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, index=True)
 
 
-class PromotionChangeLog(Base, AccountOwned, TimestampMixin):
+class PromotionChangeLog(Base, AccountOwned, UserStamped, TimestampMixin):
     """Auditoría de cambios de promociones (crear/editar/eliminar). Append-only."""
 
     __tablename__ = "promotion_change_log"
@@ -43,7 +43,7 @@ class PromotionChangeLog(Base, AccountOwned, TimestampMixin):
     changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, index=True)
 
 
-class ChannelOffsetLog(Base, AccountOwned, TimestampMixin):
+class ChannelOffsetLog(Base, AccountOwned, UserStamped, TimestampMixin):
     """Auditoría del ajuste de precio por canal (feature 013). Append-only.
 
     `detail` guarda contexto útil de la escritura (p. ej. el multiplier antes/después

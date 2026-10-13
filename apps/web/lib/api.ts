@@ -38,6 +38,7 @@ import type {
   ExtensionResult,
   ConversationSummary,
   ConversationDetail,
+  Me,
   PushDevice,
   Unit,
 } from "@/lib/types";
@@ -65,6 +66,16 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
     cache: "no-store",
     ...init,
   });
+  if (
+    res.status === 401 &&
+    typeof window !== "undefined" &&
+    !/^\/(login|claim|forgot|reset|verify)/.test(window.location.pathname)
+  ) {
+    // Sesión vencida o cerrada (feature 026): a entrar de nuevo, volviendo a esta página.
+    const next = window.location.pathname + window.location.search;
+    window.location.href = `/login?next=${encodeURIComponent(next)}`;
+    throw new Error(trServer("Sesión no válida"));
+  }
   if (!res.ok) {
     // El backend responde errores honestos en `detail` (p. ej. estado real de una
     // sugerencia ya resuelta): se propaga para mostrarlo tal cual.
@@ -245,6 +256,17 @@ export const api = {
   listPushDevices: () => req<PushDevice[]>(`/push/devices`),
   // Cuentas (feature 026)
   listUnits: () => req<Unit[]>(`/units`),
+  me: () => req<Me>(`/auth/me`),
+  renameAccount: (name: string) =>
+    req<{ name: string }>(`/account`, { method: "PATCH", body: JSON.stringify({ name }) }),
+  changePassword: (current: string, next: string) =>
+    req<{ status: string }>(`/auth/change-password`, {
+      method: "POST",
+      body: JSON.stringify({ current, new: next }),
+    }),
+  sendVerification: () => req<{ sent: boolean }>(`/auth/send-verification`, { method: "POST" }),
+  logoutAll: () =>
+    fetch(`${API_URL}/auth/logout-all`, { method: "POST", cache: "no-store" }).then(() => null),
   updatePushDevice: (id: number, body: { notify_bookings?: boolean; notify_suggestions?: boolean }) =>
     req<PushDevice>(`/push/devices/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   deletePushDevice: (id: number) => req<{ deleted: boolean }>(`/push/devices/${id}`, { method: "DELETE" }),

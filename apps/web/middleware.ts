@@ -1,8 +1,17 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
+import { SESSION_COOKIE, looksLikeSessionToken } from "@/lib/session";
 
-const PUBLIC = ["/login", "/api/login", "/api/hooks/"]; // hooks: avisos de Beds24 (auth por clave propia)
+// Páginas y rutas sin sesión (feature 026). hooks: avisos de Beds24 (auth por clave propia).
+const PUBLIC = [
+  "/login",
+  "/claim",
+  "/forgot",
+  "/reset",
+  "/verify",
+  "/api/auth/",
+  "/api/hooks/",
+];
 
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
@@ -14,11 +23,14 @@ export async function middleware(request: NextRequest) {
   if (PUBLIC.some((p) => pathname.startsWith(p)) || pathname === "/icon.svg") {
     return NextResponse.next();
   }
-  // La cookie debe llevar una firma válida y vigente: su mera presencia no basta.
-  const token = request.cookies.get(SESSION_COOKIE)?.value;
-  if (!(await verifySessionToken(token, process.env.APP_PASSWORD))) {
+  // La API valida la sesión en cada petición; aquí basta con que exista y tenga forma.
+  if (!looksLikeSessionToken(request.cookies.get(SESSION_COOKIE)?.value)) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ detail: "Sesión no válida" }, { status: 401 });
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/login";
+    url.search = pathname === "/" ? "" : `?next=${encodeURIComponent(pathname + search)}`;
     return NextResponse.redirect(url);
   }
   return NextResponse.next();

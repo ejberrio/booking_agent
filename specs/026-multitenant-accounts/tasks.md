@@ -7,7 +7,7 @@
 ## Phase 1: Setup (PR1)
 
 - [X] T001 ADR `docs/adr/0007-multitenancy.md` (filtro automático por cuenta, sesiones en la API, secretos por ámbito, Resend, Google PKCE, reclamación, 4 PRs) y actualizar `CLAUDE.md` (ya no "single-tenant")
-- [ ] T002 [P] (→ PR2, con T025) Añadir `argon2-cffi` (versión publicada hace > 2 semanas) a `apps/api/pyproject.toml` + `uv lock`
+- [X] T002 [P] (→ PR2, con T025) Añadir `argon2-cffi` (versión publicada hace > 2 semanas) a `apps/api/pyproject.toml` + `uv lock`
 
 ## Phase 2: Foundational — cuentas y filtro automático (PR1, bloquea todo)
 
@@ -29,7 +29,7 @@
 - [X] T013 [US3] Webhook por cuenta: `webhook_service.verify_key` busca la cuenta por clave (tiempo constante), `routes/hooks.py` abre `tenant_session` de esa cuenta, `propertyId` ajeno → ignorado; la URL/clave se muestra por cuenta
 - [X] T014 [US3] Avisos por cuenta: `push_service` (registro reasigna el token desde otras cuentas con `platform_session` acotado, envío solo a teléfonos de la cuenta, `user_id`), dedupe por cuenta
 - [X] T015 [US3] Agente: `orchestrator` (`_units_context`, `_active_channels` bajo el contexto), `tools.ensure_unit(session, uid)` en lecturas y propuestas (unidad ajena → "no existe", cero llamadas al adaptador), conversación con `user_id`; `routes/chat.py` lista solo conversaciones de la cuenta
-- [ ] T016 [US3] (→ PR2: requiere la tabla de usuarios) Auditoría con `user_id` (logs de precio, disponibilidad, promoción, ajuste por canal, secretos) desde el contexto
+- [X] T016 [US3] (→ PR2: requiere la tabla de usuarios) Auditoría con `user_id` (logs de precio, disponibilidad, promoción, ajuste por canal, secretos) desde el contexto
 - [X] T017 [US3] `GET /units` (`apps/api/app/api/routes/units.py`) y `GET/PATCH /account`; web `lib/active-unit.ts` toma la primera unidad de `/units` (no `1` fijo) y `components/empty-state.tsx` en Panorama/Calendario/Sugerencias/Ofertas cuando no hay unidades o conexión (es/en/pt)
 - [X] T018 [P] [US3] Tests `apps/api/tests/test_isolation_routes.py`: con `two_accounts`, cada ruta de datos de B con ids de A → 404 o lista sin datos de A; escrituras (preview/apply de precios, disponibilidad, promociones, notas, sugerencias, push) sobre recursos de A → 404 y adaptador falso sin llamadas
 - [X] T019 [P] [US3] Tests `apps/api/tests/test_isolation_agent.py`: herramientas de lectura y propuestas del agente de B con `unit_type_id`/`promotion_id`/`change_id` de A → "no existe"; contexto del prompt sin unidades de A; confirmar una acción de otra cuenta → no existe
@@ -45,16 +45,16 @@
 
 ## Phase 5: US1 + US4 — Reclamar la cuenta y entrar con correo (P1/P2, PR2)
 
-- [ ] T024 [US1] Modelos `apps/api/app/models/auth.py` (`AppUser`, `Membership`, `UserSession`, `AuthToken`, `AuthAttempt`) + migración `a1b2c3d4e5f7_auth.py`
-- [ ] T025 [US4] `apps/api/app/auth/passwords.py` (Argon2id, rehash, política ≥ 10 y lista de comunes), `tokens.py` (token aleatorio + sha256, enlaces de un solo uso), `ratelimit.py` (10 fallos/correo, 50/IP en 15 min)
-- [ ] T026 [P] [US4] Puerto de correo `apps/api/app/email/{base,resend,fake}.py` + plantillas es/en/pt (`templates.py`: verificación, recuperación, "ya tienes cuenta")
-- [ ] T027 [US4] `apps/api/app/services/auth_service.py`: login, sesiones (crear/validar/revocar/todas, `last_used_at` cada 5 min, `account.last_seen_at`), verificación, reenvío, olvidé/restablecer (revoca sesiones), `me`; `claim_status`/`claim` (solo cuenta 1 sin miembros → dueño + `is_platform_admin`)
-- [ ] T028 [US4] Rutas `apps/api/app/api/routes/auth.py` (contrato) y `require_ctx` en modo sesiones (Bearer → sesión → usuario → membresía → cuenta activa; 401/403); quitar `AUTH_MODE=legacy`
-- [ ] T029 [US1] Web: `lib/session.ts` (cookie `sl_session`, duraciones), `middleware.ts` (forma de la cookie, rutas públicas), proxy (Bearer desde cookie, bloquea `auth/*`, ignora cabeceras de identidad del navegador, borra cookie en 401), `lib/api.ts` (401 → `/login?next=`), eliminar `app/api/login` antiguo
-- [ ] T030 [US1] Web: rutas `app/api/auth/{login,logout,logout-all,verify,forgot,reset,claim}/route.ts` (claim compara `APP_PASSWORD` en tiempo constante y solo si `claim-status`)
-- [ ] T031 [US4] Web: páginas `app/(auth)/{login,forgot,reset,verify,claim}/page.tsx` (es/en/pt, tema claro/oscuro, mensajes genéricos, "reenviar verificación"); `/login` redirige a `/claim` si la cuenta 1 es reclamable
-- [ ] T032 [US4] Ajustes → "Mi cuenta": nombre de la cuenta, correo, verificar correo, cambiar contraseña, "cerrar todas mis sesiones", cerrar sesión (menú)
-- [ ] T033 [P] [US4] Tests `apps/api/tests/test_auth.py`: login ok/incorrecto genérico/bloqueo tras 10 fallos; correo sin verificar → 403; verificación de un solo uso y vencida; recuperación revoca sesiones; logout y logout-all; sesión web 7 días / app 90 días; cuenta desactivada → 401; claim una sola vez y luego 409; rutas sin Bearer → 401
+- [X] T024 [US1] Modelos `apps/api/app/models/auth.py` (`AppUser`, `Membership`, `UserSession`, `AuthToken`, `AuthAttempt`) + migración `a1b2c3d4e5f7_auth.py`
+- [X] T025 [US4] `apps/api/app/auth/passwords.py` (Argon2id, rehash, política ≥ 10 y lista de comunes), `tokens.py` (token aleatorio + sha256, enlaces de un solo uso), `ratelimit.py` (10 fallos/correo, 50/IP en 15 min)
+- [X] T026 [P] [US4] Puerto de correo `apps/api/app/email/{base,resend,fake}.py` + plantillas es/en/pt (`templates.py`: verificación, recuperación, "ya tienes cuenta")
+- [X] T027 [US4] `apps/api/app/services/auth_service.py`: login, sesiones (crear/validar/revocar/todas, `last_used_at` cada 5 min, `account.last_seen_at`), verificación, reenvío, olvidé/restablecer (revoca sesiones), `me`; `claim_status`/`claim` (solo cuenta 1 sin miembros → dueño + `is_platform_admin`)
+- [X] T028 [US4] Rutas `apps/api/app/api/routes/auth.py` (contrato) y `require_ctx` en modo sesiones (Bearer → sesión → usuario → membresía → cuenta activa; 401/403); quitar `AUTH_MODE=legacy`
+- [X] T029 [US1] Web: `lib/session.ts` (cookie `sl_session`, duraciones), `middleware.ts` (forma de la cookie, rutas públicas), proxy (Bearer desde cookie, bloquea `auth/*`, ignora cabeceras de identidad del navegador, borra cookie en 401), `lib/api.ts` (401 → `/login?next=`), eliminar `app/api/login` antiguo
+- [X] T030 [US1] Web: rutas `app/api/auth/{login,logout,logout-all,verify,forgot,reset,claim}/route.ts` (claim compara `APP_PASSWORD` en tiempo constante y solo si `claim-status`)
+- [X] T031 [US4] Web: páginas `app/(auth)/{login,forgot,reset,verify,claim}/page.tsx` (es/en/pt, tema claro/oscuro, mensajes genéricos, "reenviar verificación"); `/login` redirige a `/claim` si la cuenta 1 es reclamable
+- [X] T032 [US4] Ajustes → "Mi cuenta": nombre de la cuenta, correo, verificar correo, cambiar contraseña, "cerrar todas mis sesiones", cerrar sesión (menú)
+- [X] T033 [P] [US4] Tests `apps/api/tests/test_auth.py`: login ok/incorrecto genérico/bloqueo tras 10 fallos; correo sin verificar → 403; verificación de un solo uso y vencida; recuperación revoca sesiones; logout y logout-all; sesión web 7 días / app 90 días; cuenta desactivada → 401; claim una sola vez y luego 409; rutas sin Bearer → 401
 
 **Checkpoint PR2**: el host reclama su cuenta (quickstart PR2).
 

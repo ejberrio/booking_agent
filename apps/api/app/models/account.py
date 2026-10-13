@@ -42,3 +42,12 @@ class AccountOwned:
     @declared_attr
     def account_id(cls) -> Mapped[int]:  # noqa: N805 — declared_attr recibe la clase
         return mapped_column(ForeignKey("account.id"), index=True)
+
+
+class UserStamped:
+    """Mixin: guarda qué usuario hizo el cambio (auditoría, feature 026). Lo rellena
+    `before_flush` con el usuario de la sesión; NULL = sistema/cron."""
+
+    @declared_attr
+    def user_id(cls) -> Mapped[int | None]:  # noqa: N805
+        return mapped_column(ForeignKey("app_user.id"), nullable=True)

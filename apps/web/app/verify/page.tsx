@@ -1,0 +1,38 @@
+"use client";
+
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { AuthShell, FormNote, postJson } from "@/components/auth/auth-shell";
+import { useI18n } from "@/lib/i18n";
+
+function Verify() {
+  const token = useSearchParams().get("token") ?? "";
+  const router = useRouter();
+  const { m } = useI18n();
+  const t = m.auth.verify;
+  const [state, setState] = useState<"working" | "ok" | "invalid">("working");
+  const started = useRef(false);
+
+  useEffect(() => {
+    if (started.current) return; // el enlace es de un solo uso: una sola llamada
+    started.current = true;
+    postJson("/api/auth/verify", { token }).then(({ ok }) => {
+      setState(ok ? "ok" : "invalid");
+      if (ok) setTimeout(() => router.replace("/"), 1200);
+    });
+  }, [token, router]);
+
+  return (
+    <AuthShell title={state === "ok" ? t.ok : t.title}>
+      {state === "invalid" && <FormNote kind="error">{t.invalid}</FormNote>}
+    </AuthShell>
+  );
+}
+
+export default function VerifyPage() {
+  return (
+    <Suspense>
+      <Verify />
+    </Suspense>
+  );
+}
