@@ -20,6 +20,9 @@ HORIZON_DAYS = 365
 
 
 async def main() -> None:
+    if settings.sandbox:  # ambiente de pruebas: nunca un adaptador real (feature 026)
+        print("sync_daily: CHANNEL_MODE=simulated; nada que hacer.")
+        return
     adapter = Beds24Adapter(
         api_key=settings.beds24_api_key,
         prop_id=settings.beds24_prop_id,

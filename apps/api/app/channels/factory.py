@@ -29,6 +29,8 @@ def has_credentials(session: AsyncSession) -> bool:
     from app.services.secret_service import get_secret
 
     account_id = _account(session)
+    if settings.sandbox:
+        return True  # ambiente de pruebas: canal simulado siempre "conectado"
     if account_id == FIRST_ACCOUNT_ID and settings.beds24_api_version != "v2":
         return bool(settings.beds24_api_key)
     return bool(get_secret(REFRESH_TOKEN, account_id))
@@ -39,6 +41,11 @@ def get_adapter(session: AsyncSession):
     from app.services.secret_service import get_secret
 
     account_id = _account(session)
+    if settings.sandbox:
+        # Ambiente de pruebas: jamás se construye un adaptador real (ni con credenciales).
+        from app.channels.simulated import SimulatedChannelAdapter
+
+        return SimulatedChannelAdapter(session)
     first = account_id == FIRST_ACCOUNT_ID
     # La cuenta nº 1 conserva su configuración de entorno (V1 de solo lectura o V2).
     if first and settings.beds24_api_version != "v2":

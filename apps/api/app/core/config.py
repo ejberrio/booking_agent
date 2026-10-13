@@ -62,6 +62,14 @@ class Settings(BaseSettings):
     # Feature 026: "legacy" = sin sesiones de usuario, todo va a la cuenta nº 1 (transición
     # hasta desplegar el acceso por usuario); "sessions" = cada petición trae su sesión.
     auth_mode: str = "legacy"
+    # Feature 026 — ambiente de pruebas: "simulated" = el Channel Manager se simula con la
+    # base local (NUNCA habla con Beds24/Booking/Airbnb) y no se envían avisos al celular.
+    # Producción: "real" (por defecto).
+    channel_mode: str = "real"
+
+    @property
+    def sandbox(self) -> bool:
+        return self.channel_mode == "simulated"
 
     # LLM (multi-proveedor via LiteLLM)
     # Estrategia dos niveles: modelo barato para tareas de alto volumen

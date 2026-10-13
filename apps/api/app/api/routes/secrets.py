@@ -88,6 +88,10 @@ async def redeem_beds24_invite(
     from app.channels.errors import AuthError, ChannelError
     from app.core.config import settings
 
+    if settings.sandbox:
+        raise HTTPException(
+            status_code=409, detail="Ambiente de pruebas: el canal es simulado, no se conecta Beds24"
+        )
     if not req.code.strip():
         raise HTTPException(status_code=422, detail="El código no puede estar vacío")
     try:
