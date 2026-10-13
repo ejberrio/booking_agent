@@ -250,6 +250,19 @@ async def resend_verification(
 async def verify_email(
     session: AsyncSession, token: str, *, kind: str = "web", user_agent: str | None = None
 ) -> tuple[str, datetime, AppUser]:
+    # Abrir el enlace dos veces (o que el correo lo "previsualice") no debe asustar: si el
+    # correo ya está confirmado, se dice así en vez de "enlace vencido".
+    row = (
+        await session.execute(
+            select(AuthToken).where(
+                AuthToken.token_hash == digest(token or ""), AuthToken.purpose == "verify_email"
+            )
+        )
+    ).scalar_one_or_none()
+    if row is not None and row.used_at is not None:
+        owner = await session.get(AppUser, row.user_id)
+        if owner is not None and owner.email_verified_at is not None:
+            raise AuthError("already_verified", "Tu correo ya está confirmado", 409)
     user = await _consume(session, "verify_email", token)
     user.email_verified_at = user.email_verified_at or _now()
     tok, expires = await create_session(session, user, kind, user_agent)

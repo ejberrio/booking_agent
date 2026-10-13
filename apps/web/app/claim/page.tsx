@@ -13,6 +13,7 @@ export default function ClaimPage() {
   const { m, lang } = useI18n();
   const t = m.auth;
   const [form, setForm] = useState({ app_password: "", name: "", email: "", password: "" });
+  const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -20,6 +21,10 @@ export default function ClaimPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (form.password !== confirm) {
+      setError(t.mismatch);
+      return;
+    }
     setLoading(true);
     setError(null);
     const { ok, data } = await postJson("/api/auth/claim", { ...form, language: lang });
@@ -69,6 +74,15 @@ export default function ClaimPage() {
           placeholder={t.newPassword}
           value={form.password}
           onChange={set("password")}
+          minLength={10}
+          required
+        />
+        <Input
+          type="password"
+          autoComplete="new-password"
+          placeholder={t.confirmPassword}
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
           minLength={10}
           required
         />

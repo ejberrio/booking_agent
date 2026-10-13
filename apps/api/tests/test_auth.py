@@ -148,7 +148,9 @@ async def test_verificar_correo_enlace_de_un_solo_uso(client, mail):
     tok = _link_token(mail.sent[0])
     r = await client.post("/auth/verify-email", json={"token": tok})
     assert r.status_code == 200 and r.json()["token"]
-    assert (await client.post("/auth/verify-email", json={"token": tok})).status_code == 400
+    again = await client.post("/auth/verify-email", json={"token": tok})
+    assert again.status_code == 409 and again.json()["code"] == "already_verified"
+    assert (await client.post("/auth/verify-email", json={"token": "otro"})).status_code == 400
 
 
 async def test_recuperar_contrasena_cierra_las_sesiones(client, mail):

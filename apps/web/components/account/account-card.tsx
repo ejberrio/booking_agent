@@ -19,6 +19,7 @@ export function AccountCard() {
   const [name, setName] = useState<string | null>(null);
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
 
   const rename = useMutation({
     mutationFn: (v: string) => api.renameAccount(v),
@@ -40,6 +41,7 @@ export function AccountCard() {
       toast.success(t.passwordChanged);
       setCurrent("");
       setNext("");
+      setConfirm("");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -92,7 +94,13 @@ export function AccountCard() {
         )}
         <Input type="password" autoComplete="new-password" placeholder={m.auth.newPassword}
           value={next} onChange={(e) => setNext(e.target.value)} minLength={10} />
-        <Button onClick={() => pwd.mutate()} disabled={next.length < 10 || pwd.isPending}>
+        <Input type="password" autoComplete="new-password" placeholder={m.auth.confirmPassword}
+          value={confirm} onChange={(e) => setConfirm(e.target.value)} minLength={10} />
+        {confirm && confirm !== next && (
+          <p className="text-xs text-red-500">{m.auth.mismatch}</p>
+        )}
+        <Button onClick={() => pwd.mutate()}
+          disabled={next.length < 10 || confirm !== next || pwd.isPending}>
           {t.changePassword}
         </Button>
       </div>

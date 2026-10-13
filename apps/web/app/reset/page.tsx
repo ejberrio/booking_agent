@@ -13,12 +13,17 @@ function ResetForm() {
   const { m } = useI18n();
   const t = m.auth;
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [state, setState] = useState<"form" | "done">("form");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (password !== confirm) {
+      setError(t.mismatch);
+      return;
+    }
     setLoading(true);
     setError(null);
     const { ok, data } = await postJson("/api/auth/reset", { token, password });
@@ -44,6 +49,15 @@ function ResetForm() {
             onChange={(e) => setPassword(e.target.value)}
             minLength={10}
             autoFocus
+            required
+          />
+          <Input
+            type="password"
+            autoComplete="new-password"
+            placeholder={t.confirmPassword}
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            minLength={10}
             required
           />
           <p className="text-xs text-muted-foreground">{t.passwordHint}</p>
