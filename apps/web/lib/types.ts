@@ -478,3 +478,25 @@ export interface Me {
   };
   account: { id: number; name: string };
 }
+
+/** Invitación (feature 026, panel del administrador). El código completo solo al crearla. */
+export interface Invite {
+  id: number;
+  last4: string;
+  note: string | null;
+  status: "active" | "used" | "expired" | "revoked";
+  expires_at: string;
+  created_at: string | null;
+  used_by_account: { id: number; name: string } | null;
+}
+
+export interface AdminAccount {
+  id: number;
+  name: string;
+  owner_email: string | null;
+  status: "active" | "disabled";
+  created_at: string | null;
+  last_seen_at: string | null;
+  connected: boolean;
+  properties: number;
+}

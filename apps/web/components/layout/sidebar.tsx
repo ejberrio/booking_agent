@@ -9,13 +9,16 @@ import {
   MessageSquare,
   Plug,
   Settings,
+  ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { LanguageSwitcher } from "@/components/i18n/language-switcher";
+import { api } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 
 const NAV = [
@@ -33,6 +36,9 @@ export function Sidebar() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const { m } = useI18n();
+  // Enlace al panel solo para el administrador de plataforma (feature 026).
+  const me = useQuery({ queryKey: ["me"], queryFn: api.me, staleTime: 5 * 60_000 });
+  const isAdmin = Boolean(me.data?.user.is_platform_admin);
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -88,6 +94,19 @@ export function Sidebar() {
               </Link>
             );
           })}
+          {isAdmin && (
+            <Link
+              href="/admin"
+              onClick={() => setOpen(false)}
+              className={cn(
+                "flex items-center gap-2 rounded-md px-3 py-2 text-sm",
+                pathname.startsWith("/admin") ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+              )}
+            >
+              <ShieldCheck size={16} />
+              {m.admin.nav}
+            </Link>
+          )}
         </nav>
         <LanguageSwitcher className="px-3 pt-2" />
         <button

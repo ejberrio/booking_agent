@@ -19,6 +19,19 @@ Al desplegar la entrega 2, tus datos están en la cuenta nº 1 sin usuario. Al a
 tu correo y una contraseña nueva. Quedas como dueño y **administrador de la plataforma**. Después,
 la contraseña de siempre ya no sirve para entrar.
 
+## Invitar anfitriones (beta)
+
+- **Administración → Invitaciones:** escribe para quién es (p. ej. "Ana, Cartagena") y pulsa
+  "Crear código". El código `SL-XXXX-XXXX` se muestra **una sola vez**: copia el código o el
+  enlace de registro (`staylever.com/register?code=…`) y compártelo. Vence en 30 días (ajustable)
+  y sirve una vez; puedes revocarlo mientras no se use.
+- El anfitrión crea su cuenta (nombre, correo, contraseña dos veces), confirma su correo y entra a
+  una StayLever vacía que le indica conectar su Beds24 en Ajustes.
+- **Administración → Cuentas:** ves cada cuenta (dueño, uso, si tiene channel manager, nº de
+  propiedades), sin sus precios, reservas ni conversaciones. "Desactivar" cierra sus sesiones y
+  el escaneo la omite; sus datos se conservan y "Reactivar" lo deshace.
+- **Registro abierto:** apagado (beta) = solo con código; encendido = cualquiera con un correo.
+
 ## Correo (Resend)
 
 - Dominio de envío `mail.staylever.com` (registros DKIM/SPF en Cloudflare, región sa-east-1).

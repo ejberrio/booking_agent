@@ -60,12 +60,12 @@
 
 ## Phase 6: US2 + US5 — Invitaciones, registro y panel de administrador (P1/P2, PR3)
 
-- [ ] T034 [US2] Modelos `InviteCode` y `PlatformSetting` + migración `b2c3d4e5f6a8_invites.py`
-- [ ] T035 [US2] `apps/api/app/services/invite_service.py` (crear `SL-XXXX-XXXX` con hash + last4, listar estados, revocar, consumo atómico) y `auth_service.register` (código requerido si el registro está cerrado; crea cuenta + usuario + membresía dueño en una transacción; correo existente → "ya tienes cuenta" sin consumir el código; 503 sin correo configurado)
-- [ ] T036 [US5] `apps/api/app/services/admin_service.py` + `routes/admin.py`: invitaciones, cuentas (sin datos privados; desactivar revoca sesiones; no la propia), `registration_open`, `llm-config`, secretos de plataforma — todo con `require_platform_admin`
-- [ ] T037 [US2] Web: `app/api/auth/register/route.ts` + página `app/(auth)/register/page.tsx` (`?code=`), mensaje "beta por invitación"
-- [ ] T038 [US5] Web: `app/(app)/admin/page.tsx` (Invitaciones con copiar código una vez, Cuentas, Registro abierto, Secretos de plataforma, Modelo de IA) y enlace en el menú solo para administradores; Ajustes ya no muestra secretos de plataforma
-- [ ] T039 [P] [US2] Tests `apps/api/tests/test_invites_admin.py`: código vigente/usado/vencido/revocado; doble uso simultáneo → uno gana; registro cerrado sin código → 400; abierto sin código → ok; correo existente no consume; admin vs no admin (403); lista de cuentas sin datos privados; desactivar/reactivar; cuenta nueva vacía sin errores en `/status`, `/units`, calendario, sugerencias
+- [X] T034 [US2] Modelos `InviteCode` y `PlatformSetting` + migración `b2c3d4e5f6a8_invites.py`
+- [X] T035 [US2] `apps/api/app/services/invite_service.py` (crear `SL-XXXX-XXXX` con hash + last4, listar estados, revocar, consumo atómico) y `auth_service.register` (código requerido si el registro está cerrado; crea cuenta + usuario + membresía dueño en una transacción; correo existente → "ya tienes cuenta" sin consumir el código; 503 sin correo configurado)
+- [X] T036 [US5] `apps/api/app/services/admin_service.py` + `routes/admin.py`: invitaciones, cuentas (sin datos privados; desactivar revoca sesiones; no la propia), `registration_open`, `llm-config`, secretos de plataforma — todo con `require_platform_admin`
+- [X] T037 [US2] Web: `app/api/auth/register/route.ts` + página `app/(auth)/register/page.tsx` (`?code=`), mensaje "beta por invitación"
+- [X] T038 [US5] Web: `app/(app)/admin/page.tsx` (Invitaciones con copiar código una vez, Cuentas, Registro abierto, Secretos de plataforma, Modelo de IA) y enlace en el menú solo para administradores; Ajustes ya no muestra secretos de plataforma
+- [X] T039 [P] [US2] Tests `apps/api/tests/test_invites_admin.py`: código vigente/usado/vencido/revocado; doble uso simultáneo → uno gana; registro cerrado sin código → 400; abierto sin código → ok; correo existente no consume; admin vs no admin (403); lista de cuentas sin datos privados; desactivar/reactivar; cuenta nueva vacía sin errores en `/status`, `/units`, calendario, sugerencias
 
 **Checkpoint PR3**: invitar a un anfitrión beta (quickstart PR3).
 

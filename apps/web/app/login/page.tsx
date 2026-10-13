@@ -65,7 +65,12 @@ function LoginForm() {
   return (
     <AuthShell
       title={t.login.title}
-      footer={<Link href="/forgot" className="underline">{t.login.forgot}</Link>}
+      footer={
+        <div className="space-y-2">
+          <Link href="/forgot" className="block underline">{t.login.forgot}</Link>
+          <Link href="/register" className="block underline">{t.register.cta}</Link>
+        </div>
+      }
     >
       <form onSubmit={onSubmit} className="space-y-3">
         <Input

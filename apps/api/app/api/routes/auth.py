@@ -107,6 +107,35 @@ async def reset_password(req: ResetRequest, session: AsyncSession = Depends(get_
     return {"status": "ok"}
 
 
+class RegisterRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    email: str = Field(max_length=254)
+    password: str = Field(max_length=256)
+    invite_code: str | None = Field(default=None, max_length=40)
+    language: str = "es"
+
+
+@router.post("/register", status_code=202)
+async def register(req: RegisterRequest, session: AsyncSession = Depends(get_session)):
+    try:
+        await auth_service.register(
+            session, name=req.name, email=req.email, password=req.password,
+            invite_code=req.invite_code, language=req.language,
+        )
+    except WeakPassword as exc:
+        return _weak(exc)
+    except AuthError as exc:
+        return _error(exc)
+    return {"status": "check_email"}
+
+
+@router.get("/registration-status")
+async def registration_status(session: AsyncSession = Depends(get_session)):
+    from app.services import invite_service
+
+    return {"open": await invite_service.registration_open(session)}
+
+
 @router.get("/claim-status")
 async def claim_status(session: AsyncSession = Depends(get_session)):
     return {"claimable": await auth_service.claim_status(session)}
