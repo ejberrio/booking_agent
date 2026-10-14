@@ -1,8 +1,8 @@
 <!-- SPECKIT START -->
-Feature activa: **032-assistant-bulk** (asistente con cambios en bloque y una sola confirmación; issue #172).
-Spec/tareas: `specs/032-assistant-bulk/{spec,tasks}.md`. Servicio `app/services/bulk_service.py`; herramientas en
-`app/agent/tools.py` (propose_price_change, propose_discount, propose_apply/reject_suggestions); botones deterministas
-`POST /chat/actions/{id}/confirm|cancel` (sin IA ni cuota). Anteriores: 027 (límites de IA), 028 (Ley 1581), 026 (principio VI).
+Feature activa: **029-offline-mode** (modo sin conexión: apartamento manual, iCal, aplicar a mano; issue #146).
+Spec/tareas: `specs/029-offline-mode/{spec,tasks}.md`. `account.channel_mode` (connected|manual) → `ManualChannelAdapter`;
+`manual_service`, `ical_service` (lista blanca de dominios), rutas `/manual/*`. Anteriores: 032 (asistente en bloque),
+027 (límites de IA), 028 (Ley 1581), 026 (principio VI).
 <!-- SPECKIT END -->
 
 # Booking AI Agent

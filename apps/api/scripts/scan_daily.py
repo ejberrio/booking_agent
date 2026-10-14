@@ -19,7 +19,7 @@ from datetime import date, timedelta
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.channels.factory import get_adapter, has_credentials
+from app.channels.factory import get_adapter, has_credentials, set_channel_mode
 from app.db.tenancy import platform_session, tenant_session
 from app.llm.client import default_llm
 from app.models.account import Account, AccountStatus
@@ -30,6 +30,7 @@ from app.models.property import UnitType
 from app.search.tavily import TavilyProvider
 from app.services import (
     event_service,
+    ical_service,
     intelligence_service,
     privacy_service,
     push_service,
@@ -43,10 +44,17 @@ SYNC_DAYS = 730  # 2 años: la app ve todo el horizonte cargado en Beds24 (featu
 
 async def active_account_ids(session: AsyncSession) -> list[int]:
     """Cuentas activas (sesión de plataforma: única consulta entre cuentas del cron)."""
+    return list((await active_accounts(session)).keys())
+
+
+async def active_accounts(session: AsyncSession) -> dict[int, str]:
+    """Cuentas activas → modo de canal (feature 029)."""
     rows = await session.execute(
-        select(Account.id).where(Account.status == AccountStatus.active).order_by(Account.id)
+        select(Account.id, Account.channel_mode)
+        .where(Account.status == AccountStatus.active)
+        .order_by(Account.id)
     )
-    return list(rows.scalars())
+    return {aid: mode or "connected" for aid, mode in rows.all()}
 
 
 async def sync_account(session: AsyncSession, today: date) -> str:
@@ -129,7 +137,8 @@ async def _record_failure(account_id: int, exc: Exception) -> None:
 async def run_all(today: date | None = None, *, search=None, llm=None, market_factory=None) -> None:
     today = today or date.today()
     async with platform_session() as session:
-        account_ids = await active_account_ids(session)
+        modes = await active_accounts(session)
+    account_ids = list(modes)
     scanned_cities: set[str] = set()
     for account_id in account_ids:
         # Feature 028: nombres de huéspedes con salida hace más de 1 año (con o sin canal).
@@ -142,6 +151,14 @@ async def run_all(today: date | None = None, *, search=None, llm=None, market_fa
             print(f"scan_daily: cuenta {account_id} limpieza falló ({type(exc).__name__}).")
         try:
             async with tenant_session(account_id) as session:
+                set_channel_mode(session, modes[account_id])
+                if modes[account_id] == "manual":
+                    # Sin conexión (feature 029): la ocupación llega de los iCal del anfitrión.
+                    rep = await ical_service.sync_account(session, today=today)
+                    await session.commit()
+                    print(f"scan_daily: cuenta {account_id} iCal canales={rep.channels} "
+                          f"reservas nuevas={rep.bookings} canceladas={rep.cancelled} "
+                          f"errores={len(rep.errors)}")
                 if not has_credentials(session):
                     print(f"scan_daily: cuenta {account_id} sin channel manager; se omite.")
                     continue

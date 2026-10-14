@@ -49,6 +49,9 @@ class Channel(Base, AccountOwned, TimestampMixin):
     external_ref: Mapped[str | None] = mapped_column(String(120), nullable=True)
     # Channel-aware: modelado pero NO aplicado todavía.
     price_offset_pct: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
+    # Feature 029 (modo sin conexión): anuncio público y calendario iCal de exportación.
+    listing_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    ical_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
 
     property: Mapped[Property] = relationship(back_populates="channels")
 

@@ -9,6 +9,7 @@ import dashboard from "@/lib/i18n/catalog/dashboard";
 import extension from "@/lib/i18n/catalog/extension";
 import legal from "@/lib/i18n/catalog/legal";
 import offers from "@/lib/i18n/catalog/offers";
+import offline from "@/lib/i18n/catalog/offline";
 import rationale from "@/lib/i18n/catalog/rationale";
 import settings from "@/lib/i18n/catalog/settings";
 import shell from "@/lib/i18n/catalog/shell";
@@ -36,6 +37,7 @@ const AREAS = {
   suggestions,
   rationale,
   offers,
+  offline,
   connection,
   settings,
 };

@@ -1,6 +1,9 @@
 import { getActiveLang } from "@/lib/i18n/core";
 import { trServer } from "@/lib/i18n/server-messages";
 import type {
+  IcalReport,
+  ManualListingsInput,
+  ManualOverview,
   AccountUsage,
   AdminUsage,
   ApplyResult,
@@ -296,6 +299,17 @@ export const api = {
     }),
   sendVerification: () => req<{ sent: boolean }>(`/auth/send-verification`, { method: "POST" }),
   accountUsage: () => req<AccountUsage>(`/account/usage`),
+  manualOverview: () => req<ManualOverview>(`/manual`),
+  createManualApartment: (body: ManualListingsInput & {
+    name: string; city: string; currency: string; weekday_price: number; weekend_price?: number;
+  }) => req<{ unit_type_id: number; ical: IcalReport }>(`/manual/apartments`, {
+    method: "POST", body: JSON.stringify(body),
+  }),
+  updateManualListings: (propertyId: number, body: ManualListingsInput) =>
+    req<{ ical: IcalReport }>(`/manual/apartments/${propertyId}/listings`, {
+      method: "PATCH", body: JSON.stringify(body),
+    }),
+  syncIcal: () => req<IcalReport>(`/manual/ical/sync`, { method: "POST" }),
   adminUsage: (month?: string) =>
     req<AdminUsage>(`/admin/usage${month ? `?month=${month}` : ""}`),
   setAccountLimits: (id: number, body: { chat_limit_month?: number | null; search_limit_day?: number | null }) =>

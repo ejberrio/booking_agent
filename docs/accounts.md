@@ -86,6 +86,19 @@ la contraseña de siempre ya no sirve para entrar.
 - Costos estimados con `AI_PRICES` (JSON, USD por millón de tokens `[entrada, salida]` por modelo y
   `"search"` por búsqueda). Un modelo sin precio se cuenta como "sin precio".
 
+## Modo sin conexión (feature 029)
+
+- Una cuenta nueva puede **usar StayLever sin channel manager**: "Usar sin conexión" → crea el
+  apartamento (nombre, ciudad, moneda, precio entre semana y de viernes/sábado, enlaces del anuncio
+  y del iCal de exportación de Airbnb/Booking). StayLever siembra 365 noches de precio.
+- La ocupación llega del **iCal** (escaneo diario o "Sincronizar calendarios ahora" en Ajustes) y
+  se puede marcar a mano en el calendario. Las reservas del iCal no traen nombre de huésped.
+- Sugerencias, precios en bloque y el asistente funcionan igual, pero **no publican**: StayLever
+  guarda el precio y la app muestra enlaces para copiarlo en Airbnb (multicalendario) y Booking
+  (extranet). `account.channel_mode = manual`; adaptador `ManualChannelAdapter`.
+- iCal: solo https de Airbnb, Booking, Vrbo o Google Calendar; el enlace completo es privado
+  (da acceso al calendario) y no se muestra ni se registra.
+
 ## Interruptor de transición (`AUTH_MODE`, servicio api)
 
 - `legacy` (por defecto): con sesión, la cuenta de la sesión; sin sesión, la cuenta nº 1. Permite

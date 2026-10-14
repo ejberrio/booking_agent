@@ -54,6 +54,8 @@ def _out(acc: Account, session: AsyncSession) -> dict:
         "name": acc.name,
         "status": acc.status.value,
         "connected": has_credentials(session),
+        # Feature 029: "manual" = sin conexión (los precios se aplican a mano).
+        "channel_mode": acc.channel_mode,
     }
 
 

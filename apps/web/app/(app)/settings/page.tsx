@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AccountCard } from "@/components/account/account-card";
+import { OfflineCard } from "@/components/offline/offline-card";
 import { DataCard } from "@/components/account/data-card";
 import { UsageCard } from "@/components/account/usage-card";
 import { Button } from "@/components/ui/button";
@@ -781,6 +782,8 @@ export default function SettingsPage() {
       <h1 className="text-xl font-semibold">{t.title}</h1>
 
       <AccountCard />
+
+      <OfflineCard />
 
       <UsageCard />
 

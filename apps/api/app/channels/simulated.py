@@ -190,3 +190,17 @@ class SimulatedChannelAdapter:
         self, property_external_id: str, channel: str, factor: Decimal | None
     ) -> WriteResult:
         return OK
+
+
+MANUAL_OK = WriteResult(True, True, "sin conexión: registrado en StayLever; aplícalo a mano")
+
+
+class ManualChannelAdapter(SimulatedChannelAdapter):
+    """Modo sin conexión (feature 029): la "verdad" es la base de StayLever.
+
+    Mismo comportamiento que el canal simulado, pero para cuentas reales que no conectaron
+    un Channel Manager: los cambios se registran y la app recuerda aplicarlos a mano.
+    """
+
+    simulated = False
+    manual = True

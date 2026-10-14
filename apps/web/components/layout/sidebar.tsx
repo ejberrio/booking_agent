@@ -39,6 +39,8 @@ export function Sidebar() {
   // Enlace al panel solo para el administrador de plataforma (feature 026).
   const me = useQuery({ queryKey: ["me"], queryFn: api.me, staleTime: 5 * 60_000 });
   const isAdmin = Boolean(me.data?.user.is_platform_admin);
+  // Feature 029: "Sin conexión" bajo el nombre de la cuenta.
+  const manual = useQuery({ queryKey: ["manual"], queryFn: api.manualOverview, staleTime: 5 * 60_000 });
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -115,6 +117,9 @@ export function Sidebar() {
             className="mb-1 block rounded-md px-3 py-2 hover:bg-muted"
           >
             <span className="block truncate text-sm font-medium">{me.data.account.name}</span>
+            {manual.data?.channel_mode === "manual" && (
+              <span className="block text-[11px] text-amber-600 dark:text-amber-400">{m.offline.badge}</span>
+            )}
             <span className="block truncate text-xs text-muted-foreground">{me.data.user.email}</span>
           </Link>
         )}

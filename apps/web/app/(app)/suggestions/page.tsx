@@ -12,6 +12,7 @@ import { api } from "@/lib/api";
 import { shortRange } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import type { BatchResult } from "@/lib/types";
+import { OfflineBanner } from "@/components/offline/offline-card";
 
 export default function SuggestionsPage() {
   const { m } = useI18n();
@@ -97,6 +98,7 @@ export default function SuggestionsPage() {
     <div className="mx-auto max-w-2xl space-y-4 pb-20">
       <h1 className="text-xl font-semibold">{t.title}</h1>
       <p className="text-sm text-muted-foreground">{t.intro}</p>
+      <OfflineBanner />
 
       {isError ? (
         <Card>
