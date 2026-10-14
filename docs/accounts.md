@@ -35,6 +35,11 @@ la contraseña de siempre ya no sirve para entrar.
 
 ## Correo (Resend)
 
+- **Recibir:** Cloudflare Email Routing reenvía `hello@`, `privacy@` y `support@staylever.com`
+  (y `hola@`) a la bandeja del host; cualquier otra dirección se descarta. Contacto público en
+  `/welcome` → `hello@`; en `/privacy` → `privacy@`. Los registros MX/SPF de `staylever.com` son de
+  Cloudflare y no chocan con Resend, que envía desde el subdominio `mail.staylever.com`.
+
 - Dominio de envío `mail.staylever.com` (registros DKIM/SPF en Cloudflare, región sa-east-1).
 - La clave (`re_…`, permiso *Sending access*) se pega en **Ajustes → Secretos → "Correo (Resend
   API key)"** — es un secreto de plataforma: solo lo ve el administrador. Sin clave, no salen

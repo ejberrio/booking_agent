@@ -1,6 +1,7 @@
 // Páginas públicas (feature 026, entrega 4): presentación y política de privacidad. Google las
 // exige para publicar "Entrar con Google". El español es la referencia: en/pt con las MISMAS claves.
-const CONTACT = "hola@staylever.com";
+const CONTACT = "hello@staylever.com";
+const PRIVACY = "privacy@staylever.com";
 
 const es = {
   contact: CONTACT,
@@ -47,7 +48,7 @@ const es = {
           "StayLever es una herramienta para anfitriones de alquiler vacacional que sugiere precios " +
             "por noche y los publica en su channel manager cuando el anfitrión lo aprueba. Esta " +
             "política explica qué datos tratamos y cómo, de acuerdo con la Ley 1581 de 2012 de " +
-            `Colombia. Para cualquier asunto de privacidad escríbenos a ${CONTACT}.`,
+            `Colombia. Para cualquier asunto de privacidad escríbenos a ${PRIVACY}.`,
         ],
       },
       {
@@ -97,7 +98,7 @@ const es = {
         title: "Tus derechos",
         body: [
           "Puedes conocer, actualizar, rectificar y suprimir tus datos, y revocar tu autorización, " +
-            `escribiendo a ${CONTACT}. Respondemos en máximo 15 días hábiles. Tu nombre y el de tu ` +
+            `escribiendo a ${PRIVACY}. Respondemos en máximo 15 días hábiles. Tu nombre y el de tu ` +
             "cuenta los puedes cambiar tú mismo en Ajustes.",
         ],
       },
@@ -166,7 +167,7 @@ const en: Shape = {
           "StayLever is a tool for vacation rental hosts that suggests nightly prices and publishes " +
             "them to their channel manager when the host approves. This policy explains which data " +
             "we process and how, in accordance with Colombia's Law 1581 of 2012. For any privacy " +
-            `matter, write to ${CONTACT}.`,
+            `matter, write to ${PRIVACY}.`,
         ],
       },
       {
@@ -216,7 +217,7 @@ const en: Shape = {
         title: "Your rights",
         body: [
           "You can access, update, correct and delete your data, and withdraw your consent, by " +
-            `writing to ${CONTACT}. We reply within 15 business days. You can change your name ` +
+            `writing to ${PRIVACY}. We reply within 15 business days. You can change your name ` +
             "and your account's name yourself in Settings.",
         ],
       },
@@ -283,7 +284,7 @@ const pt: Shape = {
           "O StayLever é uma ferramenta para anfitriões de aluguel por temporada que sugere preços " +
             "por noite e os publica no seu channel manager quando o anfitrião aprova. Esta " +
             "política explica quais dados tratamos e como, de acordo com a Lei 1581 de 2012 da " +
-            `Colômbia. Para qualquer assunto de privacidade, escreva para ${CONTACT}.`,
+            `Colômbia. Para qualquer assunto de privacidade, escreva para ${PRIVACY}.`,
         ],
       },
       {
@@ -333,7 +334,7 @@ const pt: Shape = {
         title: "Seus direitos",
         body: [
           "Você pode conhecer, atualizar, retificar e excluir seus dados, e revogar sua " +
-            `autorização, escrevendo para ${CONTACT}. Respondemos em até 15 dias úteis. Seu nome e ` +
+            `autorização, escrevendo para ${PRIVACY}. Respondemos em até 15 dias úteis. Seu nome e ` +
             "o da sua conta você mesmo pode mudar em Configurações.",
         ],
       },
