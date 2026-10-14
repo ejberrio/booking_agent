@@ -1,8 +1,9 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
@@ -21,6 +22,22 @@ export default function ManualSetupPage() {
     airbnb_url: "", airbnb_ical: "", booking_url: "", booking_ical: "",
   });
   const [busy, setBusy] = useState(false);
+  // Feature 030: si la cuenta viene del informe gratis, se prellenan municipio y precios.
+  const report = useQuery({ queryKey: ["my-report"], queryFn: api.myReport, retry: false });
+  const [prefilled, setPrefilled] = useState(false);
+  useEffect(() => {
+    const r = report.data;
+    if (!r || prefilled) return;
+    setPrefilled(true);
+    const digits = (v: string | null) => (v ? String(Math.round(Number(v))) : "");
+    setF((cur) => ({
+      ...cur,
+      city: cur.city || r.city,
+      currency: r.currency || cur.currency,
+      weekday: cur.weekday || digits(r.weekday_price),
+      weekend: cur.weekend || digits(r.weekend_price),
+    }));
+  }, [report.data, prefilled]);
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setF({ ...f, [k]: e.target.value });
   const num = (v: string) => Number(v.replace(/[^\d]/g, ""));
@@ -51,6 +68,12 @@ export default function ManualSetupPage() {
       <Card className="space-y-3">
         <CardTitle>{t.title}</CardTitle>
         <CardDescription>{t.description}</CardDescription>
+        {prefilled && (
+          <p className="text-xs text-muted-foreground">
+            {m.pub.app.prefilled}{" "}
+            <Link href="/report" className="underline">{m.pub.app.seeReport}</Link>
+          </p>
+        )}
         <form onSubmit={submit} className="space-y-3">
           <Input placeholder={t.name} value={f.name} onChange={set("name")} required maxLength={200} />
           <div className="flex gap-2">

@@ -48,6 +48,8 @@ import type {
   Me,
   PushDevice,
   Unit,
+  AdminBeta,
+  MyReport,
 } from "@/lib/types";
 
 export interface PromotionInput {
@@ -310,6 +312,14 @@ export const api = {
       method: "PATCH", body: JSON.stringify(body),
     }),
   syncIcal: () => req<IcalReport>(`/manual/ical/sync`, { method: "POST" }),
+  myReport: () => req<MyReport>(`/report/mine`),
+  adminBeta: () => req<AdminBeta>(`/admin/beta`),
+  patchBeta: (body: { enabled?: boolean; quota?: number; city_budget?: number }) =>
+    req<AdminBeta>(`/admin/beta`, { method: "PATCH", body: JSON.stringify(body) }),
+  inviteWaitlist: (id: number) =>
+    req<{ invited: boolean }>(`/admin/waitlist/${id}/invite`, { method: "POST" }),
+  deleteWaitlist: (id: number) =>
+    req<{ deleted: boolean }>(`/admin/waitlist/${id}`, { method: "DELETE" }),
   adminUsage: (month?: string) =>
     req<AdminUsage>(`/admin/usage${month ? `?month=${month}` : ""}`),
   setAccountLimits: (id: number, body: { chat_limit_month?: number | null; search_limit_day?: number | null }) =>

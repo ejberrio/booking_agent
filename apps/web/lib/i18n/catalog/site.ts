@@ -110,6 +110,17 @@ const es = {
         ],
       },
       {
+        title: "Página pública e informe gratis",
+        body: [
+          "Para pedir el informe gratis no necesitas cuenta: guardamos el municipio y los precios " +
+            "que escribes, sin tu nombre ni tu correo. Para limitar abusos usamos un código derivado " +
+            "de tu IP que cambia cada día; no guardamos la IP. Contamos visitas e informes solo como " +
+            "totales por día, sin cookies ni rastreo.",
+          "Si te unes a la lista de espera, guardamos tu correo con tu autorización solo para " +
+            "avisarte de la beta; lo borramos cuando te invitamos, si nos lo pides o a los 12 meses.",
+        ],
+      },
+      {
         title: "Tus derechos",
         body: [
           "Puedes conocer, actualizar, rectificar y suprimir tus datos, y revocar tu autorización. " +
@@ -244,6 +255,17 @@ const en: Shape = {
         ],
       },
       {
+        title: "Public page and free report",
+        body: [
+          "You don't need an account to request the free report: we keep the town and prices you " +
+            "type, without your name or email. To limit abuse we use a code derived from your IP " +
+            "that changes every day; we don't store the IP. We count visits and reports only as " +
+            "daily totals, without cookies or tracking.",
+          "If you join the waitlist, we keep your email with your consent only to tell you about " +
+            "the beta; we delete it when we invite you, when you ask, or after 12 months.",
+        ],
+      },
+      {
         title: "Your rights",
         body: [
           "You can access, update, correct and delete your data, and withdraw your consent. In " +
@@ -374,6 +396,17 @@ const pt: Shape = {
             "e canal) para as estatísticas de preços.",
           "Se você excluir sua conta em Configurações, apagamos todos os seus dados na hora; as " +
             "cópias de segurança do banco de dados desaparecem sozinhas em até 7 dias.",
+        ],
+      },
+      {
+        title: "Página pública e relatório grátis",
+        body: [
+          "Para pedir o relatório grátis você não precisa de conta: guardamos o município e os " +
+            "preços que você digita, sem seu nome nem seu e-mail. Para limitar abusos usamos um " +
+            "código derivado do seu IP que muda todo dia; não guardamos o IP. Contamos visitas e " +
+            "relatórios apenas como totais por dia, sem cookies nem rastreamento.",
+          "Se você entrar na lista de espera, guardamos seu e-mail com sua autorização apenas para " +
+            "avisar da beta; apagamos quando convidamos você, se pedir ou após 12 meses.",
         ],
       },
       {

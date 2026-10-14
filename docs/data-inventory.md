@@ -20,6 +20,10 @@ de cobrar (Fase 1). Versión de los documentos públicos: `LEGAL_VERSION` en
 | Teléfonos para avisos | Anfitrión | `push_device` (token de Firebase, modelo) | Avisos al celular | Solo la cuenta | Hasta desactivarse o borrar la cuenta |
 | Eventos públicos de la ciudad | — | `event` (compartido) | Sugerencias | Todas las cuentas de esa ciudad | Indefinido (datos públicos) |
 | Registros técnicos | — | Railway (EE. UU.) | Operar y depurar | Administrador | Retención de Railway; sin correos completos, tokens ni nombres de huéspedes |
+| Informe gratis (feature 030) | Visitante (sin cuenta) | `public_report` (municipio, precios, idioma; sin nombre, correo ni IP) | Mostrar el informe y vincularlo si crea cuenta | Nadie; si crea cuenta, solo esa cuenta | Indefinido sin datos personales; se borra con la cuenta vinculada |
+| Límite diario de visitantes | Visitante | `public_quota` (HMAC de la IP con la fecha, irreversible) | Evitar abuso del informe | Nadie | Se borra al día siguiente (cron) |
+| Lista de espera | Interesado | `waitlist_entry` (correo, idioma, municipio, fecha de autorización) | Avisar de la beta | Administrador de plataforma | Hasta invitarlo, a pedido o 12 meses (cron) |
+| Métricas de la página pública | — | `public_metric` (totales por día) | Medir la beta | Administrador de plataforma | Indefinido (sin datos personales) |
 | Copias de seguridad de la base | Todos | Neon (ramas `antes-de-…`) | Recuperación ante fallos | Administrador | Se borran solas en máximo 7 días |
 
 ## Proveedores (encargados de StayLever)

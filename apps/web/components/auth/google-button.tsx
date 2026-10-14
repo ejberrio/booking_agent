@@ -47,9 +47,12 @@ export function GoogleButton({
   mode,
   invite,
   accepted,
+  report,
 }: {
   mode: "login" | "register";
   invite?: string;
+  /** Informe gratis (feature 030) que se vincula a la cuenta nueva. */
+  report?: string;
   /** Registro: la casilla de Términos y Privacidad (feature 028) debe estar marcada. */
   accepted?: boolean;
 }) {
@@ -102,6 +105,7 @@ export function GoogleButton({
     const qs = new URLSearchParams({ mode, lang });
     if (invite?.trim()) qs.set("invite", invite.trim());
     if (accepted) qs.set("accept", "1");
+    if (report) qs.set("report", report);
     if (!nativeOk) {
       window.location.assign(`/api/auth/google/start?${qs}`);
       return;

@@ -617,3 +617,40 @@ export interface ManualListingsInput {
   booking_url?: string;
   booking_ical?: string;
 }
+
+// Feature 030: informe gratis y beta pública.
+export type ReportEventItem = {
+  name: string;
+  start_date: string;
+  end_date: string;
+  relevance: "high" | "medium" | "low";
+  kind: string;
+  location: string | null;
+  base_price: string;
+  suggested_price: string;
+  pct: number;
+};
+
+export type MyReport = {
+  municipality: { code: string; name: string; department: string; label: string };
+  city: string;
+  weekday_price: string;
+  weekend_price: string | null;
+  currency: string;
+  unit_kind: string | null;
+  horizon_days: number;
+  events: ReportEventItem[];
+  generated_at: string | null;
+};
+
+export type AdminBeta = {
+  enabled: boolean;
+  quota: number;
+  used: number;
+  full: boolean;
+  city_budget: number;
+  searches_today: number;
+  reports_total: number;
+  metrics: { day: string; key: string; value: number }[];
+  waitlist: { id: number; email: string; language: string; municipality: string | null; created_at: string | null }[];
+};
