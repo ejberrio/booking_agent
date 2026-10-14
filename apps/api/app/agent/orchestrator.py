@@ -27,7 +27,7 @@ from app.models.agent import AgentAction, LLMConfig, Message
 from app.models.enums import AgentActionStatus, MessageRole
 from app.models.property import Channel, Property, UnitType
 
-MAX_STEPS = 6
+MAX_STEPS = 10  # llamadas al modelo por turno (feature 032: antes 6)
 
 
 @dataclass
@@ -161,6 +161,19 @@ async def run_turn(
     tools = openai_tools(include_control=pending is not None)
     events: list[dict] = []
 
+    def _echo(tc) -> dict:
+        return {
+            "role": "assistant",
+            "content": None,
+            "tool_calls": [
+                {
+                    "id": tc.id,
+                    "type": "function",
+                    "function": {"name": tc.name, "arguments": json.dumps(tc.arguments)},
+                }
+            ],
+        }
+
     for _ in range(MAX_STEPS):
         resp = await llm.chat(messages=messages, tools=tools, model=model)
 
@@ -169,63 +182,51 @@ async def run_turn(
             await _persist(session, conversation_id, MessageRole.assistant, text)
             return AgentReply(text, events=events)
 
-        tc = resp.tool_calls[0]
-        events.append({"type": "tool", "name": tc.name})
-        spec = ALL_TOOLS.get(tc.name)
+        # Feature 032: TODAS las lecturas de la respuesta se ejecutan (antes solo la
+        # primera llamada); de escrituras se acepta UNA sola propuesta por turno.
+        reads, controls, writes = [], [], []
+        for tc in resp.tool_calls:
+            events.append({"type": "tool", "name": tc.name})
+            spec = ALL_TOOLS.get(tc.name)
+            if tc.name in ("confirm_pending", "cancel_pending"):
+                controls.append(tc)
+            elif spec and not spec.is_write:
+                reads.append(tc)
+            else:
+                writes.append(tc)
 
-        # Herramienta de lectura → ejecuta y realimenta.
-        if spec and not spec.is_write and tc.name not in ("confirm_pending", "cancel_pending"):
+        if controls:
+            if controls[0].name == "confirm_pending":
+                return await _confirm(
+                    session, channel, conversation_id, pending, user_msg.id, events, language
+                )
+            return await _cancel(session, conversation_id, pending, events, language)
+
+        for tc in reads:
             result = await exec_read(session, tc.name, tc.arguments)
-            messages.append(
-                {
-                    "role": "assistant",
-                    "content": None,
-                    "tool_calls": [
-                        {
-                            "id": tc.id,
-                            "type": "function",
-                            "function": {"name": tc.name, "arguments": json.dumps(tc.arguments)},
-                        }
-                    ],
-                }
-            )
+            messages.append(_echo(tc))
             messages.append({"role": "tool", "tool_call_id": tc.id, "content": json.dumps(result)})
+
+        if not writes:
+            continue
+        if len(writes) > 1:
+            msg = (
+                "Solo se admite UNA propuesta por turno: combina todo en una sola llamada "
+                "(usa date_from/date_to con weekdays o 'dates', o varias sugerencias por ids)."
+            )
+            for tc in writes:
+                messages.append(_echo(tc))
+                messages.append(
+                    {"role": "tool", "tool_call_id": tc.id, "content": json.dumps({"error": msg})}
+                )
             continue
 
-        # Confirmación.
-        if tc.name == "confirm_pending":
-            return await _confirm(
-                session, channel, conversation_id, pending, user_msg.id, events, language
-            )
-
-        # Cancelación.
-        if tc.name == "cancel_pending":
-            if pending:
-                pending.status = AgentActionStatus.cancelled
-                await session.flush()
-            text = tr("Entendido, cancelo la propuesta.")
-            await _persist(session, conversation_id, MessageRole.assistant, text)
-            return AgentReply(text, events=events)
-
-        # Herramienta de escritura → proponer (no aplica).
+        tc = writes[0]
         try:
-            proposal = await build_proposal(session, tc.name, tc.arguments)
+            proposal = await build_proposal(session, tc.name, tc.arguments, language)
         except ValueError as exc:
-            # Realimenta el error al LLM para que se corrija dentro del mismo turno
-            # (p. ej. consultar el precio actual antes de proponer un porcentaje).
-            messages.append(
-                {
-                    "role": "assistant",
-                    "content": None,
-                    "tool_calls": [
-                        {
-                            "id": tc.id,
-                            "type": "function",
-                            "function": {"name": tc.name, "arguments": json.dumps(tc.arguments)},
-                        }
-                    ],
-                }
-            )
+            # Realimenta el error al LLM para que se corrija dentro del mismo turno.
+            messages.append(_echo(tc))
             messages.append(
                 {"role": "tool", "tool_call_id": tc.id, "content": json.dumps({"error": str(exc)})}
             )
@@ -270,10 +271,10 @@ async def _confirm(
         await _persist(session, conversation_id, MessageRole.assistant, text)
         return AgentReply(text, events=events)
 
-    outcome = await apply_proposal(session, channel, pending, message_id)
+    outcome = await apply_proposal(session, channel, pending, message_id, language)
 
     if outcome.status == "stale":
-        proposal = await build_proposal(session, pending.tool, pending.arguments)
+        proposal = await build_proposal(session, pending.tool, pending.arguments, language)
         pending.status = AgentActionStatus.stale
         new_action = AgentAction(
             conversation_id=conversation_id,
@@ -297,3 +298,44 @@ async def _confirm(
     done = tr(outcome.summary)
     await _persist(session, conversation_id, MessageRole.assistant, done)
     return AgentReply(done, applied=True, events=events)
+
+
+async def _cancel(
+    session: AsyncSession,
+    conversation_id: int,
+    pending: AgentAction | None,
+    events: list[dict],
+    language: str = "es",
+) -> AgentReply:
+    if pending:
+        pending.status = AgentActionStatus.cancelled
+        await session.flush()
+    text = agent_texts.translate("Entendido, cancelo la propuesta.", language)
+    await _persist(session, conversation_id, MessageRole.assistant, text)
+    return AgentReply(text, events=events)
+
+
+async def resolve_action(
+    session: AsyncSession,
+    channel,
+    *,
+    conversation_id: int,
+    action_id: int,
+    confirm: bool,
+    language: str = "es",
+) -> AgentReply:
+    """Botones Confirmar/Cancelar (feature 032): sin modelo de lenguaje ni cuota.
+
+    Solo actúa sobre la propuesta PENDIENTE de esa conversación (de la cuenta del contexto,
+    por el filtro automático); cualquier otra cosa responde "no hay propuesta pendiente".
+    """
+    pending = await _pending_action(session, conversation_id)
+    label = "Confirmar" if confirm else "Cancelar"
+    msg = await _persist(session, conversation_id, MessageRole.user, f"[{label}]")
+    if pending is None or pending.id != action_id:
+        text = agent_texts.translate("No hay ninguna propuesta pendiente para confirmar.", language)
+        await _persist(session, conversation_id, MessageRole.assistant, text)
+        return AgentReply(text)
+    if confirm:
+        return await _confirm(session, channel, conversation_id, pending, msg.id, [], language)
+    return await _cancel(session, conversation_id, pending, [], language)

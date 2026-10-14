@@ -22,6 +22,28 @@ const es = {
   resize: "Arrastra para cambiar el ancho",
   loading: "Cargando conversación…",
   send: "Enviar",
+  preview: {
+    dates: "Fechas",
+    nights: "Noches",
+    before: "Antes",
+    after: "Después",
+    affected: (n: number) => `${n} noche(s) afectadas`,
+    skipped: "Omitidas",
+    bigChange: "Es un cambio grande: revísalo antes de confirmar.",
+    reasons: {
+      pasada: "pasadas",
+      reservada: "reservadas",
+      bloqueada: "bloqueadas",
+      "sin precio": "sin precio",
+      "fuera de límites": "fuera de tus límites",
+      "variación mayor a 50 %": "variación mayor a 50 %",
+      "sin cambio": "sin cambio",
+      "por debajo del precio mínimo": "bajo el precio mínimo",
+      "menos de 1 %": "descuento menor a 1 %",
+      conflicto: "en conflicto",
+      "no es menor que el precio": "no bajan el precio",
+    } as Record<string, string>,
+  },
 };
 
 type Shape = typeof es;
@@ -46,6 +68,28 @@ const en: Shape = {
   resize: "Drag to change the width",
   loading: "Loading conversation…",
   send: "Send",
+  preview: {
+    dates: "Dates",
+    nights: "Nights",
+    before: "Before",
+    after: "After",
+    affected: (n: number) => `${n} night(s) affected`,
+    skipped: "Skipped",
+    bigChange: "This is a big change: review it before confirming.",
+    reasons: {
+      pasada: "past",
+      reservada: "booked",
+      bloqueada: "blocked",
+      "sin precio": "no price",
+      "fuera de límites": "outside your limits",
+      "variación mayor a 50 %": "change over 50%",
+      "sin cambio": "no change",
+      "por debajo del precio mínimo": "below the minimum price",
+      "menos de 1 %": "discount under 1%",
+      conflicto: "in conflict",
+      "no es menor que el precio": "not lower than the price",
+    } as Record<string, string>,
+  },
 };
 
 const pt: Shape = {
@@ -68,6 +112,28 @@ const pt: Shape = {
   resize: "Arraste para mudar a largura",
   loading: "Carregando conversa…",
   send: "Enviar",
+  preview: {
+    dates: "Datas",
+    nights: "Noites",
+    before: "Antes",
+    after: "Depois",
+    affected: (n: number) => `${n} noite(s) afetadas`,
+    skipped: "Omitidas",
+    bigChange: "É uma mudança grande: revise antes de confirmar.",
+    reasons: {
+      pasada: "passadas",
+      reservada: "reservadas",
+      bloqueada: "bloqueadas",
+      "sin precio": "sem preço",
+      "fuera de límites": "fora dos seus limites",
+      "variación mayor a 50 %": "variação maior que 50%",
+      "sin cambio": "sem mudança",
+      "por debajo del precio mínimo": "abaixo do preço mínimo",
+      "menos de 1 %": "desconto menor que 1%",
+      conflicto: "em conflito",
+      "no es menor que el precio": "não baixam o preço",
+    } as Record<string, string>,
+  },
 };
 
 const catalog = { es, en, pt };

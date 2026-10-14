@@ -47,3 +47,15 @@ def test_prompt_keeps_existing_rules():
     assert "propose_" in p
     assert "badge" in p
     assert "HOY es" in p
+
+
+def test_prompt_rules_feature_032():
+    p = system_prompt(DAY, active_channels=["booking", "airbnb"])
+    # Lote: una sola propuesta, el servidor calcula, fin de semana = viernes y sábado.
+    assert "propose_price_change" in p and "propose_discount" in p
+    assert "propose_apply_suggestions" in p
+    assert "NUNCA una por día" in p
+    assert "[4,5]" in p and "[5,6]" not in p
+    # Sin moneda ni proveedor fijos, sin herramientas viejas.
+    assert "COP" not in p and "Beds24" not in p
+    assert "propose_set_range" not in p and "propose_create_promotion" not in p

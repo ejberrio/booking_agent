@@ -1,4 +1,4 @@
-import type { ChatQuota } from "@/lib/types";
+import type { ChatQuota, PendingAction } from "@/lib/types";
 import { API_URL } from "@/lib/api";
 import { getActiveLang } from "@/lib/i18n/core";
 
@@ -10,6 +10,7 @@ export interface ChatDoneEvent {
   /** Feature 027: mensajes del mes y si la respuesta fue el aviso de límite. */
   quota?: ChatQuota | null;
   limited?: boolean;
+  pending_action?: PendingAction | null;
 }
 
 export interface StreamHandlers {
