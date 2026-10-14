@@ -80,7 +80,7 @@
 
 - [X] T044 [P] `docs/accounts.md` (reclamar la cuenta, configurar Resend y Google, invitar, administrar, desactivar) + `docs/operations.md` (cron por cuenta) + `docs/mobile.md` (APK 1.1.0)
 - [X] T045 Revisión de logs: sin correos completos, tokens ni datos de huéspedes; `ruff`, `pytest`, `tsc`, `eslint`, `build` verdes
-- [ ] T046 Verificación en producción con el host (quickstart completo) y cierre de #143
+- [X] T046 Verificación en producción con el host (quickstart completo) y cierre de #143
 
 ## Dependencies
 
