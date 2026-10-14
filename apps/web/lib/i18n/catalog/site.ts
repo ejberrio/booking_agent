@@ -5,7 +5,8 @@ const PRIVACY = "privacy@staylever.com";
 
 const es = {
   contact: CONTACT,
-  nav: { login: "Entrar", register: "Crear cuenta", privacy: "Privacidad", terms: "Términos", home: "Inicio" },
+  privacyContact: PRIVACY,
+  nav: { login: "Entrar", register: "Crear cuenta", privacy: "Privacidad", terms: "Términos", home: "Inicio", back: "Volver" },
   welcome: {
     title: "Precios inteligentes para tu apartamento turístico",
     lead:
@@ -139,7 +140,8 @@ type Shape = typeof es;
 
 const en: Shape = {
   contact: CONTACT,
-  nav: { login: "Sign in", register: "Sign up", privacy: "Privacy", terms: "Terms", home: "Home" },
+  privacyContact: PRIVACY,
+  nav: { login: "Sign in", register: "Sign up", privacy: "Privacy", terms: "Terms", home: "Home", back: "Back" },
   welcome: {
     title: "Smart pricing for your vacation rental",
     lead:
@@ -270,7 +272,8 @@ const en: Shape = {
 
 const pt: Shape = {
   contact: CONTACT,
-  nav: { login: "Entrar", register: "Criar conta", privacy: "Privacidade", terms: "Termos", home: "Início" },
+  privacyContact: PRIVACY,
+  nav: { login: "Entrar", register: "Criar conta", privacy: "Privacidade", terms: "Termos", home: "Início", back: "Voltar" },
   welcome: {
     title: "Preços inteligentes para o seu apartamento de temporada",
     lead:

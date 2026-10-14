@@ -7,6 +7,7 @@ const es = {
     and: " y la ",
     privacy: "Política de privacidad",
     after: ".",
+    close: "Cerrar",
     required: "Debes aceptar los Términos de uso y la Política de privacidad.",
   },
   gate: {
@@ -54,6 +55,7 @@ const en: Shape = {
     and: " and the ",
     privacy: "Privacy policy",
     after: ".",
+    close: "Close",
     required: "You must accept the Terms of use and the Privacy policy.",
   },
   gate: {
@@ -99,6 +101,7 @@ const pt: Shape = {
     and: " e a ",
     privacy: "Política de privacidade",
     after: ".",
+    close: "Fechar",
     required: "Você deve aceitar os Termos de uso e a Política de privacidade.",
   },
   gate: {
