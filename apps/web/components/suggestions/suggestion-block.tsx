@@ -143,6 +143,16 @@ export function SuggestionBlock({ block, selected, onToggle, onApplyOne, onRejec
                         {pctChange(first?.current_price ?? null, s.suggested_price)}
                       </span>
                     </p>
+                    {s.previous && (
+                      <p className="rounded-md bg-sky-500/10 px-2 py-1 text-[11px] text-sky-700 dark:text-sky-300">
+                        {(s.previous.status === "applied" ? t.previousApplied : t.previousRejected)(
+                          formatCOP(s.previous.price),
+                          shortRange(s.previous.date_from, s.previous.date_to),
+                          s.previous.decided_on ? shortDate(s.previous.decided_on) : null,
+                        )}{" "}
+                        {t.previousWhy(Math.round(s.previous.threshold_pct))}
+                      </p>
+                    )}
                     {s.occupied_count > 0 && (
                       <p className="text-[11px] text-amber-600">
                         {t.occupiedNote(s.sellable_count, s.total_nights, s.occupied_count)}

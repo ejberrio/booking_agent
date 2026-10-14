@@ -231,9 +231,12 @@ async def test_equivalente_pendiente_refresca_racional_resueltas_intactas(sessio
     prop, unit = await _seed(session)
     session.add(_event())
     await session.flush()
+    # Aplicada con un precio drásticamente distinto (+18 %): si fuera el mismo precio, la
+    # pendiente sería una repetición de lo ya decidido y se retiraría (fix sugerencias
+    # repetidas, ver test_suggestions_no_repeat.py).
     aplicada = PriceSuggestion(
         property_id=prop.id, unit_type_id=unit.id, date_from=E1, date_to=E3,
-        suggested_price=D("390000"), status=SuggestionStatus.applied,
+        suggested_price=D("330000"), status=SuggestionStatus.applied,
         rationale={"text": "histórico"},
     )
     session.add(aplicada)

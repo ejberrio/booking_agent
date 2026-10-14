@@ -6,6 +6,11 @@ bloqueo) se excluyen. Al persistir un rango nuevo, las pendientes solapadas qued
 `superseded` (nunca dos pendientes para la misma noche); las vencidas se depuran al
 inicio de cada corrida y, al final, las pendientes del horizonte que el scan ya no
 respalda (p. ej. la noche se reservó o la señal desapareció) también.
+
+No repetición: el cálculo parte del precio que fijó el host (sin la subida de una
+sugerencia ya aplicada) y una noche ya decidida (aplicada o rechazada) solo vuelve a
+proponerse ante un cambio drástico; en ese caso el racional lleva `previous` con la
+decisión anterior (ver app/domain/suggestion_repeat.py).
 """
 
 from __future__ import annotations
@@ -16,10 +21,13 @@ from decimal import Decimal
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
+from app.domain import suggestion_repeat as repeat
 from app.domain.suggestion import EventSignal, suggest_price_v2
 from app.market.provider import MarketDataProvider, MarketSnapshot
+from app.models.audit import PriceChangeLog
 from app.models.calendar import CalendarDay
-from app.models.enums import Relevance, SuggestionStatus
+from app.models.enums import ChangeOrigin, Relevance, SuggestionStatus
 from app.models.market import Event, PriceSuggestion
 from app.models.property import Property, UnitType
 from app.services import event_service, pricing_service
@@ -112,6 +120,69 @@ async def _exists_equivalent(
     return (pending or found or [None])[0]
 
 
+# --------- no repetición: decisiones previas y precio de referencia ---------
+
+
+async def _prior_decisions(
+    session: AsyncSession, unit_type_id: int, date_from: date, date_to: date
+) -> dict[date, repeat.PriorDecision]:
+    """Última decisión del host (aplicada o rechazada) por noche del horizonte.
+
+    Nunca hay dos pendientes para la misma noche (supersede), así que el id más alto
+    es la decisión más reciente.
+    """
+    res = await session.execute(
+        select(PriceSuggestion)
+        .where(
+            PriceSuggestion.unit_type_id == unit_type_id,
+            PriceSuggestion.status.in_((SuggestionStatus.applied, SuggestionStatus.rejected)),
+            PriceSuggestion.date_from <= date_to,
+            PriceSuggestion.date_to >= date_from,
+        )
+        .order_by(PriceSuggestion.id)
+    )
+    out: dict[date, repeat.PriorDecision] = {}
+    for s in res.scalars():
+        decision = repeat.PriorDecision(
+            suggestion_id=s.id,
+            status=s.status.value,
+            price=s.suggested_price,
+            date_from=s.date_from,
+            date_to=s.date_to,
+            decided_on=s.updated_at.date() if s.updated_at else None,
+        )
+        day = max(s.date_from, date_from)
+        while day <= min(s.date_to, date_to):
+            out[day] = decision  # la más reciente gana
+            day += timedelta(days=1)
+    return out
+
+
+async def _price_logs(
+    session: AsyncSession, unit_type_id: int, date_from: date, date_to: date
+) -> dict[date, list[repeat.PriceLog]]:
+    """Bitácora de precios del horizonte por noche, del cambio más nuevo al más viejo."""
+    res = await session.execute(
+        select(PriceChangeLog)
+        .where(
+            PriceChangeLog.unit_type_id == unit_type_id,
+            PriceChangeLog.date >= date_from,
+            PriceChangeLog.date <= date_to,
+        )
+        .order_by(PriceChangeLog.id.desc())
+    )
+    out: dict[date, list[repeat.PriceLog]] = {}
+    for log in res.scalars():
+        out.setdefault(log.date, []).append(
+            repeat.PriceLog(
+                old_price=log.old_price,
+                new_price=log.new_price,
+                from_suggestion=log.origin is ChangeOrigin.suggestion,
+            )
+        )
+    return out
+
+
 # --------- señales por día ---------
 
 
@@ -145,7 +216,9 @@ def _event_signal(ev: Event) -> EventSignal:
     )
 
 
-def _rationale(out, market: MarketSnapshot | None) -> dict:
+def _rationale(
+    out, market: MarketSnapshot | None, previous: repeat.PriorDecision | None = None
+) -> dict:
     data: dict = {
         "text": out.text,
         "factors": [
@@ -165,6 +238,9 @@ def _rationale(out, market: MarketSnapshot | None) -> dict:
             "samples": market.sample_size,
             "source": market.source,
         }
+    if previous is not None:
+        # Re-propuesta por cambio drástico: la web avisa qué se había decidido antes.
+        data["previous"] = previous.as_dict(Decimal(str(settings.suggestion_repeat_threshold_pct)))
     return data
 
 
@@ -220,15 +296,23 @@ async def generate_suggestions(
             snapshots[(month.year, month.month)] = await market.get_snapshot(zone, month)
             month = (month.replace(day=28) + timedelta(days=4)).replace(day=1)
 
+    horizon_from = max(date_from, today)
+    decisions = await _prior_decisions(session, unit_type_id, horizon_from, date_to)
+    logs = await _price_logs(session, unit_type_id, horizon_from, date_to)
+    threshold = Decimal(str(settings.suggestion_repeat_threshold_pct))
+    tolerance = Decimal(str(settings.suggestion_same_price_tolerance_pct))
+
     # Cálculo por día (solo días con precio, libres y no pasados) y agrupación
-    # por (clave de señal, precio sugerido): días contiguos → un rango.
-    per_day: list[tuple[date, tuple, object, MarketSnapshot | None]] = []
-    day = max(date_from, today)
+    # por (clave de señal, precio sugerido, decisión previa): días contiguos → un rango.
+    per_day: list[tuple[date, tuple, object, MarketSnapshot | None, repeat.PriorDecision | None]] = []
+    day = horizon_from
     while day <= date_to:
-        base = await pricing_service.get_price(session, unit_type_id, day)
-        if base is None or day in occupied:
+        current = await pricing_service.get_price(session, unit_type_id, day)
+        if current is None or day in occupied:
             day += timedelta(days=1)
             continue
+        # El motor calcula sobre el precio del host, no sobre una subida ya aplicada.
+        base = repeat.reference_base(current, logs.get(day, []))
         ev = _event_for(events, day)
         occ = _occupancy_high(occupied, day)
         gap = (day - today).days if ev is None and not occ and (day - today).days <= _GAP_WINDOW else None
@@ -242,17 +326,25 @@ async def generate_suggestions(
             min_price=min_p,
             max_price=max_p,
         )
-        if out is not None:
-            # Clave de agrupación: misma señal dominante y mismo precio resultante.
-            key = (ev.id if ev else None, occ, gap is not None, out.price)
-            per_day.append((day, key, out, snap))
+        prior = decisions.get(day)
+        if out is not None and repeat.should_propose(
+            out.price,
+            current=current,
+            reference=base,
+            prior_price=prior.price if prior else None,
+            threshold_pct=threshold,
+            tolerance_pct=tolerance,
+        ):
+            # Clave de agrupación: misma señal dominante, mismo precio y misma decisión previa.
+            key = (ev.id if ev else None, occ, gap is not None, out.price, prior)
+            per_day.append((day, key, out, snap, prior))
         day += timedelta(days=1)
 
     created: list[PriceSuggestion] = []
     keep: set[int] = set()
     i = 0
     while i < len(per_day):
-        start_day, key, out, snap = per_day[i]
+        start_day, key, out, snap, prior = per_day[i]
         j = i
         while (
             j + 1 < len(per_day)
@@ -267,7 +359,7 @@ async def generate_suggestions(
             keep.add(equivalent.id)
             if equivalent.status in (SuggestionStatus.proposed, SuggestionStatus.approved):
                 # Misma identidad y estado, explicación del último scan (019 · US4).
-                equivalent.rationale = _rationale(out, snap)
+                equivalent.rationale = _rationale(out, snap, prior)
                 equivalent.confidence = out.confidence
         else:
             await _supersede_overlapping(session, unit_type_id, start_day, end_day)
@@ -277,7 +369,7 @@ async def generate_suggestions(
                 date_from=start_day,
                 date_to=end_day,
                 suggested_price=out.price,
-                rationale=_rationale(out, snap),
+                rationale=_rationale(out, snap, prior),
                 confidence=out.confidence,
                 status=SuggestionStatus.proposed,
             )
@@ -287,7 +379,5 @@ async def generate_suggestions(
 
     await session.flush()
     keep.update(s.id for s in created)
-    await _supersede_not_regenerated(
-        session, unit_type_id, max(date_from, today), date_to, keep
-    )
+    await _supersede_not_regenerated(session, unit_type_id, horizon_from, date_to, keep)
     return created
