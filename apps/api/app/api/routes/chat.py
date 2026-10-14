@@ -36,6 +36,8 @@ class ChatResponse(BaseModel):
     # Feature 027: mensajes del mes (used/limit/resets_on/warning/exhausted).
     quota: dict | None = None
     limited: bool = False
+    # Feature 032: la propuesta pendiente con su vista previa estructurada (tabla en la web).
+    pending_action: dict | None = None
 
 
 _LIMIT_TEXT = {
@@ -55,6 +57,7 @@ class _Turn:
     applied: bool = False
     events: list = field(default_factory=list)
     limited: bool = False
+    pending_action: dict | None = None
 
 
 async def _metered_turn(
@@ -86,9 +89,20 @@ async def _metered_turn(
     )
     quota.used += 1
     return (
-        _Turn(reply.text, reply.pending_action_id, reply.applied, list(reply.events)),
+        _Turn(reply.text, reply.pending_action_id, reply.applied, list(reply.events),
+              pending_action=await _action_view(session, reply.pending_action_id)),
         quota.as_dict(),
     )
+
+
+async def _action_view(session: AsyncSession, action_id: int | None) -> dict | None:
+    if action_id is None:
+        return None
+    action = await session.get(AgentAction, action_id)
+    if action is None or action.status != AgentActionStatus.proposed:
+        return None
+    return {"id": action.id, "tool": action.tool, "preview": action.preview,
+            "reinforced": action.reinforced}
 
 
 async def _ensure_conversation(session: AsyncSession, conversation_id: int | None) -> int:
@@ -121,6 +135,7 @@ async def chat(
             applied=reply.applied,
             quota=quota,
             limited=reply.limited,
+            pending_action=reply.pending_action,
         )
     finally:
         await adapter.aclose()
@@ -151,6 +166,7 @@ async def chat_stream(
             "applied": reply.applied,
             "quota": quota,
             "limited": reply.limited,
+            "pending_action": reply.pending_action,
         }
         yield f"event: done\ndata: {json.dumps(done)}\n\n"
 
@@ -251,4 +267,50 @@ async def get_conversation(conversation_id: int, session: AsyncSession = Depends
             for m in msgs
         ],
         "pending_action_id": pending,
+        "pending_action": await _action_view(session, pending),
     }
+
+
+# --------- botones Confirmar / Cancelar (feature 032) ---------
+
+
+class ActionRequest(BaseModel):
+    conversation_id: int
+    language: Literal["es", "en", "pt"] = "es"
+
+
+async def _resolve(action_id: int, req: ActionRequest, session: AsyncSession, confirm: bool):
+    from app.agent.orchestrator import resolve_action
+
+    # Sin llamar a la IA ni contar mensajes de la cuota (#144).
+    adapter = get_adapter(session)
+    try:
+        conv_id = await _ensure_conversation(session, req.conversation_id)
+        reply = await resolve_action(
+            session, adapter, conversation_id=conv_id, action_id=action_id,
+            confirm=confirm, language=req.language,
+        )
+        await session.commit()
+    finally:
+        await adapter.aclose()
+    return ChatResponse(
+        reply=reply.text,
+        conversation_id=conv_id,
+        pending_action_id=reply.pending_action_id,
+        applied=reply.applied,
+        pending_action=await _action_view(session, reply.pending_action_id),
+    )
+
+
+@router.post("/actions/{action_id}/confirm", response_model=ChatResponse)
+async def confirm_action(
+    action_id: int, req: ActionRequest, session: AsyncSession = Depends(get_session)
+):
+    return await _resolve(action_id, req, session, True)
+
+
+@router.post("/actions/{action_id}/cancel", response_model=ChatResponse)
+async def cancel_action(
+    action_id: int, req: ActionRequest, session: AsyncSession = Depends(get_session)
+):
+    return await _resolve(action_id, req, session, False)

@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { History, MessageSquarePlus, Send } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { ActionPreview } from "@/components/chat/action-preview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
@@ -131,11 +132,15 @@ export function ChatPanel({ compact = false }: { compact?: boolean }) {
           </div>
         )}
         {chat.pendingActionId !== null && !chat.busy && (
-          <div className="flex gap-2">
-            <Button onClick={() => send(t.confirmMessage)}>{msgs.common.confirm}</Button>
-            <Button className="bg-muted text-foreground" onClick={() => send(t.cancelMessage)}>
-              {msgs.common.cancel}
-            </Button>
+          <div className="space-y-2">
+            {chat.pendingAction && <ActionPreview action={chat.pendingAction} />}
+            {/* Feature 032: confirman o cancelan directo, sin pasar por la IA ni gastar cuota. */}
+            <div className="flex gap-2">
+              <Button onClick={() => void chat.resolve(true)}>{msgs.common.confirm}</Button>
+              <Button className="bg-muted text-foreground" onClick={() => void chat.resolve(false)}>
+                {msgs.common.cancel}
+              </Button>
+            </div>
           </div>
         )}
         <div ref={endRef} />

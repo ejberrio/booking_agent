@@ -1,9 +1,8 @@
 <!-- SPECKIT START -->
-Feature activa: **027-ai-usage-limits** (uso y límites de IA por cuenta; issue #144, épica #156 Comercial F0).
-Plan: `specs/027-ai-usage-limits/{spec,plan,tasks}.md` + `contracts/usage-api.md`.
-Decisiones del host (2026-10-14): 300 mensajes/mes, pausa hasta el próximo mes (aviso al 80 %; nunca cortar una
-confirmación pendiente), 5 búsquedas/día en el escaneo; el administrador ajusta por cuenta.
-Anteriores: 028-guest-privacy (Ley 1581), 026-multitenant-accounts (principio VI, constitución v1.1.0).
+Feature activa: **032-assistant-bulk** (asistente con cambios en bloque y una sola confirmación; issue #172).
+Spec/tareas: `specs/032-assistant-bulk/{spec,tasks}.md`. Servicio `app/services/bulk_service.py`; herramientas en
+`app/agent/tools.py` (propose_price_change, propose_discount, propose_apply/reject_suggestions); botones deterministas
+`POST /chat/actions/{id}/confirm|cancel` (sin IA ni cuota). Anteriores: 027 (límites de IA), 028 (Ley 1581), 026 (principio VI).
 <!-- SPECKIT END -->
 
 # Booking AI Agent

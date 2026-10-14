@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { trServer } from "@/lib/i18n/server-messages";
 import { streamChat } from "@/lib/sse";
+import type { PendingAction } from "@/lib/types";
 
 /** Conversación del asistente COMPARTIDA por la sección Chat y el panel flotante (feature 024).
  *
@@ -20,10 +21,14 @@ interface ChatState {
   messages: ChatMsg[];
   conversationId: number | null;
   pendingActionId: number | null;
+  /** Feature 032: la propuesta pendiente con su tabla de vista previa. */
+  pendingAction: PendingAction | null;
   busy: boolean;
   loading: boolean;
   tool: string | null;
   send: (text: string) => Promise<void>;
+  /** Botones Confirmar / Cancelar: no pasan por la IA ni gastan cuota. */
+  resolve: (confirm: boolean) => Promise<void>;
   newConversation: () => void;
   openConversation: (id: number) => Promise<void>;
 }
@@ -50,11 +55,16 @@ function storeId(id: number | null) {
 }
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
-  const { m } = useI18n();
+  const { m, lang } = useI18n();
   const qc = useQueryClient();
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [conversationId, setConversationId] = useState<number | null>(null);
-  const [pendingActionId, setPending] = useState<number | null>(null);
+  const [pendingActionId, setPendingId] = useState<number | null>(null);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const setPending = useCallback((id: number | null, action?: PendingAction | null) => {
+    setPendingId(id);
+    setPendingAction(id !== null ? (action ?? null) : null);
+  }, []);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(false);
   const [tool, setTool] = useState<string | null>(null);
@@ -65,7 +75,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     try {
       const d = await api.getConversation(id);
       setConversationId(d.id);
-      setPending(d.pending_action_id);
+      setPending(d.pending_action_id, d.pending_action);
       // Las respuestas fijas del servidor se traducen; el texto libre del LLM queda igual.
       setMessages(
         d.messages.map((x) => ({ role: x.role, text: x.role === "agent" ? trServer(x.text) : x.text })),
@@ -82,7 +92,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     } finally {
       if (!quiet) setLoading(false);
     }
-  }, []);
+  }, [setPending]);
 
   // Al montar: retomar la conversación recordada.
   useEffect(() => {
@@ -113,7 +123,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           onDone: (d) => {
             setConversationId(d.conversation_id);
             storeId(d.conversation_id);
-            setPending(d.pending_action_id);
+            setPending(d.pending_action_id, d.pending_action);
             setMessages((ms) => [...ms, { role: "agent", text: trServer(d.reply) }]);
             // Feature 027: aviso al acercarse al límite mensual del asistente.
             const q = d.quota;
@@ -133,7 +143,31 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         setTool(null);
       }
     },
-    [conversationId, qc, m.chat.unreachable, m.usage],
+    [conversationId, qc, m.chat.unreachable, m.usage, setPending],
+  );
+
+  const resolve = useCallback(
+    async (confirm: boolean) => {
+      if (busyRef.current || pendingActionId === null || conversationId === null) return;
+      busyRef.current = true;
+      setBusy(true);
+      setMessages((ms) => [
+        ...ms,
+        { role: "user", text: confirm ? m.common.confirm : m.common.cancel },
+      ]);
+      try {
+        const d = await api.resolveAction(pendingActionId, confirm, conversationId, lang);
+        setPending(d.pending_action_id, d.pending_action);
+        setMessages((ms) => [...ms, { role: "agent", text: trServer(d.reply) }]);
+        if (d.applied) void qc.invalidateQueries();
+      } catch {
+        toast.error(m.chat.unreachable);
+      } finally {
+        busyRef.current = false;
+        setBusy(false);
+      }
+    },
+    [pendingActionId, conversationId, lang, qc, m.common, m.chat.unreachable, setPending],
   );
 
   const newConversation = useCallback(() => {
@@ -142,7 +176,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setMessages([]);
     setPending(null);
     storeId(null);
-  }, []);
+  }, [setPending]);
 
   const openConversation = useCallback(
     async (id: number) => {
@@ -158,10 +192,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         messages,
         conversationId,
         pendingActionId,
+        pendingAction,
         busy,
         loading,
         tool,
         send,
+        resolve,
         newConversation,
         openConversation,
       }}

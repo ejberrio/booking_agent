@@ -318,6 +318,12 @@ export const api = {
   // Historial de chat (feature 024)
   listConversations: (limit = 20) => req<ConversationSummary[]>(`/chat/conversations?limit=${limit}`),
   getConversation: (id: number) => req<ConversationDetail>(`/chat/conversations/${id}`),
+  /** Botones de la propuesta (feature 032): sin modelo de lenguaje ni cuota. */
+  resolveAction: (id: number, confirm: boolean, conversationId: number, language: string) =>
+    req<ChatReply>(`/chat/actions/${id}/${confirm ? "confirm" : "cancel"}`, {
+      method: "POST",
+      body: JSON.stringify({ conversation_id: conversationId, language }),
+    }),
   chat: (message: string, conversationId?: number) =>
     req<ChatReply>(`/chat`, {
       method: "POST",

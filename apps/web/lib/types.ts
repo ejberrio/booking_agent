@@ -185,6 +185,7 @@ export interface ChatReply {
   applied: boolean;
   quota?: ChatQuota | null;
   limited?: boolean;
+  pending_action?: PendingAction | null;
 }
 
 export interface AccountUsage {
@@ -486,11 +487,35 @@ export interface ConversationSummary {
   message_count: number;
 }
 
+/** Propuesta del asistente con su vista previa (feature 032). */
+export interface ActionPreviewRow {
+  from: string;
+  to: string;
+  nights: number;
+  old: string | null;
+  new: string | null;
+  note: string | null;
+}
+
+export interface PendingAction {
+  id: number;
+  tool: string;
+  reinforced?: boolean;
+  preview: {
+    kind?: "price" | "discount" | "apply_suggestions" | "reject_suggestions";
+    rows?: ActionPreviewRow[];
+    totals?: { affected: number; skipped: Record<string, number> };
+    warnings?: string[];
+    currency?: string;
+  } | null;
+}
+
 export interface ConversationDetail {
   id: number;
   title: string;
   messages: { role: "user" | "agent"; text: string; created_at: string }[];
   pending_action_id: number | null;
+  pending_action?: PendingAction | null;
 }
 
 // --- Avisos al celular (feature 025) ---
