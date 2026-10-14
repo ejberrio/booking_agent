@@ -1,7 +1,8 @@
 <!-- SPECKIT START -->
-Feature activa: **029-offline-mode** (modo sin conexión: apartamento manual, iCal, aplicar a mano; issue #146).
-Spec/tareas: `specs/029-offline-mode/{spec,tasks}.md`. `account.channel_mode` (connected|manual) → `ManualChannelAdapter`;
-`manual_service`, `ical_service` (lista blanca de dominios), rutas `/manual/*`. Anteriores: 032 (asistente en bloque),
+Feature activa: **030-public-report** (página pública, informe gratis, registro abierto con cupo; issue #147).
+Plan: `specs/030-public-report/plan.md`. Rutas sin sesión `/public/*` (solo vía servidor web con `x-client-ip`),
+`public_service` (caché `city_scan` + presupuesto diario, límite por HMAC diario de IP), municipios DIVIPOLA,
+cupo en `registration_open` + `account.signup_source`. Anteriores: 029 (sin conexión), 032 (asistente en bloque),
 027 (límites de IA), 028 (Ley 1581), 026 (principio VI).
 <!-- SPECKIT END -->
 

@@ -134,15 +134,70 @@ async def consume(session: AsyncSession, inv: InviteCode, account_id: int) -> bo
     return res.rowcount == 1
 
 
-async def registration_open(session: AsyncSession) -> bool:
+DEFAULT_QUOTA = 50
+DEFAULT_CITY_BUDGET = 20
+
+
+async def _setting(session: AsyncSession) -> dict:
     row = await session.get(PlatformSetting, REGISTRATION_OPEN)
-    return bool(row and isinstance(row.value, dict) and row.value.get("enabled"))
+    return dict(row.value) if row is not None and isinstance(row.value, dict) else {}
+
+
+async def open_accounts(session: AsyncSession) -> int:
+    """Cuentas del registro abierto que cuentan contra el cupo (las borradas lo liberan)."""
+    from sqlalchemy import func
+
+    from app.models.account import AccountStatus
+
+    return (
+        await session.execute(
+            select(func.count()).select_from(Account).where(
+                Account.signup_source == "open", Account.status != AccountStatus.deleted
+            )
+        )
+    ).scalar_one()
+
+
+async def registration_state(session: AsyncSession) -> dict:
+    """Registro abierto con cupo (feature 030): {enabled, quota, used, full, open, city_budget}."""
+    v = await _setting(session)
+    enabled = bool(v.get("enabled"))
+    quota = int(v.get("quota") or DEFAULT_QUOTA)
+    used = await open_accounts(session)
+    full = used >= quota
+    return {
+        "enabled": enabled,
+        "quota": quota,
+        "used": used,
+        "full": enabled and full,
+        "open": enabled and not full,
+        "city_budget": int(v.get("city_budget") or DEFAULT_CITY_BUDGET),
+    }
+
+
+async def registration_open(session: AsyncSession) -> bool:
+    """Se puede registrar sin invitación: encendido y con cupo."""
+    return (await registration_state(session))["open"]
+
+
+async def update_registration(
+    session: AsyncSession, *, enabled: bool | None = None, quota: int | None = None,
+    city_budget: int | None = None,
+) -> None:
+    v = await _setting(session)
+    if enabled is not None:
+        v["enabled"] = bool(enabled)
+    if quota is not None:
+        v["quota"] = max(0, min(int(quota), 100000))
+    if city_budget is not None:
+        v["city_budget"] = max(0, min(int(city_budget), 1000))
+    row = await session.get(PlatformSetting, REGISTRATION_OPEN)
+    if row is None:
+        session.add(PlatformSetting(key=REGISTRATION_OPEN, value=v))
+    else:
+        row.value = v  # nuevo dict: SQLAlchemy detecta el cambio del JSON
+    await session.flush()
 
 
 async def set_registration_open(session: AsyncSession, enabled: bool) -> None:
-    row = await session.get(PlatformSetting, REGISTRATION_OPEN)
-    if row is None:
-        session.add(PlatformSetting(key=REGISTRATION_OPEN, value={"enabled": bool(enabled)}))
-    else:
-        row.value = {"enabled": bool(enabled)}
-    await session.flush()
+    await update_registration(session, enabled=enabled)

@@ -114,6 +114,7 @@ class RegisterRequest(BaseModel):
     invite_code: str | None = Field(default=None, max_length=40)
     language: str = "es"
     accept_terms: bool = False
+    report: str | None = Field(default=None, max_length=64)
 
 
 @router.post("/register", status_code=202)
@@ -122,6 +123,7 @@ async def register(req: RegisterRequest, session: AsyncSession = Depends(get_ses
         await auth_service.register(
             session, name=req.name, email=req.email, password=req.password,
             invite_code=req.invite_code, language=req.language, accept=req.accept_terms,
+            report=req.report,
         )
     except WeakPassword as exc:
         return _weak(exc)
@@ -134,7 +136,8 @@ async def register(req: RegisterRequest, session: AsyncSession = Depends(get_ses
 async def registration_status(session: AsyncSession = Depends(get_session)):
     from app.services import invite_service
 
-    return {"open": await invite_service.registration_open(session)}
+    state = await invite_service.registration_state(session)
+    return {"open": state["open"], "full": state["full"]}
 
 
 @router.get("/providers")
@@ -151,6 +154,7 @@ class GoogleStartRequest(BaseModel):
     challenge: str | None = Field(default=None, max_length=128)
     language: str = "es"
     accept_terms: bool = False
+    report: str | None = Field(default=None, max_length=64)
 
 
 @router.post("/google/start")
@@ -161,6 +165,7 @@ async def google_start(req: GoogleStartRequest, session: AsyncSession = Depends(
         url = await google_auth_service.start(
             session, mode=req.mode, client=req.client, invite_code=req.invite_code,
             challenge=req.challenge, language=req.language, accept=req.accept_terms,
+            report=req.report,
         )
     except AuthError as exc:
         return _error(exc)

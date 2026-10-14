@@ -298,7 +298,24 @@ async def verify_email(
     user.email_verified_at = user.email_verified_at or _now()
     tok, expires = await create_session(session, user, kind, user_agent)
     await session.commit()
+    await _email_report(session, user)
     return tok, expires, user
+
+
+async def _email_report(session: AsyncSession, user: AppUser) -> None:
+    """Feature 030: con el correo ya confirmado, el informe completo (si vino de uno)."""
+    from app.services import public_service
+
+    member = await _membership(session, user.id)
+    if member is None:
+        return
+    try:
+        if await public_service.email_report_once(
+            session, member.account_id, user.email, user.language, get_email_sender()
+        ):
+            await session.commit()
+    except Exception:  # noqa: BLE001 — el correo del informe nunca rompe la verificación
+        await session.rollback()
 
 
 async def forgot_password(
@@ -352,6 +369,7 @@ async def register(
     language: str = "es",
     accept: bool = False,
     sender: EmailSender | None = None,
+    report: str | None = None,
 ) -> None:
     """Crea cuenta + usuario dueño. Con el registro cerrado exige un código vigente.
 
@@ -370,19 +388,7 @@ async def register(
     passwords.check_policy(password)
     if not accept:
         raise terms_required_error()
-    open_reg = await invite_service.registration_open(session)
-    invite = None
-    if not open_reg:
-        invite = await invite_service.find_valid(session, invite_code or "")
-        if invite is None:
-            code = "invite_required" if not (invite_code or "").strip() else "invite_invalid"
-            raise AuthError(
-                code,
-                "StayLever está en beta por invitación"
-                if code == "invite_required"
-                else "El código de invitación no es válido, venció o ya se usó",
-                400,
-            )
+    invite, source = await _signup_gate(session, invite_code)
     existing = await _user_by_email(session, email)
     lang = language if language in LANGS else "es"
     if existing is not None:
@@ -390,12 +396,13 @@ async def register(
             templates.already_registered(email, lang, f"{settings.public_base_url.rstrip('/')}/login")
         )
         return
-    account = Account(name=name[:120])
+    account = Account(name=name[:120], signup_source=source)
     session.add(account)
     await session.flush()
     if invite is not None and not await invite_service.consume(session, invite, account.id):
         await session.rollback()
         raise AuthError("invite_invalid", "El código de invitación no es válido, venció o ya se usó", 400)
+    await _after_signup(session, account.id, source, report)
     user = AppUser(
         email=email,
         name=name[:120],
@@ -408,6 +415,39 @@ async def register(
     await accept_terms(session, user.id)
     await session.commit()
     await send_verification(session, user, sender)
+
+
+async def _signup_gate(session: AsyncSession, invite_code: str | None):
+    """Invitación vigente (no cuenta contra el cupo) o registro abierto con cupo (030).
+
+    Devuelve (invitación | None, signup_source). Con el cupo lleno y sin invitación →
+    `beta_full` (la web ofrece la lista de espera).
+    """
+    from app.services import invite_service
+
+    if (invite_code or "").strip():
+        invite = await invite_service.find_valid(session, invite_code or "")
+        if invite is None:
+            raise AuthError(
+                "invite_invalid", "El código de invitación no es válido, venció o ya se usó", 400
+            )
+        return invite, "invite"
+    state = await invite_service.registration_state(session)
+    if state["open"]:
+        return None, "open"
+    if state["full"]:
+        raise AuthError("beta_full", "La beta está llena por ahora", 400)
+    raise AuthError("invite_required", "StayLever está en beta por invitación", 400)
+
+
+async def _after_signup(
+    session: AsyncSession, account_id: int, source: str, report: str | None
+) -> None:
+    from app.services import public_service
+
+    if source == "open":
+        await public_service.bump(session, public_service.SIGNUP_OPEN)
+    await public_service.link_report(session, report, account_id)
 
 
 # --------- reclamar la cuenta nº 1 ---------

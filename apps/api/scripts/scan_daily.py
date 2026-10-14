@@ -33,6 +33,7 @@ from app.services import (
     ical_service,
     intelligence_service,
     privacy_service,
+    public_service,
     push_service,
     sync_service,
     usage_service,
@@ -113,6 +114,9 @@ async def scan_account(
         total += run.suggestions_created
         events_found += run.events_found
         await push_service.notify_suggestions(session, run.id, run.suggestions_created)
+    if include_city:
+        # Feature 030: el informe público reutiliza esta búsqueda (caché por ciudad).
+        await public_service.mark_scanned(session, city_key, events_found)
     scanned_cities.add(city_key)
     await session.commit()
     return f"{city_key}: eventos={events_found} sugerencias={total}"
@@ -138,6 +142,9 @@ async def run_all(today: date | None = None, *, search=None, llm=None, market_fa
     today = today or date.today()
     async with platform_session() as session:
         modes = await active_accounts(session)
+        # Feature 030: contadores de visitantes de días anteriores y lista de espera > 12 meses.
+        await public_service.purge_old(session)
+        await session.commit()
     account_ids = list(modes)
     scanned_cities: set[str] = set()
     for account_id in account_ids:

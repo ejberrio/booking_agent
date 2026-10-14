@@ -90,6 +90,7 @@ async def start(
     challenge: str | None = None,
     language: str = "es",
     accept: bool = False,
+    report: str | None = None,
 ) -> str:
     creds = credentials()
     if creds is None:
@@ -110,6 +111,7 @@ async def start(
                 "challenge": challenge if client == "app" else None,
                 "language": language if language in LANGS else "es",
                 "accept": bool(accept),
+                "report": (report or "").strip()[:64] or None,
             },
             expires_at=_now() + STATE_TTL,
         )
@@ -227,23 +229,15 @@ async def _find_or_create(session: AsyncSession, profile: GoogleProfile, st: dic
         raise AuthError(
             "google_unverified", "Tu correo de Google no está verificado.", 403
         )
-    invite = None
-    if not await invite_service.registration_open(session):
-        invite = await invite_service.find_valid(session, st.get("invite") or "")
-        if invite is None:
-            code = "invite_required" if not st.get("invite") else "invite_invalid"
-            raise AuthError(
-                code,
-                "StayLever está en beta por invitación"
-                if code == "invite_required"
-                else "El código de invitación no es válido, venció o ya se usó",
-                400,
-            )
-    account = Account(name=profile.name or profile.email)
+    from app.services.auth_service import _after_signup, _signup_gate
+
+    invite, source = await _signup_gate(session, st.get("invite"))
+    account = Account(name=profile.name or profile.email, signup_source=source)
     session.add(account)
     await session.flush()
     if invite is not None and not await invite_service.consume(session, invite, account.id):
         raise AuthError("invite_invalid", "El código de invitación no es válido, venció o ya se usó", 400)
+    await _after_signup(session, account.id, source, st.get("report"))
     user = AppUser(
         email=profile.email,
         name=profile.name or profile.email,
@@ -256,6 +250,13 @@ async def _find_or_create(session: AsyncSession, profile: GoogleProfile, st: dic
     await session.flush()
     session.add(Membership(user_id=user.id, account_id=account.id, role="owner"))
     await session.flush()
+    # Google ya verificó el correo: el informe completo (si viene de uno) sale ahora.
+    from app.services import public_service
+    from app.services.auth_service import get_email_sender
+
+    await public_service.email_report_once(
+        session, account.id, user.email, user.language, get_email_sender()
+    )
     return user
 
 
