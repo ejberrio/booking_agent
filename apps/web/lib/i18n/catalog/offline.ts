@@ -31,7 +31,10 @@ const es = {
     bookingIcal: "Enlace iCal de exportación de Booking",
     icalHelp:
       "Airbnb: Calendario → Disponibilidad → Conectar calendarios → Exportar calendario. " +
-      "Booking: Extranet → Tarifas y disponibilidad → Sincronizar calendarios → Exportar.",
+      "Booking: Extranet → Tarifas y disponibilidad → Sincronizar calendarios → Exportar. " +
+      "Si tu anuncio está conectado a un channel manager (Beds24 u otro), la plataforma oculta " +
+      "esa opción: deja el iCal vacío y marca las noches ocupadas en el Calendario. " +
+      "Enlace del anuncio de Booking: busca tu alojamiento en booking.com y copia la dirección.",
     submit: "Crear apartamento",
     creating: "Creando…",
     created: "Apartamento creado. Tus sugerencias llegan con el próximo escaneo diario.",
@@ -92,7 +95,10 @@ const en: Shape = {
     bookingIcal: "Booking export iCal link",
     icalHelp:
       "Airbnb: Calendar → Availability → Connect calendars → Export calendar. " +
-      "Booking: Extranet → Rates & availability → Sync calendars → Export.",
+      "Booking: Extranet → Rates & availability → Sync calendars → Export. " +
+      "If your listing is connected to a channel manager (Beds24 or another), the platform hides " +
+      "that option: leave the iCal empty and mark booked nights in the Calendar. " +
+      "Booking listing link: search your property on booking.com and copy the address.",
     submit: "Create apartment",
     creating: "Creating…",
     created: "Apartment created. Your suggestions arrive with the next daily scan.",
@@ -150,7 +156,10 @@ const pt: Shape = {
     bookingIcal: "Link iCal de exportação do Booking",
     icalHelp:
       "Airbnb: Calendário → Disponibilidade → Conectar calendários → Exportar calendário. " +
-      "Booking: Extranet → Tarifas e disponibilidade → Sincronizar calendários → Exportar.",
+      "Booking: Extranet → Tarifas e disponibilidade → Sincronizar calendários → Exportar. " +
+      "Se o seu anúncio está conectado a um channel manager (Beds24 ou outro), a plataforma " +
+      "esconde essa opção: deixe o iCal vazio e marque as noites ocupadas no Calendário. " +
+      "Link do anúncio do Booking: procure sua acomodação no booking.com e copie o endereço.",
     submit: "Criar apartamento",
     creating: "Criando…",
     created: "Apartamento criado. Suas sugestões chegam com a próxima varredura diária.",
