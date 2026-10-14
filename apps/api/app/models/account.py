@@ -10,7 +10,7 @@ from __future__ import annotations
 import enum
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column
 
 from app.db.base import Base
@@ -36,6 +36,9 @@ class Account(Base, TimestampMixin):
     )
     disabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Límites de IA (feature 027); NULL = valor por defecto de la plataforma.
+    chat_limit_month: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    search_limit_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
 class AccountOwned:

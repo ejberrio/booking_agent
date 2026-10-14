@@ -157,11 +157,50 @@ export interface ScanConfigView {
   event_kinds: string | null;
 }
 
+/** Mensajes al asistente del mes (feature 027). */
+export interface ChatQuota {
+  used: number;
+  limit: number;
+  resets_on: string;
+  warning: boolean;
+  exhausted: boolean;
+}
+
 export interface ChatReply {
   reply: string;
   conversation_id: number;
   pending_action_id: number | null;
   applied: boolean;
+  quota?: ChatQuota | null;
+  limited?: boolean;
+}
+
+export interface AccountUsage {
+  month: string;
+  chat: ChatQuota;
+  search: { today: number; limit: number };
+}
+
+export interface AdminUsageRow {
+  id: number;
+  name: string;
+  status: string;
+  chat_messages: number;
+  llm_calls: number;
+  input_tokens: number;
+  output_tokens: number;
+  searches: number;
+  cost_usd: number;
+  unpriced: number;
+  chat_limit_month: number;
+  search_limit_day: number;
+  custom_limits: boolean;
+}
+
+export interface AdminUsage {
+  month: string;
+  accounts: AdminUsageRow[];
+  total_cost_usd: number;
 }
 
 export interface ConnectionStatus {

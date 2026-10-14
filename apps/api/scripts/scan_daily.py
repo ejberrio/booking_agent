@@ -34,6 +34,7 @@ from app.services import (
     privacy_service,
     push_service,
     sync_service,
+    usage_service,
 )
 
 HORIZON_DAYS = 180
@@ -145,14 +146,27 @@ async def run_all(today: date | None = None, *, search=None, llm=None, market_fa
                     print(f"scan_daily: cuenta {account_id} sin channel manager; se omite.")
                     continue
                 print(f"scan_daily: cuenta {account_id} {await sync_account(session, today)}")
+                # Feature 027: IA y búsquedas medidas y limitadas por cuenta.
+                limit = await usage_service.search_limit(session, account_id)
+                m_search = (
+                    usage_service.MeteredSearch(search, session, limit=limit) if search else None
+                )
+                m_llm = usage_service.MeteredLLM(llm, session, usage_service.SCAN) if llm else None
                 summary = await scan_account(
                     session,
-                    search=search,
-                    llm=llm,
+                    search=m_search,
+                    llm=m_llm,
                     scanned_cities=scanned_cities,
                     today=today,
-                    market_factory=market_factory,
+                    market_factory=(
+                        (lambda s, _q=m_search, _l=m_llm: market_factory(s, _q, _l))
+                        if market_factory
+                        else None
+                    ),
                 )
+                if m_search is not None and m_search.skipped:
+                    summary += f" búsquedas omitidas por el tope diario={m_search.skipped}"
+                await session.commit()
                 print(f"scan_daily: cuenta {account_id} {summary}")
         except Exception as exc:  # noqa: BLE001 — el fallo de una cuenta no detiene a las demás
             print(f"scan_daily: cuenta {account_id} falló ({type(exc).__name__}); se continúa.")
@@ -173,10 +187,11 @@ async def main() -> None:
     search = TavilyProvider()
     llm = default_llm()
 
-    def market_factory(session: AsyncSession):
+    def market_factory(session: AsyncSession, m_search, m_llm):
         from app.market.tavily_market import TavilyMarketProvider
 
-        return TavilyMarketProvider(search, llm, session=session) if llm else None
+        # Recibe los puertos medidos de la cuenta (feature 027).
+        return TavilyMarketProvider(m_search, m_llm, session=session) if m_llm else None
 
     try:
         await run_all(search=search, llm=llm, market_factory=market_factory)

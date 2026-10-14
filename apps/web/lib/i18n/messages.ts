@@ -15,6 +15,7 @@ import shell from "@/lib/i18n/catalog/shell";
 import site from "@/lib/i18n/catalog/site";
 import suggestions from "@/lib/i18n/catalog/suggestions";
 import terms from "@/lib/i18n/catalog/terms";
+import usage from "@/lib/i18n/catalog/usage";
 import type { Lang } from "@/lib/i18n/core";
 
 // Compone los catálogos por área en un objeto por idioma (feature 021).
@@ -27,6 +28,7 @@ const AREAS = {
   shell,
   site,
   terms,
+  usage,
   dashboard,
   calendar,
   extension,

@@ -115,6 +115,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             storeId(d.conversation_id);
             setPending(d.pending_action_id);
             setMessages((ms) => [...ms, { role: "agent", text: trServer(d.reply) }]);
+            // Feature 027: aviso al acercarse al límite mensual del asistente.
+            const q = d.quota;
+            if (q && q.warning && !d.limited) {
+              toast(q.exhausted ? m.usage.exhausted(q.resets_on) : m.usage.warning(q.used, q.limit));
+            }
+            void qc.invalidateQueries({ queryKey: ["account-usage"] });
             // Un cambio aplicado por el asistente se ve en la pantalla de fondo.
             if (d.applied) void qc.invalidateQueries();
           },
@@ -127,7 +133,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         setTool(null);
       }
     },
-    [conversationId, qc, m.chat.unreachable],
+    [conversationId, qc, m.chat.unreachable, m.usage],
   );
 
   const newConversation = useCallback(() => {

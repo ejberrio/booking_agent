@@ -88,6 +88,18 @@ class Settings(BaseSettings):
     # (modelos clásicos como gpt-4o, que no lo aceptan).
     llm_reasoning_effort: str | None = None
 
+    # Uso y límites de IA por cuenta (feature 027). Precios en USD: por millón de tokens
+    # [entrada, salida] por modelo, y por búsqueda web. `AI_PRICES` (JSON) los reemplaza.
+    ai_prices: dict = {
+        "gpt-6-luna": [0.10, 0.50],
+        "gpt-4o-mini": [0.15, 0.60],
+        "gpt-4o": [2.50, 10.0],
+        "search": 0.008,
+    }
+    ai_chat_limit_month: int = 300  # mensajes al asistente por cuenta y mes
+    ai_search_limit_day: int = 5  # búsquedas web del escaneo por cuenta y día
+    ai_timezone: str = "America/Bogota"  # para el día y el mes de los contadores
+
     # Channel Manager (Beds24, API V1 con API Key de cuenta)
     channel_manager: str | None = None
     cm_api_key: str | None = None

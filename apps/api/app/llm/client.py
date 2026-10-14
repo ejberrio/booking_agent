@@ -31,6 +31,9 @@ class ToolCall:
 class LLMResponse:
     content: str | None = None
     tool_calls: list[ToolCall] = field(default_factory=list)
+    # Feature 027: tokens consumidos (entrada, salida) y modelo, para medir el uso por cuenta.
+    usage: tuple[int, int] | None = None
+    model: str | None = None
 
 
 class LLM(Protocol):
@@ -93,7 +96,13 @@ class LiteLLMClient:
             except (json.JSONDecodeError, TypeError):
                 args = {}
             calls.append(ToolCall(id=tc.id, name=tc.function.name, arguments=args))
-        return LLMResponse(content=msg.content, tool_calls=calls)
+        u = getattr(resp, "usage", None)
+        usage = (
+            (int(getattr(u, "prompt_tokens", 0) or 0), int(getattr(u, "completion_tokens", 0) or 0))
+            if u is not None
+            else None
+        )
+        return LLMResponse(content=msg.content, tool_calls=calls, usage=usage, model=model)
 
 
 def default_llm() -> LLM | None:

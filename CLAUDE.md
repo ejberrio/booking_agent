@@ -1,9 +1,9 @@
 <!-- SPECKIT START -->
-Feature activa: **028-guest-privacy** (privacidad de huéspedes, Ley 1581; issue #145, épica #156 Comercial F0).
-Plan: `specs/028-guest-privacy/{plan,research,data-model,quickstart}.md` + `contracts/privacy-api.md`.
-Decisiones del host (2026-10-14): el anfitrión ve el nombre del huésped, el administrador nunca; nombre borrado 1 año tras la salida;
-aceptación obligatoria y versionada de Términos y Privacidad (puerta en el servidor). TRA/SIRE en #167.
-Anterior: 026-multitenant-accounts (cuentas aisladas, principio VI de la constitución v1.1.0).
+Feature activa: **027-ai-usage-limits** (uso y límites de IA por cuenta; issue #144, épica #156 Comercial F0).
+Plan: `specs/027-ai-usage-limits/{spec,plan,tasks}.md` + `contracts/usage-api.md`.
+Decisiones del host (2026-10-14): 300 mensajes/mes, pausa hasta el próximo mes (aviso al 80 %; nunca cortar una
+confirmación pendiente), 5 búsquedas/día en el escaneo; el administrador ajusta por cuenta.
+Anteriores: 028-guest-privacy (Ley 1581), 026-multitenant-accounts (principio VI, constitución v1.1.0).
 <!-- SPECKIT END -->
 
 # Booking AI Agent

@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AccountCard } from "@/components/account/account-card";
 import { DataCard } from "@/components/account/data-card";
+import { UsageCard } from "@/components/account/usage-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
@@ -780,6 +781,8 @@ export default function SettingsPage() {
       <h1 className="text-xl font-semibold">{t.title}</h1>
 
       <AccountCard />
+
+      <UsageCard />
 
       <Card className="space-y-2">
         <CardTitle>{t.beds24.title}</CardTitle>
