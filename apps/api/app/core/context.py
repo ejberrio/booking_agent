@@ -20,6 +20,10 @@ from app.db.tenancy import set_tenant
 from app.models.account import FIRST_ACCOUNT_ID
 
 
+class TermsRequired(Exception):
+    """Falta aceptar la versión vigente de los documentos legales → 403 `terms_required`."""
+
+
 @dataclass(frozen=True)
 class RequestContext:
     account_id: int
@@ -65,8 +69,21 @@ async def require_ctx(
     """Fija la cuenta de la petición en la sesión de base de datos (filtro automático)."""
     set_tenant(session, ctx.account_id, ctx.user_id)
     request.state.ctx = ctx
+    await _ensure_terms(request, session, ctx)
     await _ensure_unit_param(request, session)
     return ctx
+
+
+async def _ensure_terms(request: Request, session: AsyncSession, ctx: RequestContext) -> None:
+    """Sin aceptar la versión vigente de los Términos y la Privacidad, la app no responde
+    (feature 028). Se impone aquí, en el servidor, para la web y la app por igual."""
+    from app.core.legal import TERMS_EXEMPT_PATHS
+    from app.services.auth_service import has_accepted
+
+    if ctx.user_id is None or request.url.path in TERMS_EXEMPT_PATHS:
+        return
+    if not await has_accepted(session, ctx.user_id):
+        raise TermsRequired()
 
 
 async def _ensure_unit_param(request: Request, session: AsyncSession) -> None:

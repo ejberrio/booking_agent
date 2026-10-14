@@ -28,7 +28,13 @@ from app.models.intelligence import IntelligenceRun
 from app.models.mixins import _now
 from app.models.property import UnitType
 from app.search.tavily import TavilyProvider
-from app.services import event_service, intelligence_service, push_service, sync_service
+from app.services import (
+    event_service,
+    intelligence_service,
+    privacy_service,
+    push_service,
+    sync_service,
+)
 
 HORIZON_DAYS = 180
 SYNC_DAYS = 730  # 2 años: la app ve todo el horizonte cargado en Beds24 (feature 023)
@@ -125,6 +131,14 @@ async def run_all(today: date | None = None, *, search=None, llm=None, market_fa
         account_ids = await active_account_ids(session)
     scanned_cities: set[str] = set()
     for account_id in account_ids:
+        # Feature 028: nombres de huéspedes con salida hace más de 1 año (con o sin canal).
+        try:
+            async with tenant_session(account_id) as session:
+                n = await privacy_service.purge_guest_names(session, account_id, today)
+                if n:
+                    print(f"scan_daily: cuenta {account_id} nombres de huésped borrados={n}")
+        except Exception as exc:  # noqa: BLE001 — no detiene el resto de la cuenta
+            print(f"scan_daily: cuenta {account_id} limpieza falló ({type(exc).__name__}).")
         try:
             async with tenant_session(account_id) as session:
                 if not has_credentials(session):

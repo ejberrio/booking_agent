@@ -27,6 +27,8 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
       <footer className="border-t border-border py-4 text-center text-xs text-muted-foreground">
         <Link href="/welcome" className="hover:underline">{t.nav.home}</Link>
         {" · "}
+        <Link href="/terms" className="hover:underline">{t.nav.terms}</Link>
+        {" · "}
         <Link href="/privacy" className="hover:underline">{t.nav.privacy}</Link>
         {" · "}
         <a href={`mailto:${t.contact}`} className="hover:underline">{t.contact}</a>

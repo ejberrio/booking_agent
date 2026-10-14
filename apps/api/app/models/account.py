@@ -23,6 +23,8 @@ FIRST_ACCOUNT_ID = 1
 class AccountStatus(enum.StrEnum):
     active = "active"
     disabled = "disabled"
+    #: Lápida tras la supresión (feature 028): sin nombre, usuarios ni datos.
+    deleted = "deleted"
 
 
 class Account(Base, TimestampMixin):

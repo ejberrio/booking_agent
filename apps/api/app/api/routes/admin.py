@@ -68,6 +68,8 @@ async def enable_account(account_id: int, ctx: RequestContext = Depends(require_
         return await admin_service.set_status(account_id, enabled=True, by_account_id=ctx.account_id)
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from None
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from None
 
 
 @router.get("/settings")

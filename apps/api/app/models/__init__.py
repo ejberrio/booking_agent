@@ -8,6 +8,7 @@ from app.models.auth import (
     InviteCode,
     Membership,
     PlatformSetting,
+    TermsAcceptance,
     UserSession,
 )
 from app.models.agent import AgentAction, Conversation, LLMConfig, Message
@@ -28,6 +29,7 @@ from app.models.webhook import WebhookEvent
 __all__ = [
     "Account",
     "AppUser",
+    "TermsAcceptance",
     "AuthAttempt",
     "AuthToken",
     "InviteCode",

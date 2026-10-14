@@ -54,7 +54,8 @@ def _link_token(msg) -> str:
 
 
 async def _claim(client, email="host@example.com"):
-    r = await client.post("/auth/claim", json={"name": "Host", "email": email, "password": PWD})
+    r = await client.post("/auth/claim", json={"name": "Host", "email": email, "password": PWD,
+                                               "accept_terms": True})
     assert r.status_code == 200, r.text
     return r.json()["token"]
 
@@ -72,7 +73,7 @@ async def test_reclamar_la_cuenta_1_una_sola_vez(client, mail):
     assert len(mail.sent) == 1 and "verify" in mail.sent[0].text  # correo de verificación
     assert (await client.get("/auth/claim-status")).json() == {"claimable": False}
     r = await client.post("/auth/claim", json={"name": "X", "email": "x@example.com",
-                                               "password": PWD})
+                                               "password": PWD, "accept_terms": True})
     assert r.status_code == 409
 
 
@@ -133,7 +134,7 @@ async def test_sesion_vencida_y_cuenta_desactivada(client, mail, session):
         await s.commit()
     assert (await client.get("/units", headers=_auth(token))).status_code == 401
     token = (await client.post("/auth/login", json={"email": "host@example.com",
-                                                    "password": PWD})).json()["token"]
+                                                    "password": PWD, "accept_terms": True})).json()["token"]
     async with maker() as s:
         acc = await s.get(Account, 1)
         acc.status = AccountStatus.disabled
@@ -176,7 +177,7 @@ async def test_recuperar_contrasena_cierra_las_sesiones(client, mail):
 async def test_cambiar_contrasena_mantiene_la_sesion_actual(client, mail):
     t1 = await _claim(client)
     t2 = (await client.post("/auth/login", json={"email": "host@example.com",
-                                                 "password": PWD})).json()["token"]
+                                                 "password": PWD, "accept_terms": True})).json()["token"]
     r = await client.post("/auth/change-password", headers=_auth(t1),
                           json={"current": PWD, "new": NEW_PWD})
     assert r.status_code == 200

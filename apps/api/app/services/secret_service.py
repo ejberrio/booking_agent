@@ -160,6 +160,12 @@ def _where(account_id: int | None, name: str):
     return select(SecretEntry).where(cond, SecretEntry.name == name)
 
 
+def forget_account(account_id: int) -> None:
+    """Quita de la caché los secretos de una cuenta borrada (feature 028)."""
+    for key in [k for k in _cache if k[0] == account_id]:
+        _cache.pop(key, None)
+
+
 async def load_cache(session: AsyncSession) -> None:
     """Carga/descifra todos los guardados. InvalidToken → ilegible + fallback env."""
     fernet = _fernet()

@@ -12,6 +12,7 @@ const PUBLIC = [
   "/verify",
   "/welcome",
   "/privacy",
+  "/terms",
   "/api/auth/",
   "/api/hooks/",
 ];

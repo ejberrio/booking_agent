@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.channels.base import ChannelManager, RemoteFixedPrice
 from app.channels.errors import AuthError, ChannelError
 from app.models.booking import Booking
+from app.services.privacy_service import keep_guest_name
 from app.models.calendar import CalendarDay, Rate
 from app.models.enums import (
     BookingStatus,
@@ -294,7 +295,8 @@ async def import_remote(
                     check_out=rb.check_out,
                     status=status,
                     external_ref=rb.external_id,
-                    guest_name=rb.guest_name,
+                    # Feature 028: el nombre de una estancia de hace más de 1 año no se guarda.
+                    guest_name=rb.guest_name if keep_guest_name(rb.check_out, today) else None,
                 )
                 session.add(new_booking)
                 created += 1
@@ -318,7 +320,11 @@ async def import_remote(
                     existing_booking.check_out = rb.check_out
                     changed = True
                 # El nombre se corrige solo si el remoto HABLA (su silencio no borra).
-                if rb.guest_name and existing_booking.guest_name != rb.guest_name:
+                if (
+                    rb.guest_name
+                    and existing_booking.guest_name != rb.guest_name
+                    and keep_guest_name(rb.check_out, today)
+                ):
                     existing_booking.guest_name = rb.guest_name
                     changed = True
                 if changed:

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AccountCard } from "@/components/account/account-card";
+import { DataCard } from "@/components/account/data-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
@@ -818,6 +819,8 @@ export default function SettingsPage() {
         <CardTitle>{t.prefs.title}</CardTitle>
         <CardDescription>{t.prefs.activeUnit(unitTypeId)}</CardDescription>
       </Card>
+
+      <DataCard />
     </div>
   );
 }

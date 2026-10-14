@@ -114,7 +114,7 @@ async def _google_login(http, g, profile, code="c1", **start):
 
 async def _admin(client) -> str:
     r = await client.post("/auth/claim", json={"name": "Host", "email": "host@example.com",
-                                               "password": PWD})
+                                               "password": PWD, "accept_terms": True})
     return r.json()["token"]
 
 

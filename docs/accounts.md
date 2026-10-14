@@ -62,6 +62,18 @@ la contraseña de siempre ya no sirve para entrar.
 - **Publicación:** mientras la pantalla de Google esté "En prueba", solo entran los usuarios de
   prueba que agregues en Público; al **publicarla** ("En producción") entra cualquiera.
 
+## Privacidad (feature 028)
+
+- **Términos y Privacidad**: casilla obligatoria al registrarse (correo y Google) y al reclamar.
+  Quien no ha aceptado la versión vigente ve una pantalla de aceptación y la API responde
+  `403 terms_required` hasta que acepte. Publicar una versión nueva = cambiar `LEGAL_VERSION`
+  (`apps/api/app/core/legal.py`) y los textos de `/terms` y `/privacy`.
+- **Nombre del huésped**: lo ve solo la cuenta dueña; se borra 1 año después de la salida (el
+  cron diario `scan_daily` lo limpia en todas las cuentas).
+- **Ajustes → Tus datos**: descargar copia (JSON) y borrar la cuenta (nombre + contraseña, o
+  código por correo si entra solo con Google). En Administración aparece como "Eliminada".
+- Inventario completo: [data-inventory.md](data-inventory.md).
+
 ## Interruptor de transición (`AUTH_MODE`, servicio api)
 
 - `legacy` (por defecto): con sesión, la cuenta de la sesión; sin sesión, la cuenta nº 1. Permite

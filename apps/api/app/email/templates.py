@@ -17,6 +17,10 @@ _T = {
         "exists_subject": "Ya tienes una cuenta en StayLever",
         "exists_body": "Hola:\n\nAlguien intentó registrarse con este correo, pero ya tienes una cuenta. Entra aquí:\n{link}\n\nSi olvidaste la contraseña, usa \"Olvidé mi contraseña\" en esa página.",
         "exists_cta": "Entrar a StayLever",
+        "delcode_subject": "Código para borrar tu cuenta de StayLever",
+        "delcode_body": "Hola {name}:\n\nTu código para confirmar el borrado de tu cuenta es: {code}\n\nVence en 15 minutos. Si no lo pediste, ignora este mensaje y tu cuenta sigue igual.",
+        "deleted_subject": "Tu cuenta de StayLever fue eliminada",
+        "deleted_body": "Hola {name}:\n\nBorramos tu cuenta de StayLever y todos sus datos. Las copias de seguridad se eliminan solas en un máximo de 7 días.\n\nGracias por haber usado StayLever. Si fue un error, escríbenos a privacy@staylever.com.",
     },
     "en": {
         "verify_subject": "Confirm your email for StayLever",
@@ -28,6 +32,10 @@ _T = {
         "exists_subject": "You already have a StayLever account",
         "exists_body": "Hi,\n\nSomeone tried to sign up with this email, but you already have an account. Sign in here:\n{link}\n\nIf you forgot your password, use \"Forgot password\" on that page.",
         "exists_cta": "Sign in to StayLever",
+        "delcode_subject": "Code to delete your StayLever account",
+        "delcode_body": "Hi {name},\n\nYour code to confirm deleting your account is: {code}\n\nIt expires in 15 minutes. If you didn't ask for it, ignore this message and your account stays as is.",
+        "deleted_subject": "Your StayLever account was deleted",
+        "deleted_body": "Hi {name},\n\nWe deleted your StayLever account and all its data. Backups are erased automatically within 7 days.\n\nThanks for using StayLever. If this was a mistake, write to privacy@staylever.com.",
     },
     "pt": {
         "verify_subject": "Confirme seu e-mail no StayLever",
@@ -39,6 +47,10 @@ _T = {
         "exists_subject": "Você já tem uma conta no StayLever",
         "exists_body": "Olá,\n\nAlguém tentou se cadastrar com este e-mail, mas você já tem uma conta. Entre aqui:\n{link}\n\nSe esqueceu a senha, use \"Esqueci minha senha\" nessa página.",
         "exists_cta": "Entrar no StayLever",
+        "delcode_subject": "Código para excluir sua conta do StayLever",
+        "delcode_body": "Olá {name},\n\nSeu código para confirmar a exclusão da sua conta é: {code}\n\nEle expira em 15 minutos. Se não pediu, ignore esta mensagem e sua conta continua igual.",
+        "deleted_subject": "Sua conta do StayLever foi excluída",
+        "deleted_body": "Olá {name},\n\nExcluímos sua conta do StayLever e todos os seus dados. As cópias de segurança são apagadas automaticamente em até 7 dias.\n\nObrigado por usar o StayLever. Se foi um engano, escreva para privacy@staylever.com.",
     },
 }
 
@@ -79,3 +91,20 @@ def reset_password(to: str, lang: str | None, link: str, name: str) -> EmailMess
 
 def already_registered(to: str, lang: str | None, link: str) -> EmailMessage:
     return _build("exists", to, lang, link)
+
+
+def _plain(kind: str, to: str, lang: str | None, **fields: str) -> EmailMessage:
+    """Correo sin botón (feature 028): código de borrado y confirmación."""
+    t = _T[_lang(lang)]
+    text = t[f"{kind}_body"].format(**fields)
+    paras = "".join(f"<p>{escape(p).replace(chr(10), '<br>')}</p>" for p in text.split("\n\n"))
+    html = f'<div style="font-family:system-ui,sans-serif;line-height:1.5">{paras}</div>'
+    return EmailMessage(to=to, subject=t[f"{kind}_subject"], text=text, html=html)
+
+
+def delete_code(to: str, lang: str | None, name: str, code: str) -> EmailMessage:
+    return _plain("delcode", to, lang, name=name or "", code=code)
+
+
+def account_deleted(to: str, lang: str | None, name: str) -> EmailMessage:
+    return _plain("deleted", to, lang, name=name or "")

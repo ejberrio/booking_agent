@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import { AcceptTerms } from "@/components/auth/accept-terms";
 import { AuthShell, FormNote, postJson } from "@/components/auth/auth-shell";
 import { GoogleButton, useGoogleError } from "@/components/auth/google-button";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ function RegisterForm() {
     password: "",
   });
   const [confirm, setConfirm] = useState("");
+  const [accepted, setAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -44,7 +46,11 @@ function RegisterForm() {
     }
     setLoading(true);
     setError(null);
-    const { ok, status, data } = await postJson("/api/auth/register", { ...form, language: lang });
+    const { ok, status, data } = await postJson("/api/auth/register", {
+      ...form,
+      language: lang,
+      accept_terms: accepted,
+    });
     setLoading(false);
     if (ok) {
       setSent(true);
@@ -91,11 +97,13 @@ function RegisterForm() {
             value={confirm} onChange={(e) => setConfirm(e.target.value)} minLength={10} required />
           <p className="text-xs text-muted-foreground">{t.passwordHint}</p>
           {error && <FormNote kind="error">{error}</FormNote>}
-          <Button type="submit" className="w-full" disabled={loading}>
+          <AcceptTerms checked={accepted} onChange={setAccepted} />
+          <Button type="submit" className="w-full" disabled={loading || !accepted}>
             {t.register.submit}
           </Button>
           {googleError && !error && <FormNote kind="error">{googleError}</FormNote>}
-          <GoogleButton mode="register" invite={open ? undefined : form.invite_code} />
+          <GoogleButton mode="register" invite={open ? undefined : form.invite_code}
+            accepted={accepted} />
         </form>
       )}
     </AuthShell>

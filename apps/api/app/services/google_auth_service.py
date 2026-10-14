@@ -41,6 +41,7 @@ from app.services.auth_service import (
     _aware,
     _membership,
     _user_by_email,
+    accept_terms,
     create_session,
 )
 
@@ -88,6 +89,7 @@ async def start(
     invite_code: str | None = None,
     challenge: str | None = None,
     language: str = "es",
+    accept: bool = False,
 ) -> str:
     creds = credentials()
     if creds is None:
@@ -107,6 +109,7 @@ async def start(
                 "invite": (invite_code or "").strip()[:40] or None,
                 "challenge": challenge if client == "app" else None,
                 "language": language if language in LANGS else "es",
+                "accept": bool(accept),
             },
             expires_at=_now() + STATE_TTL,
         )
@@ -288,6 +291,8 @@ async def callback(
         await session.rollback()
         raise
     user.last_login_at = _now()
+    if st.get("accept"):  # casilla marcada antes de ir a Google (feature 028)
+        await accept_terms(session, user.id)
     if st.get("client") == "app":
         handoff = new_token()
         session.add(

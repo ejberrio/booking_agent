@@ -5,7 +5,7 @@ const PRIVACY = "privacy@staylever.com";
 
 const es = {
   contact: CONTACT,
-  nav: { login: "Entrar", register: "Crear cuenta", privacy: "Privacidad", home: "Inicio" },
+  nav: { login: "Entrar", register: "Crear cuenta", privacy: "Privacidad", terms: "Términos", home: "Inicio" },
   welcome: {
     title: "Precios inteligentes para tu apartamento turístico",
     lead:
@@ -40,7 +40,7 @@ const es = {
   },
   privacy: {
     title: "Política de privacidad",
-    updated: "Última actualización: 13 de octubre de 2026",
+    updated: "Última actualización: 14 de octubre de 2026",
     sections: [
       {
         title: "Quiénes somos",
@@ -67,6 +67,17 @@ const es = {
         ],
       },
       {
+        title: "Datos de tus huéspedes",
+        body: [
+          "Sobre los datos de tus huéspedes, tú eres el Responsable del tratamiento y StayLever " +
+            "es el Encargado: los tratamos solo por tu cuenta y para prestarte el servicio. De " +
+            "cada huésped guardamos únicamente el nombre que envía tu channel manager (nunca " +
+            "teléfono, correo ni documento), lo ves solo tú dentro de tu cuenta y nadie más: " +
+            "ni otras cuentas ni los administradores de StayLever. Nunca va a la IA ni a los " +
+            "avisos del celular.",
+        ],
+      },
+      {
         title: "Para qué los usamos",
         body: [
           "Solo para prestarte el servicio: identificarte, calcular y explicar sugerencias de " +
@@ -90,16 +101,20 @@ const es = {
       {
         title: "Cuánto tiempo los guardamos",
         body: [
-          "Mientras tu cuenta esté activa. Si pides eliminarla, borramos tus datos en un plazo " +
-            "máximo de 30 días, salvo lo que la ley nos obligue a conservar.",
+          "Los datos de tu cuenta, mientras esté activa. El nombre de cada huésped se borra " +
+            "automáticamente 1 año después de la fecha de salida; la reserva se conserva sin él " +
+            "(fechas, precio y canal) para las estadísticas de precios.",
+          "Si borras tu cuenta desde Ajustes, eliminamos de inmediato todos sus datos; las copias " +
+            "de seguridad de la base de datos desaparecen solas en un máximo de 7 días.",
         ],
       },
       {
         title: "Tus derechos",
         body: [
-          "Puedes conocer, actualizar, rectificar y suprimir tus datos, y revocar tu autorización, " +
-            `escribiendo a ${PRIVACY}. Respondemos en máximo 15 días hábiles. Tu nombre y el de tu ` +
-            "cuenta los puedes cambiar tú mismo en Ajustes.",
+          "Puedes conocer, actualizar, rectificar y suprimir tus datos, y revocar tu autorización. " +
+            "En Ajustes → Tus datos descargas una copia de todo o borras tu cuenta; tu nombre y el " +
+            `de tu cuenta los cambias en Ajustes → Mi cuenta. Para lo demás escribe a ${PRIVACY}; ` +
+            "respondemos en máximo 15 días hábiles.",
         ],
       },
       {
@@ -124,7 +139,7 @@ type Shape = typeof es;
 
 const en: Shape = {
   contact: CONTACT,
-  nav: { login: "Sign in", register: "Sign up", privacy: "Privacy", home: "Home" },
+  nav: { login: "Sign in", register: "Sign up", privacy: "Privacy", terms: "Terms", home: "Home" },
   welcome: {
     title: "Smart pricing for your vacation rental",
     lead:
@@ -159,7 +174,7 @@ const en: Shape = {
   },
   privacy: {
     title: "Privacy policy",
-    updated: "Last updated: October 13, 2026",
+    updated: "Last updated: October 14, 2026",
     sections: [
       {
         title: "Who we are",
@@ -186,6 +201,16 @@ const en: Shape = {
         ],
       },
       {
+        title: "Your guests' data",
+        body: [
+          "For your guests' data, you are the Controller and StayLever is the Processor: we " +
+            "process it only on your behalf and to provide the service. For each guest we keep " +
+            "only the name your channel manager sends (never phone, email or ID), only you see " +
+            "it inside your account and no one else: not other accounts nor StayLever's " +
+            "administrators. It never goes to the AI or to phone alerts.",
+        ],
+      },
+      {
         title: "How we use it",
         body: [
           "Only to provide the service: identify you, compute and explain price suggestions, " +
@@ -209,16 +234,20 @@ const en: Shape = {
       {
         title: "How long we keep it",
         body: [
-          "While your account is active. If you ask us to delete it, we erase your data within 30 " +
-            "days, except what the law requires us to keep.",
+          "Your account data, while the account is active. Each guest's name is erased " +
+            "automatically 1 year after the check-out date; the booking stays without it (dates, " +
+            "price and channel) for price statistics.",
+          "If you delete your account in Settings, we erase all its data right away; database " +
+            "backups disappear automatically within 7 days.",
         ],
       },
       {
         title: "Your rights",
         body: [
-          "You can access, update, correct and delete your data, and withdraw your consent, by " +
-            `writing to ${PRIVACY}. We reply within 15 business days. You can change your name ` +
-            "and your account's name yourself in Settings.",
+          "You can access, update, correct and delete your data, and withdraw your consent. In " +
+            "Settings → Your data you download a copy of everything or delete your account; you " +
+            "change your name and your account's name in Settings → My account. For anything " +
+            `else write to ${PRIVACY}; we reply within 15 business days.`,
         ],
       },
       {
@@ -241,7 +270,7 @@ const en: Shape = {
 
 const pt: Shape = {
   contact: CONTACT,
-  nav: { login: "Entrar", register: "Criar conta", privacy: "Privacidade", home: "Início" },
+  nav: { login: "Entrar", register: "Criar conta", privacy: "Privacidade", terms: "Termos", home: "Início" },
   welcome: {
     title: "Preços inteligentes para o seu apartamento de temporada",
     lead:
@@ -276,7 +305,7 @@ const pt: Shape = {
   },
   privacy: {
     title: "Política de privacidade",
-    updated: "Última atualização: 13 de outubro de 2026",
+    updated: "Última atualização: 14 de outubro de 2026",
     sections: [
       {
         title: "Quem somos",
@@ -303,6 +332,17 @@ const pt: Shape = {
         ],
       },
       {
+        title: "Dados dos seus hóspedes",
+        body: [
+          "Sobre os dados dos seus hóspedes, você é o Responsável pelo tratamento e o StayLever " +
+            "é o Encarregado (operador): tratamos esses dados apenas em seu nome e para prestar " +
+            "o serviço. De cada hóspede guardamos somente o nome que o seu channel manager envia " +
+            "(nunca telefone, e-mail ou documento), só você o vê dentro da sua conta e mais " +
+            "ninguém: nem outras contas nem os administradores do StayLever. Ele nunca vai para " +
+            "a IA nem para os avisos do celular.",
+        ],
+      },
+      {
         title: "Para que os usamos",
         body: [
           "Apenas para prestar o serviço: identificar você, calcular e explicar sugestões de " +
@@ -326,16 +366,20 @@ const pt: Shape = {
       {
         title: "Por quanto tempo os guardamos",
         body: [
-          "Enquanto sua conta estiver ativa. Se você pedir para excluí-la, apagamos seus dados em " +
-            "até 30 dias, exceto o que a lei nos obrigue a manter.",
+          "Os dados da sua conta, enquanto ela estiver ativa. O nome de cada hóspede é apagado " +
+            "automaticamente 1 ano após a data de saída; a reserva continua sem ele (datas, preço " +
+            "e canal) para as estatísticas de preços.",
+          "Se você excluir sua conta em Configurações, apagamos todos os seus dados na hora; as " +
+            "cópias de segurança do banco de dados desaparecem sozinhas em até 7 dias.",
         ],
       },
       {
         title: "Seus direitos",
         body: [
           "Você pode conhecer, atualizar, retificar e excluir seus dados, e revogar sua " +
-            `autorização, escrevendo para ${PRIVACY}. Respondemos em até 15 dias úteis. Seu nome e ` +
-            "o da sua conta você mesmo pode mudar em Configurações.",
+            "autorização. Em Configurações → Seus dados você baixa uma cópia de tudo ou exclui sua " +
+            "conta; seu nome e o da conta você muda em Configurações → Minha conta. Para o resto, " +
+            `escreva para ${PRIVACY}; respondemos em até 15 dias úteis.`,
         ],
       },
       {

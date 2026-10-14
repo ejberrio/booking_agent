@@ -1,5 +1,6 @@
 import { FloatingChat } from "@/components/chat/floating-chat";
 import { Sidebar } from "@/components/layout/sidebar";
+import { TermsGate } from "@/components/legal/terms-gate";
 import { NativeBridge } from "@/components/native/native-bridge";
 import { ChatProvider } from "@/lib/chat-store";
 
@@ -14,6 +15,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <FloatingChat />
       {/* Solo dentro de la app móvil: botón atrás y avisos (feature 025). */}
       <NativeBridge />
+      {/* Términos y Privacidad vigentes sin aceptar → pantalla de aceptación (feature 028). */}
+      <TermsGate />
     </ChatProvider>
   );
 }

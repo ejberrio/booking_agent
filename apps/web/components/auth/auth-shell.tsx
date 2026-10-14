@@ -11,6 +11,7 @@ function SiteLinks() {
   return (
     <div className="mt-4 flex justify-center gap-3 text-[11px] text-muted-foreground">
       <Link href="/welcome" className="hover:underline">StayLever</Link>
+      <Link href="/terms" className="hover:underline">{m.site.nav.terms}</Link>
       <Link href="/privacy" className="hover:underline">{m.site.nav.privacy}</Link>
     </div>
   );

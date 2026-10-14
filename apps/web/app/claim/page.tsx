@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AcceptTerms } from "@/components/auth/accept-terms";
 import { AuthShell, FormNote, postJson } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ export default function ClaimPage() {
   const t = m.auth;
   const [form, setForm] = useState({ app_password: "", name: "", email: "", password: "" });
   const [confirm, setConfirm] = useState("");
+  const [accepted, setAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -27,7 +29,11 @@ export default function ClaimPage() {
     }
     setLoading(true);
     setError(null);
-    const { ok, data } = await postJson("/api/auth/claim", { ...form, language: lang });
+    const { ok, data } = await postJson("/api/auth/claim", {
+      ...form,
+      language: lang,
+      accept_terms: accepted,
+    });
     setLoading(false);
     if (ok) {
       router.push("/");
@@ -88,7 +94,8 @@ export default function ClaimPage() {
         />
         <p className="text-xs text-muted-foreground">{t.passwordHint}</p>
         {error && <FormNote kind="error">{error}</FormNote>}
-        <Button type="submit" className="w-full" disabled={loading}>
+        <AcceptTerms checked={accepted} onChange={setAccepted} />
+        <Button type="submit" className="w-full" disabled={loading || !accepted}>
           {t.claim.submit}
         </Button>
       </form>

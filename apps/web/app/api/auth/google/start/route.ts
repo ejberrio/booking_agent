@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
     invite_code: q.get("invite") || null,
     challenge: q.get("challenge") || null,
     language: q.get("lang") || "es",
+    accept_terms: q.get("accept") === "1",
   });
   if (status === 200 && typeof data.url === "string") return NextResponse.redirect(data.url, 303);
   const code = typeof data.code === "string" ? data.code : "google_failed";
