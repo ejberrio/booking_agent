@@ -102,3 +102,14 @@ class PlatformSetting(Base):
 
     key: Mapped[str] = mapped_column(String(64), primary_key=True)
     value: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
+
+class TermsAcceptance(Base, TimestampMixin):
+    """Aceptación de los Términos y la Política de privacidad (feature 028). Una fila por
+    versión aceptada: se conserva el historial."""
+
+    __tablename__ = "terms_acceptance"
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("app_user.id"), index=True)
+    version: Mapped[str] = mapped_column(String(20))
+    accepted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)

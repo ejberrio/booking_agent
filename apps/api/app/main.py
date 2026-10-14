@@ -4,9 +4,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.api.router import api_router
 from app.core.config import settings
+from app.core.context import TermsRequired
 from app.core.observability import init_sentry, setup_logging
 
 # Observabilidad: logging + Sentry (no-op sin DSN). Antes de crear la app.
@@ -42,6 +44,16 @@ app = FastAPI(
         "Booking.com y Airbnb via Channel Manager."
     ),
 )
+
+
+@app.exception_handler(TermsRequired)
+async def _terms_required(_request: Request, _exc: TermsRequired):
+    # Feature 028: sin aceptar los documentos vigentes, solo responden /auth/me y afines.
+    return JSONResponse(
+        status_code=403,
+        content={"detail": "Acepta los Términos de uso y la Política de privacidad",
+                 "code": "terms_required"},
+    )
 
 
 @app.middleware("http")

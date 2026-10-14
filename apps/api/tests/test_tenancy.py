@@ -87,7 +87,7 @@ def _sources():
 def test_bypass_solo_en_modulos_permitidos():
     """Consultas entre cuentas: SOLO tenancy (definición), cross_account, el panel de
     administrador y el recorrido del cron."""
-    allowed_platform = {"tenancy.py", "admin_service.py", "scan_daily.py"}
+    allowed_platform = {"tenancy.py", "admin_service.py", "scan_daily.py", "privacy_service.py"}
     allowed_table = {"cross_account.py"}
     for path, text in _sources():
         if re.search(r"\bplatform_session\(|\bmark_platform\(", text):

@@ -78,6 +78,11 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
     window.location.href = `/login?next=${encodeURIComponent(next)}`;
     throw new Error(trServer("Sesión no válida"));
   }
+  if (res.status === 403 && typeof window !== "undefined") {
+    // Feature 028: hay una versión nueva de Términos y Privacidad sin aceptar → la puerta.
+    const body = await res.clone().json().catch(() => null);
+    if (body?.code === "terms_required") window.dispatchEvent(new Event("sl:terms-required"));
+  }
   if (!res.ok) {
     // El backend responde errores honestos en `detail` (p. ej. estado real de una
     // sugerencia ya resuelta): se propaga para mostrarlo tal cual.
@@ -288,6 +293,13 @@ export const api = {
       body: JSON.stringify({ registration_open: open }),
     }),
   sendVerification: () => req<{ sent: boolean }>(`/auth/send-verification`, { method: "POST" }),
+  acceptTerms: (version: string) =>
+    req<Me>(`/auth/terms/accept`, { method: "POST", body: JSON.stringify({ version }) }),
+  exportAccount: () => req<Record<string, unknown>>(`/account/export`),
+  sendDeleteCode: () =>
+    req<{ sent: boolean }>(`/account/delete-code`, { method: "POST" }),
+  deleteAccount: (body: { account_name: string; password?: string; code?: string }) =>
+    req<{ status: string }>(`/account/delete`, { method: "POST", body: JSON.stringify(body) }),
   logoutAll: () =>
     fetch(`${API_URL}/auth/logout-all`, { method: "POST", cache: "no-store" }).then(() => null),
   updatePushDevice: (id: number, body: { notify_bookings?: boolean; notify_suggestions?: boolean }) =>

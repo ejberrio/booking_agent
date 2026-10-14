@@ -43,7 +43,16 @@ function GoogleMark() {
   );
 }
 
-export function GoogleButton({ mode, invite }: { mode: "login" | "register"; invite?: string }) {
+export function GoogleButton({
+  mode,
+  invite,
+  accepted,
+}: {
+  mode: "login" | "register";
+  invite?: string;
+  /** Registro: la casilla de Términos y Privacidad (feature 028) debe estar marcada. */
+  accepted?: boolean;
+}) {
   const { m, lang } = useI18n();
   const t = m.auth.google;
   const [available, setAvailable] = useState(false);
@@ -92,6 +101,7 @@ export function GoogleButton({ mode, invite }: { mode: "login" | "register"; inv
     setBusy(true);
     const qs = new URLSearchParams({ mode, lang });
     if (invite?.trim()) qs.set("invite", invite.trim());
+    if (accepted) qs.set("accept", "1");
     if (!nativeOk) {
       window.location.assign(`/api/auth/google/start?${qs}`);
       return;
@@ -115,7 +125,7 @@ export function GoogleButton({ mode, invite }: { mode: "login" | "register"; inv
         {t.or}
         <span className="h-px flex-1 bg-border" />
       </div>
-      <Button type="button" onClick={go} disabled={busy}
+      <Button type="button" onClick={go} disabled={busy || (mode === "register" && !accepted)}
         className="w-full border border-border bg-background text-foreground hover:bg-muted">
         <GoogleMark />
         {mode === "register" ? t.register : t.login}

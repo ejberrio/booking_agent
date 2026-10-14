@@ -61,7 +61,7 @@ def _auth(token):
 
 async def _admin(client) -> str:
     r = await client.post("/auth/claim", json={"name": "Host", "email": "host@example.com",
-                                               "password": PWD})
+                                               "password": PWD, "accept_terms": True})
     return r.json()["token"]
 
 
@@ -73,7 +73,8 @@ async def _invite(client, token, note="Ana"):
 
 async def _register(client, code, email="ana@example.com"):
     return await client.post("/auth/register", json={"name": "Ana", "email": email,
-                                                     "password": PWD, "invite_code": code})
+                                                     "password": PWD, "invite_code": code,
+                                                     "accept_terms": True})
 
 
 def test_formato_y_normalizacion_del_codigo():

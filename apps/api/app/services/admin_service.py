@@ -72,6 +72,8 @@ async def set_status(account_id: int, *, enabled: bool, by_account_id: int) -> d
         acc = await s.get(Account, account_id)
         if acc is None:
             raise LookupError("No existe esa cuenta")
+        if acc.status == AccountStatus.deleted:
+            raise ValueError("Esa cuenta fue eliminada por su dueño")
         acc.status = AccountStatus.active if enabled else AccountStatus.disabled
         acc.disabled_at = None if enabled else _now()
         if not enabled:

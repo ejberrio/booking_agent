@@ -475,8 +475,11 @@ export interface Me {
     language: string;
     is_platform_admin: boolean;
     has_password: boolean;
+    /** Feature 028: falta aceptar la versión vigente de Términos y Privacidad. */
+    terms_required?: boolean;
   };
   account: { id: number; name: string };
+  legal_version?: string;
 }
 
 /** Invitación (feature 026, panel del administrador). El código completo solo al crearla. */
@@ -494,7 +497,7 @@ export interface AdminAccount {
   id: number;
   name: string;
   owner_email: string | null;
-  status: "active" | "disabled";
+  status: "active" | "disabled" | "deleted";
   created_at: string | null;
   last_seen_at: string | null;
   connected: boolean;

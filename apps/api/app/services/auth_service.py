@@ -17,10 +17,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth import passwords, ratelimit
 from app.auth.tokens import digest, new_token, normalize_email
 from app.core.config import settings
+from app.core.legal import LEGAL_VERSION
 from app.email import templates
 from app.email.base import EmailSender
 from app.models.account import FIRST_ACCOUNT_ID, Account, AccountStatus
-from app.models.auth import AppUser, AuthToken, Membership, UserSession
+from app.models.auth import AppUser, AuthToken, Membership, TermsAcceptance, UserSession
 from app.models.mixins import _now
 
 SESSION_TTL = {"web": timedelta(days=7), "app": timedelta(days=90)}
@@ -144,6 +145,32 @@ async def revoke_all(session: AsyncSession, user_id: int, *, keep_token: str | N
         stmt = stmt.where(UserSession.token_hash != digest(keep_token))
     await session.execute(stmt.values(revoked_at=_now()))
     await session.flush()
+
+
+# --------- términos (feature 028) ---------
+
+
+def terms_required_error() -> AuthError:
+    return AuthError(
+        "terms_required", "Debes aceptar los Términos de uso y la Política de privacidad", 400
+    )
+
+
+async def has_accepted(session: AsyncSession, user_id: int) -> bool:
+    return (
+        await session.execute(
+            select(TermsAcceptance.id).where(
+                TermsAcceptance.user_id == user_id, TermsAcceptance.version == LEGAL_VERSION
+            )
+        )
+    ).first() is not None
+
+
+async def accept_terms(session: AsyncSession, user_id: int) -> None:
+    """Registra la aceptación de la versión vigente (idempotente; conserva el historial)."""
+    if not await has_accepted(session, user_id):
+        session.add(TermsAcceptance(user_id=user_id, version=LEGAL_VERSION, accepted_at=_now()))
+        await session.flush()
 
 
 # --------- acceso ---------
@@ -323,6 +350,7 @@ async def register(
     password: str,
     invite_code: str | None = None,
     language: str = "es",
+    accept: bool = False,
     sender: EmailSender | None = None,
 ) -> None:
     """Crea cuenta + usuario dueño. Con el registro cerrado exige un código vigente.
@@ -340,6 +368,8 @@ async def register(
     if "@" not in email or len(email) > 254 or not name:
         raise AuthError("invalid_data", "Revisa el nombre y el correo", 400)
     passwords.check_policy(password)
+    if not accept:
+        raise terms_required_error()
     open_reg = await invite_service.registration_open(session)
     invite = None
     if not open_reg:
@@ -375,6 +405,7 @@ async def register(
     session.add(user)
     await session.flush()
     session.add(Membership(user_id=user.id, account_id=account.id, role="owner"))
+    await accept_terms(session, user.id)
     await session.commit()
     await send_verification(session, user, sender)
 
@@ -403,12 +434,15 @@ async def claim(
     language: str = "es",
     kind: str = "web",
     user_agent: str | None = None,
+    accept: bool = False,
     sender: EmailSender | None = None,
 ) -> tuple[str, datetime, AppUser]:
     """Crea el usuario dueño de la cuenta nº 1 (y administrador de plataforma). Una sola vez:
     la web solo llama aquí tras comprobar la contraseña compartida actual."""
     if not await claim_status(session):
         raise AuthError("already_claimed", "Esta cuenta ya tiene dueño", 409)
+    if not accept:
+        raise terms_required_error()
     email = normalize_email(email)
     if "@" not in email or len(email) > 254 or not (name or "").strip():
         raise AuthError("invalid_data", "Revisa el nombre y el correo", 400)
@@ -425,14 +459,16 @@ async def claim(
     session.add(user)
     await session.flush()
     session.add(Membership(user_id=user.id, account_id=FIRST_ACCOUNT_ID, role="owner"))
+    await accept_terms(session, user.id)
     token, expires = await create_session(session, user, kind, user_agent)
     await session.commit()
     await send_verification(session, user, sender)  # si el correo está configurado
     return token, expires, user
 
 
-def me(user: AppUser, account: Account) -> dict:
+def me(user: AppUser, account: Account, *, terms_accepted: bool = True) -> dict:
     return {
+        "legal_version": LEGAL_VERSION,
         "user": {
             "id": user.id,
             "name": user.name,
@@ -441,6 +477,70 @@ def me(user: AppUser, account: Account) -> dict:
             "language": user.language,
             "is_platform_admin": user.is_platform_admin,
             "has_password": bool(user.password_hash),
+            "terms_required": not terms_accepted,
         },
         "account": {"id": account.id, "name": account.name},
     }
+
+
+# --------- confirmar identidad para borrar la cuenta (feature 028) ---------
+
+DELETE_CODE_TTL = timedelta(minutes=15)
+DELETE_CODE_ATTEMPTS = 5
+
+
+async def send_delete_code(
+    session: AsyncSession, user: AppUser, sender: EmailSender | None = None
+) -> bool:
+    """Código de 6 dígitos por correo para quien entra solo con Google."""
+    import secrets as pysecrets
+
+    sender = sender or get_email_sender()
+    if sender is None:
+        return False
+    await session.execute(
+        update(AuthToken)
+        .where(
+            AuthToken.user_id == user.id,
+            AuthToken.purpose == "delete_account",
+            AuthToken.used_at.is_(None),
+        )
+        .values(used_at=_now())
+    )
+    code = f"{pysecrets.randbelow(1_000_000):06d}"
+    session.add(
+        AuthToken(purpose="delete_account", token_hash=digest(f"{user.id}:{code}"),
+                  user_id=user.id, payload={"attempts": 0},
+                  expires_at=_now() + DELETE_CODE_TTL)
+    )
+    await session.commit()
+    await sender.send(templates.delete_code(user.email, user.language, user.name, code))
+    return True
+
+
+async def confirm_identity(
+    session: AsyncSession, user: AppUser, *, password: str | None, code: str | None
+) -> bool:
+    """Contraseña si la tiene; si no, el código de borrado vigente (un solo uso, 5 intentos)."""
+    if user.password_hash:
+        return passwords.verify_password(user.password_hash, password or "")
+    row = (
+        await session.execute(
+            select(AuthToken)
+            .where(
+                AuthToken.user_id == user.id,
+                AuthToken.purpose == "delete_account",
+                AuthToken.used_at.is_(None),
+            )
+            .order_by(AuthToken.id.desc())
+        )
+    ).scalars().first()
+    if row is None or _aware(row.expires_at) <= _now():
+        return False
+    attempts = int((row.payload or {}).get("attempts", 0)) + 1
+    ok = digest(f"{user.id}:{(code or '').strip()}") == row.token_hash
+    if ok or attempts >= DELETE_CODE_ATTEMPTS:
+        row.used_at = _now()
+    row.payload = {"attempts": attempts}
+    await session.commit()
+    return ok

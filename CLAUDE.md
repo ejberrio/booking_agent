@@ -1,11 +1,9 @@
 <!-- SPECKIT START -->
-Feature activa: **026-multitenant-accounts** (multicliente mínimo; issue #143, épica #156 Comercial F0).
-Plan: `specs/026-multitenant-accounts/{plan,research,data-model,quickstart}.md` + `contracts/accounts-api.md`.
-Constitución v1.1.0: principio VI aislamiento por cuenta (NO NEGOCIABLE). Decisiones del host (2026-10-10): registro solo
-con código de invitación (interruptor para abrirlo), correo+contraseña Y Google, un usuario por cuenta. Diseño: account_id
-en todas las tablas del anfitrión + filtro automático del ORM (falla cerrado), sesiones opacas en la API (Bearer desde la
-cookie sl_session), Resend para correos, Google con PKCE (app: navegador del sistema → APK 1.1.0), cuenta nº 1 reclamada
-con la contraseña actual. Entrega en 4 PRs (PR1 aislamiento sin cambio visible → PR2 sesiones → PR3 invitaciones/admin → PR4 Google).
+Feature activa: **028-guest-privacy** (privacidad de huéspedes, Ley 1581; issue #145, épica #156 Comercial F0).
+Plan: `specs/028-guest-privacy/{plan,research,data-model,quickstart}.md` + `contracts/privacy-api.md`.
+Decisiones del host (2026-10-14): el anfitrión ve el nombre del huésped, el administrador nunca; nombre borrado 1 año tras la salida;
+aceptación obligatoria y versionada de Términos y Privacidad (puerta en el servidor). TRA/SIRE en #167.
+Anterior: 026-multitenant-accounts (cuentas aisladas, principio VI de la constitución v1.1.0).
 <!-- SPECKIT END -->
 
 # Booking AI Agent

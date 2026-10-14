@@ -145,6 +145,7 @@ function AccountsCard() {
               <p className="font-medium">
                 #{a.id} {a.name}{" "}
                 {a.status === "disabled" && <Badge variant="warning">{t.disabled}</Badge>}
+                {a.status === "deleted" && <Badge>{m.legal.adminDeleted}</Badge>}
               </p>
               <p className="truncate text-xs text-muted-foreground">
                 {t.owner}: {a.owner_email ?? "—"} · {a.connected ? t.connected : t.notConnected} ·{" "}
@@ -152,7 +153,7 @@ function AccountsCard() {
                 {a.last_seen_at ? t.lastSeen(dateTime(a.last_seen_at, lang)) : t.never}
               </p>
             </div>
-            {a.id !== 1 &&
+            {a.id !== 1 && a.status !== "deleted" &&
               (a.status === "active" ? (
                 <Button
                   className="bg-muted text-foreground"

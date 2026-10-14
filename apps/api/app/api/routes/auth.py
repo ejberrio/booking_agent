@@ -113,6 +113,7 @@ class RegisterRequest(BaseModel):
     password: str = Field(max_length=256)
     invite_code: str | None = Field(default=None, max_length=40)
     language: str = "es"
+    accept_terms: bool = False
 
 
 @router.post("/register", status_code=202)
@@ -120,7 +121,7 @@ async def register(req: RegisterRequest, session: AsyncSession = Depends(get_ses
     try:
         await auth_service.register(
             session, name=req.name, email=req.email, password=req.password,
-            invite_code=req.invite_code, language=req.language,
+            invite_code=req.invite_code, language=req.language, accept=req.accept_terms,
         )
     except WeakPassword as exc:
         return _weak(exc)
@@ -149,6 +150,7 @@ class GoogleStartRequest(BaseModel):
     invite_code: str | None = Field(default=None, max_length=40)
     challenge: str | None = Field(default=None, max_length=128)
     language: str = "es"
+    accept_terms: bool = False
 
 
 @router.post("/google/start")
@@ -158,7 +160,7 @@ async def google_start(req: GoogleStartRequest, session: AsyncSession = Depends(
     try:
         url = await google_auth_service.start(
             session, mode=req.mode, client=req.client, invite_code=req.invite_code,
-            challenge=req.challenge, language=req.language,
+            challenge=req.challenge, language=req.language, accept=req.accept_terms,
         )
     except AuthError as exc:
         return _error(exc)
@@ -219,6 +221,7 @@ class ClaimRequest(BaseModel):
     password: str = Field(max_length=256)
     language: str = "es"
     kind: Kind = "web"
+    accept_terms: bool = False
 
 
 @router.post("/claim")
@@ -227,6 +230,7 @@ async def claim(req: ClaimRequest, request: Request, session: AsyncSession = Dep
         token, expires, user = await auth_service.claim(
             session, name=req.name, email=req.email, password=req.password,
             language=req.language, kind=req.kind, user_agent=request.headers.get("user-agent"),
+            accept=req.accept_terms,
         )
     except WeakPassword as exc:
         return _weak(exc)
@@ -251,7 +255,33 @@ async def _current(session: AsyncSession, ctx: RequestContext) -> tuple[AppUser,
 @router.get("/me")
 async def me(session: AsyncSession = Depends(get_session), ctx: RequestContext = Depends(require_ctx)):
     user, account = await _current(session, ctx)
-    return auth_service.me(user, account)
+    accepted = await auth_service.has_accepted(session, user.id)
+    return auth_service.me(user, account, terms_accepted=accepted)
+
+
+class AcceptTermsRequest(BaseModel):
+    version: str = Field(max_length=20)
+
+
+@router.post("/terms/accept")
+async def accept_terms(
+    req: AcceptTermsRequest,
+    session: AsyncSession = Depends(get_session),
+    ctx: RequestContext = Depends(require_ctx),
+):
+    """Acepta los Términos y la Política de privacidad vigentes (feature 028)."""
+    from app.core.legal import LEGAL_VERSION
+
+    user, account = await _current(session, ctx)
+    if req.version != LEGAL_VERSION:
+        return JSONResponse(
+            status_code=409,
+            content={"detail": "Hay una versión más reciente; recarga la página",
+                     "code": "version_mismatch"},
+        )
+    await auth_service.accept_terms(session, user.id)
+    await session.commit()
+    return auth_service.me(user, account, terms_accepted=True)
 
 
 class MePatch(BaseModel):

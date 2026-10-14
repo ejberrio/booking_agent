@@ -16,6 +16,7 @@ export async function POST(req: Request) {
     email?: string;
     password?: string;
     language?: string;
+    accept_terms?: boolean;
   };
   const expected = process.env.APP_PASSWORD;
   if (!expected || !body.app_password || !sameSecret(body.app_password, expected)) {
@@ -27,6 +28,7 @@ export async function POST(req: Request) {
     password: body.password ?? "",
     language: body.language ?? "es",
     kind: kindFor(req),
+    accept_terms: body.accept_terms === true,
   });
   if (status === 200 && typeof data.token === "string") return withSession(req, data.token);
   return relay(status, data);

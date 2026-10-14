@@ -7,12 +7,14 @@ import common from "@/lib/i18n/catalog/common";
 import connection from "@/lib/i18n/catalog/connection";
 import dashboard from "@/lib/i18n/catalog/dashboard";
 import extension from "@/lib/i18n/catalog/extension";
+import legal from "@/lib/i18n/catalog/legal";
 import offers from "@/lib/i18n/catalog/offers";
 import rationale from "@/lib/i18n/catalog/rationale";
 import settings from "@/lib/i18n/catalog/settings";
 import shell from "@/lib/i18n/catalog/shell";
 import site from "@/lib/i18n/catalog/site";
 import suggestions from "@/lib/i18n/catalog/suggestions";
+import terms from "@/lib/i18n/catalog/terms";
 import type { Lang } from "@/lib/i18n/core";
 
 // Compone los catálogos por área en un objeto por idioma (feature 021).
@@ -21,8 +23,10 @@ const AREAS = {
   account,
   admin,
   auth,
+  legal,
   shell,
   site,
+  terms,
   dashboard,
   calendar,
   extension,
