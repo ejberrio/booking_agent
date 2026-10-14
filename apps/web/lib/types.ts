@@ -579,3 +579,41 @@ export interface AdminAccount {
   connected: boolean;
   properties: number;
 }
+
+/** Modo sin conexión (feature 029). */
+export interface ManualChannelView {
+  channel: string;
+  calendar_url: string | null;
+  listing_url: string | null;
+  has_ical: boolean;
+  ical_hint: string | null;
+}
+
+export interface ManualApartment {
+  property_id: number;
+  unit_type_id: number | null;
+  name: string;
+  city: string;
+  currency: string;
+  channels: ManualChannelView[];
+}
+
+export interface ManualOverview {
+  channel_mode: "connected" | "manual";
+  apartments: ManualApartment[];
+}
+
+export interface IcalReport {
+  channels: number;
+  bookings: number;
+  cancelled: number;
+  blocked_nights: number;
+  errors: string[];
+}
+
+export interface ManualListingsInput {
+  airbnb_url?: string;
+  airbnb_ical?: string;
+  booking_url?: string;
+  booking_ical?: string;
+}

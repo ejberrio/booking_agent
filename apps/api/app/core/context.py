@@ -69,9 +69,25 @@ async def require_ctx(
     """Fija la cuenta de la petición en la sesión de base de datos (filtro automático)."""
     set_tenant(session, ctx.account_id, ctx.user_id)
     request.state.ctx = ctx
+    await _load_channel_mode(session, ctx)
     await _ensure_terms(request, session, ctx)
     await _ensure_unit_param(request, session)
     return ctx
+
+
+async def _load_channel_mode(session: AsyncSession, ctx: RequestContext) -> None:
+    """Modo de canal de la cuenta (feature 029) para elegir el adaptador sin otra consulta.
+
+    Sin usuario (modo `legacy`, cuenta nº 1 del host) la cuenta siempre está conectada.
+    """
+    from app.channels.factory import set_channel_mode
+    from app.models.account import Account
+
+    if ctx.user_id is None:
+        set_channel_mode(session, None)
+        return
+    acc = await session.get(Account, ctx.account_id)
+    set_channel_mode(session, acc.channel_mode if acc else None)
 
 
 async def _ensure_terms(request: Request, session: AsyncSession, ctx: RequestContext) -> None:

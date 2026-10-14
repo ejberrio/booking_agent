@@ -39,6 +39,9 @@ class Account(Base, TimestampMixin):
     # Límites de IA (feature 027); NULL = valor por defecto de la plataforma.
     chat_limit_month: Mapped[int | None] = mapped_column(Integer, nullable=True)
     search_limit_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Feature 029: "connected" (Channel Manager) | "manual" (sin conexión: StayLever guarda los
+    # precios y el anfitrión los aplica a mano en cada plataforma; nada se publica).
+    channel_mode: Mapped[str] = mapped_column(String(12), default="connected")
 
 
 class AccountOwned:

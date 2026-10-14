@@ -27,6 +27,25 @@ from app.models.agent import AgentAction, LLMConfig, Message
 from app.models.enums import AgentActionStatus, MessageRole
 from app.models.property import Channel, Property, UnitType
 
+_MANUAL_NOTE = {
+    "es": " Estás sin conexión: quedó registrado en StayLever; aplícalo a mano en Airbnb y "
+          "Booking (Sugerencias y Ajustes tienen los enlaces).",
+    "en": " You're offline: it's recorded in StayLever; apply it by hand on Airbnb and Booking "
+          "(Suggestions and Settings have the links).",
+    "pt": " Você está sem conexão: ficou registrado no StayLever; aplique à mão no Airbnb e no "
+          "Booking (Sugestões e Configurações têm os links).",
+}
+
+# Sin conexión nada se publica: el texto de "hecho" dice "registré" en vez de "publiqué".
+_MANUAL_VERBS = (("publiqué", "registré"), ("published", "recorded"), ("publiquei", "registrei"))
+
+
+def _manual_done(text: str, language: str) -> str:
+    for old, new in _MANUAL_VERBS:
+        text = text.replace(old, new)
+    return text + _MANUAL_NOTE.get(language, _MANUAL_NOTE["es"])
+
+
 MAX_STEPS = 10  # llamadas al modelo por turno (feature 032: antes 6)
 
 
@@ -120,6 +139,14 @@ async def _build_messages(
     system = system_prompt(
         active_channels=await _active_channels(session) or None, language=language
     ) + await _units_context(session)
+    from app.channels.factory import is_manual
+
+    if is_manual(session):
+        system += (
+            "\n- MODO SIN CONEXIÓN: esta cuenta no tiene Channel Manager. Tus propuestas solo "
+            "actualizan los precios y la ocupación guardados en StayLever; NO se publican. Dilo "
+            "al proponer y recuerda que el anfitrión debe aplicarlos a mano en Airbnb y Booking."
+        )
     msgs = [{"role": "system", "content": system}]
     for m in res.scalars():
         msgs.append({"role": _ROLE.get(m.role, "user"), "content": m.content})
@@ -296,6 +323,9 @@ async def _confirm(
     pending.applied_ref = outcome.applied_ref
     await session.flush()
     done = tr(outcome.summary)
+    if getattr(channel, "manual", False):
+        # Modo sin conexión (feature 029): nada se publicó; el anfitrión lo aplica a mano.
+        done = _manual_done(done, language)
     await _persist(session, conversation_id, MessageRole.assistant, done)
     return AgentReply(done, applied=True, events=events)
 

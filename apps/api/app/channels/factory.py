@@ -15,6 +15,18 @@ from app.db.tenancy import TenantContextMissing, current_account_id
 from app.models.account import FIRST_ACCOUNT_ID
 
 REFRESH_TOKEN = "beds24_refresh_token"
+#: Clave en `session.info` con el modo de canal de la cuenta (feature 029). La fijan
+#: `require_ctx` (peticiones) y el cron (por cuenta) con `set_channel_mode`.
+CHANNEL_MODE_KEY = "channel_mode"
+MANUAL = "manual"
+
+
+def set_channel_mode(session: AsyncSession, mode: str | None) -> None:
+    session.info[CHANNEL_MODE_KEY] = mode or "connected"
+
+
+def is_manual(session: AsyncSession) -> bool:
+    return session.info.get(CHANNEL_MODE_KEY) == MANUAL
 
 
 def _account(session: AsyncSession) -> int:
@@ -29,8 +41,9 @@ def has_credentials(session: AsyncSession) -> bool:
     from app.services.secret_service import get_secret
 
     account_id = _account(session)
-    if settings.sandbox:
-        return True  # ambiente de pruebas: canal simulado siempre "conectado"
+    if settings.sandbox or is_manual(session):
+        # Ambiente de pruebas o cuenta sin conexión: el "canal" es la propia base.
+        return True
     if account_id == FIRST_ACCOUNT_ID and settings.beds24_api_version != "v2":
         return bool(settings.beds24_api_key)
     return bool(get_secret(REFRESH_TOKEN, account_id))
@@ -41,6 +54,12 @@ def get_adapter(session: AsyncSession):
     from app.services.secret_service import get_secret
 
     account_id = _account(session)
+    if is_manual(session):
+        # Modo sin conexión (feature 029): los cambios quedan en StayLever y el anfitrión los
+        # aplica a mano en cada plataforma; nunca se habla con un Channel Manager.
+        from app.channels.simulated import ManualChannelAdapter
+
+        return ManualChannelAdapter(session)
     if settings.sandbox:
         # Ambiente de pruebas: jamás se construye un adaptador real (ni con credenciales).
         from app.channels.simulated import SimulatedChannelAdapter
