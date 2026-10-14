@@ -1,7 +1,7 @@
 """Informe gratis de la página pública (feature 030).
 
 El visitante (sin cuenta) elige un municipio y su precio; el informe muestra los eventos de
-los próximos 6 meses con el precio sugerido por el MISMO cálculo de la app
+los próximos 3 meses con el precio sugerido por el MISMO cálculo de la app
 (`suggest_price_v2`). Gratis van los 3 más importantes; el resto, con cuenta.
 
 Costos acotados:
@@ -40,7 +40,7 @@ from app.services.usage_service import local_today
 
 log = logging.getLogger(__name__)
 
-HORIZON_DAYS = 180
+HORIZON_DAYS = 90  # lo que las agendas públicas suelen publicar (decisión del host)
 FREE_EVENTS = 3
 CACHE_DAYS = 7
 REPORTS_PER_VISITOR_DAY = 10
@@ -196,6 +196,15 @@ def _validate(inp: ReportInput) -> Municipality:
     return m
 
 
+def _name_key(name: str) -> str:
+    """'Beéle — Borondo Tour' y 'Beéle - Borondo Tour' son el mismo evento."""
+    import re
+    import unicodedata
+
+    plain = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode().lower()
+    return " ".join(re.sub(r"[^a-z0-9]+", " ", plain).split())
+
+
 async def _events(session: AsyncSession, keys: list[str], today: date) -> list[Event]:
     until = today + timedelta(days=HORIZON_DAYS)
     rows = (
@@ -210,7 +219,7 @@ async def _events(session: AsyncSession, keys: list[str], today: date) -> list[E
     # Mismo evento visto en dos ciudades del área (p. ej. Medellín y Sabaneta): una vez.
     seen, out = set(), []
     for ev in sorted(rows, key=lambda e: (_REL_ORDER.get(e.relevance, 3), e.start_date)):
-        k = (ev.name.strip().lower(), ev.start_date)
+        k = (_name_key(ev.name), ev.start_date)
         if k not in seen:
             seen.add(k)
             out.append(ev)
@@ -346,7 +355,9 @@ async def full_report(session: AsyncSession, account_id: int) -> dict | None:
 
 async def email_report_once(session: AsyncSession, account_id: int, email: str, lang: str,
                             sender) -> bool:
-    """Envía el informe completo por correo una sola vez (tras verificar el correo)."""
+    """Envía el resumen del informe por correo una sola vez (tras verificar el correo).
+
+    Solo los más importantes: la lista completa y actualizada vive en la app (retención)."""
     from app.email import templates
 
     rep = await report_of(session, account_id)

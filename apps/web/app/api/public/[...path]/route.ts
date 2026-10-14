@@ -9,6 +9,7 @@ const ALLOWED: Record<string, "GET" | "POST"> = {
   report: "POST",
   waitlist: "POST",
   visit: "POST",
+  unsubscribe: "POST",
 };
 
 function visitorIp(req: NextRequest): string {

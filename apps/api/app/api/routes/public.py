@@ -104,3 +104,19 @@ async def visit(session: AsyncSession = Depends(get_session)):
     await public_service.bump(session, public_service.VISIT)
     await session.commit()
     return {"ok": True}
+
+
+class UnsubscribeRequest(BaseModel):
+    u: int
+    t: str = Field(max_length=64)
+
+
+@router.post("/unsubscribe")
+async def unsubscribe(req: UnsubscribeRequest, session: AsyncSession = Depends(get_session)):
+    """Apaga el resumen semanal desde el enlace firmado del correo (sin sesión)."""
+    from app.services import digest_service
+
+    ok = await digest_service.unsubscribe(session, req.u, req.t)
+    if not ok:
+        return JSONResponse(status_code=400, content={"code": "invalid_link", "detail": "Enlace no válido"})
+    return {"ok": True}

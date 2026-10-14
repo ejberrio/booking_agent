@@ -8,6 +8,11 @@
 3. **Precios**: el visitante escribe su precio normal por noche (y, si quiere, el de viernes/sábado); el informe muestra el precio sugerido en cada evento con el mismo cálculo de la app. No se inventan precios de mercado (eso es la #148).
 4. **Muestra gratis y completo con cuenta**: gratis, los 3 eventos más importantes de los próximos 6 meses con su precio sugerido; con cuenta, los 6 meses completos en la app y por correo.
 
+### Ajustes tras la prueba en staging (2026-10-14)
+5. **Horizonte de 3 meses** (las agendas públicas rara vez publican más allá): el informe promete "próximos 3 meses" y, con cuenta, se actualiza cada semana.
+6. **Correo con resumen** (5 eventos + enlace al informe en vivo), no la lista completa: el valor vive en la app.
+7. **Resumen semanal por correo** cada lunes (noches de las próximas 2 semanas con sugerencia, enlaces para aplicarlo sin conexión y eventos nuevos de la zona); se apaga desde el correo (enlace firmado) o en Ajustes.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 — Informe gratis en un minuto (Priority: P1)

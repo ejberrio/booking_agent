@@ -313,6 +313,11 @@ export const api = {
     }),
   syncIcal: () => req<IcalReport>(`/manual/ical/sync`, { method: "POST" }),
   myReport: () => req<MyReport>(`/report/mine`),
+  digest: () => req<{ enabled: boolean; available: boolean }>(`/account/digest`),
+  setDigest: (enabled: boolean) =>
+    req<{ enabled: boolean; available: boolean }>(`/account/digest`, {
+      method: "PUT", body: JSON.stringify({ enabled }),
+    }),
   adminBeta: () => req<AdminBeta>(`/admin/beta`),
   patchBeta: (body: { enabled?: boolean; quota?: number; city_budget?: number }) =>
     req<AdminBeta>(`/admin/beta`, { method: "PATCH", body: JSON.stringify(body) }),

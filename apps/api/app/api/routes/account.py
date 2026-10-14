@@ -178,3 +178,36 @@ async def account_usage(
         "search": {"today": await usage_service.searches_on(session, today),
                    "limit": await usage_service.search_limit(session, ctx.account_id)},
     }
+
+
+# --------- resumen semanal por correo (feature 030) ---------
+
+
+class DigestIn(BaseModel):
+    enabled: bool
+
+
+@router.get("/account/digest")
+async def get_digest(
+    session: AsyncSession = Depends(get_session), ctx: RequestContext = Depends(require_ctx)
+):
+    from app.models.auth import AppUser
+
+    user = await session.get(AppUser, ctx.user_id) if ctx.user_id else None
+    return {"enabled": bool(user and user.weekly_digest), "available": user is not None}
+
+
+@router.put("/account/digest")
+async def put_digest(
+    req: DigestIn,
+    session: AsyncSession = Depends(get_session),
+    ctx: RequestContext = Depends(require_ctx),
+):
+    from app.models.auth import AppUser
+
+    user = await session.get(AppUser, ctx.user_id) if ctx.user_id else None
+    if user is None:
+        raise HTTPException(status_code=409, detail="Disponible al entrar con tu usuario")
+    user.weekly_digest = req.enabled
+    await session.commit()
+    return {"enabled": user.weekly_digest, "available": True}

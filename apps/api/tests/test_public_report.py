@@ -240,3 +240,65 @@ async def test_aislamiento_y_visitas(client, session, mail):
     tok = (await client.post("/auth/verify-email", json={"token": link})).json()["token"]
     assert (await client.get("/admin/beta", headers=_auth(tok))).status_code == 403
     assert (await client.get("/report/mine", headers=_auth(tok))).status_code == 404
+
+
+def test_mismo_evento_con_otra_puntuacion_no_se_repite():
+    assert public_service._name_key("Beéle — Borondo Tour") == public_service._name_key(
+        "Beele - Borondo  tour")
+
+
+# --------- resumen semanal (decisión del host: gancho de retención sin conexión) ---------
+
+
+async def test_resumen_semanal_lunes_una_vez_y_se_puede_apagar(session):
+    from decimal import Decimal
+
+    from app.models.auth import AppUser, Membership
+    from app.models.enums import SuggestionStatus
+    from app.models.market import PriceSuggestion
+    from app.models.mixins import _now
+    from app.services import digest_service, manual_service
+    from app.services.manual_service import ManualListing
+    from app.models.enums import ChannelKind
+
+    monday = local_today() - timedelta(days=local_today().weekday())
+    unit = await manual_service.create_apartment(
+        session, 1, name="Apto", city="Sabaneta", weekday_price=Decimal("250000"),
+        listings=[ManualListing(ChannelKind.airbnb, "https://www.airbnb.com/rooms/42", None)],
+        today=monday,
+    )
+    session.add(PriceSuggestion(
+        property_id=unit.property_id, unit_type_id=unit.id, date_from=monday + timedelta(days=4),
+        date_to=monday + timedelta(days=5), suggested_price=Decimal("325000"),
+        status=SuggestionStatus.proposed,
+        rationale={"factors": [{"kind": "event", "label": "x", "event": {"name": "Feria"}}]},
+    ))
+    await event_service.upsert_event(session, name="Concierto nuevo",
+                                     start_date=monday + timedelta(days=20),
+                                     kind=EventKind.concert, relevance=Relevance.high,
+                                     city="Sabaneta")
+    user = AppUser(email="host@example.com", name="Host", email_verified_at=_now(), language="es")
+    session.add(user)
+    await session.flush()
+    session.add(Membership(user_id=user.id, account_id=1, role="owner"))
+    await session.flush()
+
+    mail = FakeEmailSender()
+    # solo los lunes
+    assert await digest_service.send_weekly(session, 1, monday + timedelta(days=1), mail) == 0
+    assert await digest_service.send_weekly(session, 1, monday, mail) == 1
+    msg = mail.sent[-1]
+    assert "1 noche" in msg.subject and "250.000 → 325.000" in msg.text and "(Feria)" in msg.text
+    assert "multicalendar/42" in msg.text and "Concierto nuevo" in msg.text
+    # una vez por semana aunque el cron corra dos veces
+    assert await digest_service.send_weekly(session, 1, monday, mail) == 0
+    # apagar con el enlace firmado
+    tok = digest_service.unsubscribe_token(user.id)
+    assert f"u={user.id}&t={tok}" in msg.text
+    assert await digest_service.unsubscribe(session, user.id, "malo") is False
+    assert await digest_service.unsubscribe(session, user.id, tok) is True
+    await session.refresh(user)
+    assert user.weekly_digest is False
+    acc = await session.get(Account, 1)
+    acc.digest_sent_on = None
+    assert await digest_service.send_weekly(session, 1, monday, mail) == 0

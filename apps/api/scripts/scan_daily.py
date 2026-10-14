@@ -29,6 +29,8 @@ from app.models.mixins import _now
 from app.models.property import UnitType
 from app.search.tavily import TavilyProvider
 from app.services import (
+    auth_service,
+    digest_service,
     event_service,
     ical_service,
     intelligence_service,
@@ -192,6 +194,16 @@ async def run_all(today: date | None = None, *, search=None, llm=None, market_fa
                     summary += f" búsquedas omitidas por el tope diario={m_search.skipped}"
                 await session.commit()
                 print(f"scan_daily: cuenta {account_id} {summary}")
+                # Feature 030: los lunes, resumen semanal por correo (tras las sugerencias).
+                try:
+                    sent = await digest_service.send_weekly(
+                        session, account_id, usage_service.local_today(),
+                        auth_service.get_email_sender(),
+                    )
+                    if sent:
+                        print(f"scan_daily: cuenta {account_id} resumen semanal enviado={sent}")
+                except Exception as exc:  # noqa: BLE001 — el correo no frena el escaneo
+                    print(f"scan_daily: cuenta {account_id} resumen falló ({type(exc).__name__}).")
         except Exception as exc:  # noqa: BLE001 — el fallo de una cuenta no detiene a las demás
             print(f"scan_daily: cuenta {account_id} falló ({type(exc).__name__}); se continúa.")
             await _record_failure(account_id, exc)

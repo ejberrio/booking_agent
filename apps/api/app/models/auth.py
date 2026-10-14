@@ -29,6 +29,8 @@ class AppUser(Base, TimestampMixin):
     language: Mapped[str] = mapped_column(String(5), default="es")
     is_platform_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Resumen semanal por correo (feature 030); se apaga desde el correo o en Ajustes.
+    weekly_digest: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
 
 
 class Membership(Base, TimestampMixin):

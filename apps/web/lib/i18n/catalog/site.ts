@@ -85,6 +85,8 @@ const es = {
             "precio, publicar en tu channel manager lo que apruebes, enviarte correos de acceso y " +
             "avisos al celular, y mantener la seguridad. No vendemos tus datos, no hacemos " +
             "publicidad y no los usamos para entrenar modelos de IA propios.",
+          "Un resumen semanal por correo con tus sugerencias y eventos nuevos; lo apagas desde el " +
+            "mismo correo o en Ajustes.",
         ],
       },
       {
@@ -230,6 +232,8 @@ const en: Shape = {
             "publish what you approve to your channel manager, send you sign-in emails and phone " +
             "alerts, and keep things secure. We do not sell your data, show ads, or use it to " +
             "train our own AI models.",
+          "A weekly email summary with your suggestions and new events; you can turn it off from " +
+            "the email itself or in Settings.",
         ],
       },
       {
@@ -374,6 +378,8 @@ const pt: Shape = {
             "preço, publicar no seu channel manager o que você aprovar, enviar e-mails de acesso " +
             "e avisos ao celular, e manter a segurança. Não vendemos seus dados, não fazemos " +
             "publicidade e não os usamos para treinar modelos de IA próprios.",
+          "Um resumo semanal por e-mail com suas sugestões e eventos novos; você o desativa no " +
+            "próprio e-mail ou em Configurações.",
         ],
       },
       {

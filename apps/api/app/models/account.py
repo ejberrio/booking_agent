@@ -8,9 +8,9 @@
 from __future__ import annotations
 
 import enum
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String
+from sqlalchemy import Date, DateTime, Enum, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column
 
 from app.db.base import Base
@@ -42,6 +42,8 @@ class Account(Base, TimestampMixin):
     # Origen del registro (feature 030): open (registro abierto, cuenta contra el cupo),
     # invite, admin; NULL = cuentas anteriores.
     signup_source: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    # Último resumen semanal enviado (feature 030): evita repetirlo si el cron corre dos veces.
+    digest_sent_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     # Feature 029: "connected" (Channel Manager) | "manual" (sin conexión: StayLever guarda los
     # precios y el anfitrión los aplica a mano en cada plataforma; nada se publica).
     channel_mode: Mapped[str] = mapped_column(String(12), default="connected")
