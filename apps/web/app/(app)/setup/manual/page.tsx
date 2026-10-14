@@ -64,10 +64,10 @@ export default function ManualSetupPage() {
           <div className="space-y-2 border-t pt-3">
             <p className="text-sm font-medium">{t.listings}</p>
             <p className="text-xs text-muted-foreground">{t.listingsHint}</p>
-            <Input type="url" placeholder={t.airbnbUrl} value={f.airbnb_url} onChange={set("airbnb_url")} />
-            <Input type="url" placeholder={t.airbnbIcal} value={f.airbnb_ical} onChange={set("airbnb_ical")} />
-            <Input type="url" placeholder={t.bookingUrl} value={f.booking_url} onChange={set("booking_url")} />
-            <Input type="url" placeholder={t.bookingIcal} value={f.booking_ical} onChange={set("booking_ical")} />
+            <Input type="text" inputMode="url" autoCapitalize="none" placeholder={t.airbnbUrl} value={f.airbnb_url} onChange={set("airbnb_url")} />
+            <Input type="text" inputMode="url" autoCapitalize="none" placeholder={t.airbnbIcal} value={f.airbnb_ical} onChange={set("airbnb_ical")} />
+            <Input type="text" inputMode="url" autoCapitalize="none" placeholder={t.bookingUrl} value={f.booking_url} onChange={set("booking_url")} />
+            <Input type="text" inputMode="url" autoCapitalize="none" placeholder={t.bookingIcal} value={f.booking_ical} onChange={set("booking_ical")} />
             <p className="text-xs text-muted-foreground">{t.icalHelp}</p>
           </div>
           <Button type="submit" className="w-full" disabled={busy || !f.name || !f.city || !num(f.weekday)}>

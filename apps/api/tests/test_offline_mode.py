@@ -185,3 +185,14 @@ async def test_aislamiento_otra_cuenta_no_ve_los_apartamentos(session, other_ses
     await session.commit()
     set_channel_mode(other_session, None)
     assert await manual_service.overview(other_session) == []
+
+
+def test_enlaces_sin_https_se_normalizan():
+    assert manual_service._url("www.booking.com/hotel/co/x.html", 500) == (
+        "https://www.booking.com/hotel/co/x.html")
+    assert manual_service._url("http://airbnb.com.co/rooms/1", 500) == "https://airbnb.com.co/rooms/1"
+    assert manual_service._url("webcal://www.airbnb.com/calendar/ical/1.ics", 1000).startswith(
+        "https://www.airbnb.com/")
+    for bad in ("ftp://x.com/a", "javascript:alert(1)", "hola"):
+        with pytest.raises(ManualError):
+            manual_service._url(bad, 500)

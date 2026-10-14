@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import re
 import uuid
+from urllib.parse import urlparse
 from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import Decimal
@@ -43,11 +44,19 @@ class ManualListing:
 
 
 def _url(value: str | None, limit: int) -> str | None:
+    """Normaliza a https: acepta 'www.booking.com/…', 'http://…' y 'webcal://…' (iCal)."""
     value = (value or "").strip()
     if not value:
         return None
-    if not value.startswith("https://") or len(value) > limit:
-        raise ManualError("los enlaces deben empezar con https:// (cópialos desde la plataforma).")
+    scheme, sep, rest = value.partition("://")
+    if not sep:
+        rest = value
+    elif scheme.lower() not in ("http", "https", "webcal"):
+        raise ManualError("ese enlace no es válido (cópialo desde la plataforma).")
+    value = "https://" + rest
+    host = (urlparse(value).hostname or "")
+    if "." not in host or len(value) > limit:
+        raise ManualError("ese enlace no es válido (cópialo desde la plataforma).")
     return value
 
 

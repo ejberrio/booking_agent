@@ -51,10 +51,10 @@ function ListingsEditor({ apartment }: { apartment: ManualApartment }) {
     setF({ ...f, [k]: e.target.value });
   return (
     <div className="space-y-2">
-      <Input type="url" placeholder={t.setup.airbnbUrl} value={f.airbnb_url} onChange={set("airbnb_url")} />
-      <Input type="url" placeholder={t.setup.airbnbIcal} value={f.airbnb_ical} onChange={set("airbnb_ical")} />
-      <Input type="url" placeholder={t.setup.bookingUrl} value={f.booking_url} onChange={set("booking_url")} />
-      <Input type="url" placeholder={t.setup.bookingIcal} value={f.booking_ical} onChange={set("booking_ical")} />
+      <Input type="text" inputMode="url" autoCapitalize="none" placeholder={t.setup.airbnbUrl} value={f.airbnb_url} onChange={set("airbnb_url")} />
+      <Input type="text" inputMode="url" autoCapitalize="none" placeholder={t.setup.airbnbIcal} value={f.airbnb_ical} onChange={set("airbnb_ical")} />
+      <Input type="text" inputMode="url" autoCapitalize="none" placeholder={t.setup.bookingUrl} value={f.booking_url} onChange={set("booking_url")} />
+      <Input type="text" inputMode="url" autoCapitalize="none" placeholder={t.setup.bookingIcal} value={f.booking_ical} onChange={set("booking_ical")} />
       <p className="text-xs text-muted-foreground">{t.setup.icalHelp}</p>
       <Button onClick={() => save.mutate()} disabled={save.isPending}>{t.card.save}</Button>
     </div>
