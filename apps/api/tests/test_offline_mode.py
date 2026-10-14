@@ -147,7 +147,7 @@ async def test_asistente_registra_y_recuerda_aplicar_a_mano(session):
     reply = await run_turn(session, adapter, llm, conversation_id=conv.id, user_text="sube 10%")
     done = await resolve_action(session, adapter, conversation_id=conv.id,
                                 action_id=reply.pending_action_id, confirm=True)
-    assert done.applied and "sin conexión" in done.text
+    assert done.applied and "sin conexión" in done.text and "publiqué" not in done.text
     assert await pricing_service.get_price(session, unit.id, day) == D("275000")
 
 

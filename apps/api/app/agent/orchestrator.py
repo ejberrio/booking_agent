@@ -36,6 +36,16 @@ _MANUAL_NOTE = {
           "Booking (Sugestões e Configurações têm os links).",
 }
 
+# Sin conexión nada se publica: el texto de "hecho" dice "registré" en vez de "publiqué".
+_MANUAL_VERBS = (("publiqué", "registré"), ("published", "recorded"), ("publiquei", "registrei"))
+
+
+def _manual_done(text: str, language: str) -> str:
+    for old, new in _MANUAL_VERBS:
+        text = text.replace(old, new)
+    return text + _MANUAL_NOTE.get(language, _MANUAL_NOTE["es"])
+
+
 MAX_STEPS = 10  # llamadas al modelo por turno (feature 032: antes 6)
 
 
@@ -315,7 +325,7 @@ async def _confirm(
     done = tr(outcome.summary)
     if getattr(channel, "manual", False):
         # Modo sin conexión (feature 029): nada se publicó; el anfitrión lo aplica a mano.
-        done += _MANUAL_NOTE.get(language, _MANUAL_NOTE["es"])
+        done = _manual_done(done, language)
     await _persist(session, conversation_id, MessageRole.assistant, done)
     return AgentReply(done, applied=True, events=events)
 
