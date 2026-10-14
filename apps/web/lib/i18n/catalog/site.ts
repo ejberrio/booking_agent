@@ -1,6 +1,6 @@
 // Páginas públicas (feature 026, entrega 4): presentación y política de privacidad. Google las
 // exige para publicar "Entrar con Google". El español es la referencia: en/pt con las MISMAS claves.
-const CONTACT = "everberrio.col@gmail.com";
+const CONTACT = "hola@staylever.com";
 
 const es = {
   contact: CONTACT,
