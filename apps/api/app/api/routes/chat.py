@@ -1,5 +1,6 @@
 import json
 from collections.abc import AsyncIterator
+from dataclasses import dataclass, field
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -11,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.orchestrator import run_turn
 from app.api.routes.sync import get_adapter
+from app.core.context import RequestContext, require_ctx
 from app.db.session import get_session
 from app.llm.client import default_llm
 from app.models.agent import AgentAction, Conversation, Message
@@ -31,6 +33,62 @@ class ChatResponse(BaseModel):
     conversation_id: int
     pending_action_id: int | None = None
     applied: bool = False
+    # Feature 027: mensajes del mes (used/limit/resets_on/warning/exhausted).
+    quota: dict | None = None
+    limited: bool = False
+
+
+_LIMIT_TEXT = {
+    "es": "Alcanzaste el límite de {limit} mensajes al asistente de este mes. Se renueva el {date}. "
+          "Las sugerencias diarias y aprobar o rechazar cambios siguen funcionando.",
+    "en": "You reached this month's limit of {limit} assistant messages. It renews on {date}. "
+          "Daily suggestions and approving or rejecting changes keep working.",
+    "pt": "Você atingiu o limite de {limit} mensagens ao assistente deste mês. Ele renova em {date}. "
+          "As sugestões diárias e aprovar ou rejeitar mudanças continuam funcionando.",
+}
+
+
+@dataclass
+class _Turn:
+    text: str
+    pending_action_id: int | None = None
+    applied: bool = False
+    events: list = field(default_factory=list)
+    limited: bool = False
+
+
+async def _metered_turn(
+    session: AsyncSession, adapter, ctx: RequestContext, conv_id: int, req: ChatRequest
+) -> tuple[_Turn, dict]:
+    """Un turno del asistente respetando el límite mensual de la cuenta (feature 027).
+
+    Con una acción pendiente de confirmar NO se bloquea: la respuesta del anfitrión (sí/no)
+    siempre se atiende (principio III). Al límite y sin pendiente, no se llama a la IA.
+    """
+    from app.agent.orchestrator import _pending_action, _persist
+    from app.services import usage_service
+
+    quota = await usage_service.chat_quota(session, ctx.account_id)
+    pending = await _pending_action(session, conv_id)
+    if quota.exhausted and pending is None:
+        text = _LIMIT_TEXT.get(req.language, _LIMIT_TEXT["es"]).format(
+            limit=quota.limit, date=quota.resets_on.strftime("%d/%m/%Y")
+        )
+        await _persist(session, conv_id, MessageRole.user, req.message)
+        await _persist(session, conv_id, MessageRole.assistant, text)
+        return _Turn(text, limited=True), quota.as_dict()
+    await usage_service.record(session, usage_service.CHAT_MESSAGE)
+    llm = default_llm()
+    metered = usage_service.MeteredLLM(llm, session, usage_service.CHAT) if llm else None
+    reply = await run_turn(
+        session, adapter, metered, conversation_id=conv_id,
+        user_text=req.message, language=req.language,
+    )
+    quota.used += 1
+    return (
+        _Turn(reply.text, reply.pending_action_id, reply.applied, list(reply.events)),
+        quota.as_dict(),
+    )
 
 
 async def _ensure_conversation(session: AsyncSession, conversation_id: int | None) -> int:
@@ -46,38 +104,42 @@ async def _ensure_conversation(session: AsyncSession, conversation_id: int | Non
 
 
 @router.post("", response_model=ChatResponse)
-async def chat(req: ChatRequest, session: AsyncSession = Depends(get_session)):
+async def chat(
+    req: ChatRequest,
+    session: AsyncSession = Depends(get_session),
+    ctx: RequestContext = Depends(require_ctx),
+):
     adapter = get_adapter(session)
     try:
         conv_id = await _ensure_conversation(session, req.conversation_id)
-        reply = await run_turn(
-            session, adapter, default_llm(), conversation_id=conv_id,
-            user_text=req.message,
-            language=req.language,
-        )
+        reply, quota = await _metered_turn(session, adapter, ctx, conv_id, req)
         await session.commit()
         return ChatResponse(
             reply=reply.text,
             conversation_id=conv_id,
             pending_action_id=reply.pending_action_id,
             applied=reply.applied,
+            quota=quota,
+            limited=reply.limited,
         )
     finally:
         await adapter.aclose()
 
 
 @router.post("/stream")
-async def chat_stream(req: ChatRequest, session: AsyncSession = Depends(get_session)):
+async def chat_stream(
+    req: ChatRequest,
+    session: AsyncSession = Depends(get_session),
+    ctx: RequestContext = Depends(require_ctx),
+):
     """Streaming SSE: emite el estado de las herramientas y el resultado final."""
     adapter = get_adapter(session)
     conv_id = await _ensure_conversation(session, req.conversation_id)
-    reply = await run_turn(
-        session, adapter, default_llm(), conversation_id=conv_id,
-        user_text=req.message,
-        language=req.language,
-    )
-    await session.commit()
-    await adapter.aclose()
+    try:
+        reply, quota = await _metered_turn(session, adapter, ctx, conv_id, req)
+        await session.commit()
+    finally:
+        await adapter.aclose()
 
     async def event_stream() -> AsyncIterator[str]:
         for ev in reply.events:
@@ -87,6 +149,8 @@ async def chat_stream(req: ChatRequest, session: AsyncSession = Depends(get_sess
             "conversation_id": conv_id,
             "pending_action_id": reply.pending_action_id,
             "applied": reply.applied,
+            "quota": quota,
+            "limited": reply.limited,
         }
         yield f"event: done\ndata: {json.dumps(done)}\n\n"
 

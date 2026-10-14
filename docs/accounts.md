@@ -74,6 +74,18 @@ la contraseña de siempre ya no sirve para entrar.
   código por correo si entra solo con Google). En Administración aparece como "Eliminada".
 - Inventario completo: [data-inventory.md](data-inventory.md).
 
+## Uso y límites de IA (feature 027)
+
+- Cada cuenta tiene **300 mensajes al asistente por mes** y **5 búsquedas web por día** en el
+  escaneo diario (valores de la plataforma: `AI_CHAT_LIMIT_MONTH`, `AI_SEARCH_LIMIT_DAY`).
+- Al 80 % el anfitrión ve un aviso; al 100 % el asistente responde que llegó al límite y cuándo
+  se renueva (día 1 del mes, hora de Colombia) sin llamar a la IA. Si hay un cambio pendiente de
+  confirmar, su confirmación siempre se atiende. Las sugerencias diarias no cuentan.
+- **Administración → Uso de IA**: por mes y cuenta, mensajes, llamadas, tokens, búsquedas y costo
+  estimado; los límites de cada cuenta se cambian ahí ("Por defecto" vuelve a los de la plataforma).
+- Costos estimados con `AI_PRICES` (JSON, USD por millón de tokens `[entrada, salida]` por modelo y
+  `"search"` por búsqueda). Un modelo sin precio se cuenta como "sin precio".
+
 ## Interruptor de transición (`AUTH_MODE`, servicio api)
 
 - `legacy` (por defecto): con sesión, la cuenta de la sesión; sin sesión, la cuenta nº 1. Permite

@@ -1,6 +1,8 @@
 import { getActiveLang } from "@/lib/i18n/core";
 import { trServer } from "@/lib/i18n/server-messages";
 import type {
+  AccountUsage,
+  AdminUsage,
   ApplyResult,
   AvailabilityAction,
   AvailabilityApplyResult,
@@ -293,6 +295,11 @@ export const api = {
       body: JSON.stringify({ registration_open: open }),
     }),
   sendVerification: () => req<{ sent: boolean }>(`/auth/send-verification`, { method: "POST" }),
+  accountUsage: () => req<AccountUsage>(`/account/usage`),
+  adminUsage: (month?: string) =>
+    req<AdminUsage>(`/admin/usage${month ? `?month=${month}` : ""}`),
+  setAccountLimits: (id: number, body: { chat_limit_month?: number | null; search_limit_day?: number | null }) =>
+    req<{ id: number }>(`/admin/accounts/${id}/limits`, { method: "PATCH", body: JSON.stringify(body) }),
   acceptTerms: (version: string) =>
     req<Me>(`/auth/terms/accept`, { method: "POST", body: JSON.stringify({ version }) }),
   exportAccount: () => req<Record<string, unknown>>(`/account/export`),

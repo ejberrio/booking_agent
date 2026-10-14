@@ -86,3 +86,37 @@ async def patch_settings(req: SettingsPatch, session: AsyncSession = Depends(get
     await invite_service.set_registration_open(session, req.registration_open)
     await session.commit()
     return {"registration_open": req.registration_open}
+
+
+# --------- uso de IA (feature 027) ---------
+
+
+@router.get("/usage")
+async def ai_usage(month: str | None = None):
+    from datetime import date
+
+    from app.services.usage_service import local_today
+
+    try:
+        day = date.fromisoformat(f"{month}-01") if month else local_today()
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Mes inválido (AAAA-MM)") from None
+    return await admin_service.usage(day)
+
+
+class LimitsRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    chat_limit_month: int | None = Field(default=None, ge=0, le=100_000)
+    search_limit_day: int | None = Field(default=None, ge=0, le=1_000)
+
+
+@router.patch("/accounts/{account_id}/limits")
+async def set_limits(account_id: int, req: LimitsRequest):
+    fields = {k: getattr(req, k) for k in req.model_fields_set}
+    try:
+        return await admin_service.set_limits(account_id, **fields)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from None
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from None

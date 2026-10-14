@@ -157,3 +157,22 @@ async def delete_account(
         except Exception:  # noqa: BLE001 — el borrado ya ocurrió; el correo es cortesía
             pass
     return {"status": "deleted"}
+
+
+# --------- uso de IA de la cuenta (feature 027) ---------
+
+
+@router.get("/account/usage")
+async def account_usage(
+    session: AsyncSession = Depends(get_session), ctx: RequestContext = Depends(require_ctx)
+):
+    from app.services import usage_service
+
+    today = usage_service.local_today()
+    quota = await usage_service.chat_quota(session, ctx.account_id, today)
+    return {
+        "month": today.isoformat()[:7],
+        "chat": quota.as_dict(),
+        "search": {"today": await usage_service.searches_on(session, today),
+                   "limit": await usage_service.search_limit(session, ctx.account_id)},
+    }

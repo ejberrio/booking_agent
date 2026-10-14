@@ -10,6 +10,7 @@ import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
 import { dateTime } from "@/lib/format";
+import type { AdminUsageRow } from "@/lib/types";
 import { useI18n } from "@/lib/i18n";
 
 // Panel del administrador de plataforma (feature 026, entrega 3). La API exige el rol: aquí
@@ -26,6 +27,7 @@ export default function AdminPage() {
       <h1 className="text-xl font-semibold">{m.admin.title}</h1>
       <InvitesCard />
       <AccountsCard />
+      <UsageAdminCard />
       <RegistrationCard />
     </div>
   );
@@ -204,6 +206,101 @@ function RegistrationCard() {
           {t.off}
         </Button>
       </div>
+    </Card>
+  );
+}
+
+
+function LimitsEditor({ row }: { row: AdminUsageRow }) {
+  const { m } = useI18n();
+  const t = m.usage.admin;
+  const qc = useQueryClient();
+  const [chat, setChat] = useState(String(row.chat_limit_month));
+  const [search, setSearch] = useState(String(row.search_limit_day));
+  const save = useMutation({
+    mutationFn: (body: { chat_limit_month: number | null; search_limit_day: number | null }) =>
+      api.setAccountLimits(row.id, body),
+    onSuccess: () => {
+      toast.success(t.saved);
+      qc.invalidateQueries({ queryKey: ["admin-usage"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      <Input className="h-8 w-20" inputMode="numeric" value={chat}
+        onChange={(e) => setChat(e.target.value.replace(/\D/g, ""))} />
+      <Input className="h-8 w-16" inputMode="numeric" value={search}
+        onChange={(e) => setSearch(e.target.value.replace(/\D/g, ""))} />
+      <Button className="h-8 px-2 text-xs" disabled={save.isPending || !chat || !search}
+        onClick={() => save.mutate({ chat_limit_month: Number(chat), search_limit_day: Number(search) })}>
+        {t.save}
+      </Button>
+      {row.custom_limits && (
+        <Button className="h-8 bg-muted px-2 text-xs text-foreground" disabled={save.isPending}
+          onClick={() => save.mutate({ chat_limit_month: null, search_limit_day: null })}>
+          {t.reset}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function UsageAdminCard() {
+  const { m } = useI18n();
+  const t = m.usage.admin;
+  const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const usage = useQuery({ queryKey: ["admin-usage", month], queryFn: () => api.adminUsage(month) });
+  const rows = usage.data?.accounts ?? [];
+  const unpriced = rows.reduce((n, r) => n + r.unpriced, 0);
+  return (
+    <Card className="space-y-3">
+      <CardTitle>{t.title}</CardTitle>
+      <CardDescription>{t.description}</CardDescription>
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <label className="flex items-center gap-2">
+          {t.month}
+          <Input type="month" className="h-8 w-40" value={month}
+            onChange={(e) => e.target.value && setMonth(e.target.value)} />
+        </label>
+        {usage.data && (
+          <span className="font-medium">{t.total(usage.data.total_cost_usd.toFixed(2))}</span>
+        )}
+      </div>
+      {unpriced > 0 && <p className="text-xs text-amber-600">{t.unpriced(unpriced)}</p>}
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-xs">
+          <thead className="text-muted-foreground">
+            <tr>
+              <th className="py-1 pr-2">#</th>
+              <th className="py-1 pr-2">{t.messages}</th>
+              <th className="py-1 pr-2">{t.calls}</th>
+              <th className="py-1 pr-2">{t.tokens}</th>
+              <th className="py-1 pr-2">{t.searches}</th>
+              <th className="py-1 pr-2">{t.cost}</th>
+              <th className="py-1">{t.limits}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {rows.map((r) => (
+              <tr key={r.id}>
+                <td className="py-2 pr-2">
+                  #{r.id} {r.name || "—"}
+                </td>
+                <td className="py-2 pr-2">{r.chat_messages}/{r.chat_limit_month}</td>
+                <td className="py-2 pr-2">{r.llm_calls}</td>
+                <td className="py-2 pr-2">{(r.input_tokens + r.output_tokens).toLocaleString()}</td>
+                <td className="py-2 pr-2">{r.searches}</td>
+                <td className="py-2 pr-2">{r.cost_usd.toFixed(4)}</td>
+                <td className="py-2">
+                  {r.status === "deleted" ? "—" : <LimitsEditor key={`${r.id}-${r.chat_limit_month}-${r.search_limit_day}`} row={r} />}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {rows.length === 0 && <p className="text-sm text-muted-foreground">{t.empty}</p>}
     </Card>
   );
 }
