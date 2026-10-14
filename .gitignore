@@ -50,3 +50,6 @@ google-services.json
 *service-account*.json
 *.jks
 *.keystore
+
+# Copias de datos descargadas desde Ajustes → Tus datos (feature 028): datos personales
+staylever-[0-9]*.json
