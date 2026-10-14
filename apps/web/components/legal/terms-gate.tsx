@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import type { Me } from "@/lib/types";
 
 // Feature 028: sin aceptar la versión vigente de Términos y Privacidad la API no responde
 // (403 terms_required); esta pantalla lo explica y registra la aceptación.
@@ -19,7 +20,12 @@ export function TermsGate() {
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
-    const onRequired = () => qc.invalidateQueries({ queryKey: ["me"] });
+    // Solo la primera vez: con la pantalla ya abierta, los demás 403 no vuelven a consultar.
+    const onRequired = () => {
+      if (!qc.getQueryData<Me>(["me"])?.user.terms_required) {
+        void qc.invalidateQueries({ queryKey: ["me"] });
+      }
+    };
     window.addEventListener("sl:terms-required", onRequired);
     return () => window.removeEventListener("sl:terms-required", onRequired);
   }, [qc]);
