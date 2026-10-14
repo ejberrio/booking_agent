@@ -128,6 +128,13 @@ class Settings(BaseSettings):
     search_api_key: str | None = None
     search_base_url: str = "https://api.tavily.com"
 
+    # Sugerencias: no repetir lo que el host ya decidió (aplicó o rechazó). Solo se
+    # vuelve a proponer una noche decidida si el nuevo precio difiere del decidido más
+    # de este % (o cambia de sentido). Y no se sugiere nada si el precio actual ya está
+    # a menos de la tolerancia del sugerido.
+    suggestion_repeat_threshold_pct: float = 15.0
+    suggestion_same_price_tolerance_pct: float = 1.0
+
     # Observabilidad
     sentry_dsn: str | None = None  # si está, se activa Sentry; sin él es no-op
     log_level: str = "INFO"

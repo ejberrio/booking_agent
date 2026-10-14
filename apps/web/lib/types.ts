@@ -139,6 +139,18 @@ export interface Suggestion {
   confidence: string | null;
   status: string;
   applied_from?: string; // solo en la respuesta de apply (recorte de días pasados)
+  // Decisión anterior sobre estas noches cuando se re-propone por cambio drástico.
+  previous?: SuggestionPrevious | null;
+}
+
+export interface SuggestionPrevious {
+  suggestion_id: number;
+  status: "applied" | "rejected";
+  price: string;
+  date_from: string;
+  date_to: string;
+  decided_on: string | null;
+  threshold_pct: number;
 }
 
 export interface Poi {

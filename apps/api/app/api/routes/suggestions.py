@@ -27,6 +27,9 @@ def _serialize(s) -> dict:
         "rationale": s.rationale,
         "confidence": str(s.confidence) if s.confidence is not None else None,
         "status": s.status.value,
+        # Decisión anterior sobre estas noches (aplicada/rechazada) cuando se re-propone
+        # por cambio drástico; None en el resto (fix sugerencias repetidas).
+        "previous": (s.rationale or {}).get("previous"),
     }
 
 

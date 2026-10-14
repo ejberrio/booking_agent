@@ -34,6 +34,13 @@ const es = {
   occupiedNote: (sellable: number, total: number, occupied: number) =>
     `${sellable} de ${total} noches · ${occupied} ya reservada${occupied !== 1 ? "s" : ""} o bloqueada${occupied !== 1 ? "s" : ""}`,
   applyOnlyThis: "Aplicar solo esta",
+  // Re-propuesta de noches ya decididas (solo ante un cambio drástico)
+  previousApplied: (price: string, range: string, on: string | null) =>
+    `Ya aplicaste ${price} para ${range}${on ? ` el ${on}` : ""}.`,
+  previousRejected: (price: string, range: string, on: string | null) =>
+    `Ya rechazaste ${price} para ${range}${on ? ` el ${on}` : ""}.`,
+  previousWhy: (pct: number) =>
+    `Vuelve a aparecer porque el precio recomendado cambió más de un ${pct} % o cambió de sentido.`,
   reject: "Rechazar",
 
   // Vista previa del lote
@@ -50,7 +57,8 @@ const es = {
   setMinPrice: "Configurar en Ajustes",
   promoExplain: "Las bajadas se publican como promoción temporal en Booking.com y Airbnb; el precio base no cambia.",
   conditionalDeals: (list: string) => `Además pueden sumarse descuentos condicionales: ${list}.`,
-  overlapsWarn: (list: string) => `Se solapa con promociones activas: ${list}. Al confirmar se crea igualmente.`,
+  overlapsWarn: (list: string) =>
+    `Estas noches ya tienen una promoción activa: ${list}. Si confirmas, se crea otra para las mismas noches; puedes revisarlas o quitar la anterior en Ofertas.`,
   promotionsCreated: (n: number) => `${n} promoción${n !== 1 ? "es" : ""} creada${n !== 1 ? "s" : ""}`,
   /** [texto antes del número, texto después del número] */
   willPublish: (n: number): [string, string] => [
@@ -107,6 +115,12 @@ const en: Shape = {
   occupiedNote: (sellable: number, total: number, occupied: number) =>
     `${sellable} of ${total} nights · ${occupied} already booked or blocked`,
   applyOnlyThis: "Apply only this",
+  previousApplied: (price: string, range: string, on: string | null) =>
+    `You already applied ${price} for ${range}${on ? ` on ${on}` : ""}.`,
+  previousRejected: (price: string, range: string, on: string | null) =>
+    `You already rejected ${price} for ${range}${on ? ` on ${on}` : ""}.`,
+  previousWhy: (pct: number) =>
+    `It's shown again because the recommended price changed by more than ${pct}% or changed direction.`,
   reject: "Reject",
 
   resultTitle: "Result",
@@ -121,7 +135,8 @@ const en: Shape = {
   setMinPrice: "Set it in Settings",
   promoExplain: "Decreases are published as a temporary promotion on Booking.com and Airbnb; the base price doesn't change.",
   conditionalDeals: (list: string) => `Conditional discounts may also stack: ${list}.`,
-  overlapsWarn: (list: string) => `Overlaps active promotions: ${list}. Confirming creates it anyway.`,
+  overlapsWarn: (list: string) =>
+    `These nights already have an active promotion: ${list}. If you confirm, another one is created for the same nights; you can review them or remove the old one in Offers.`,
   promotionsCreated: (n: number) => `${n} promotion${n !== 1 ? "s" : ""} created`,
   willPublish: (n: number): [string, string] => [
     "",
@@ -175,6 +190,12 @@ const pt: Shape = {
   occupiedNote: (sellable: number, total: number, occupied: number) =>
     `${sellable} de ${total} noites · ${occupied} já reservada${occupied !== 1 ? "s" : ""} ou bloqueada${occupied !== 1 ? "s" : ""}`,
   applyOnlyThis: "Aplicar só esta",
+  previousApplied: (price: string, range: string, on: string | null) =>
+    `Você já aplicou ${price} para ${range}${on ? ` em ${on}` : ""}.`,
+  previousRejected: (price: string, range: string, on: string | null) =>
+    `Você já rejeitou ${price} para ${range}${on ? ` em ${on}` : ""}.`,
+  previousWhy: (pct: number) =>
+    `Aparece de novo porque o preço recomendado mudou mais de ${pct}% ou mudou de direção.`,
   reject: "Rejeitar",
 
   resultTitle: "Resultado",
@@ -189,7 +210,8 @@ const pt: Shape = {
   setMinPrice: "Configurar em Configurações",
   promoExplain: "As reduções são publicadas como promoção temporária no Booking.com e no Airbnb; o preço base não muda.",
   conditionalDeals: (list: string) => `Também podem se somar descontos condicionais: ${list}.`,
-  overlapsWarn: (list: string) => `Sobrepõe promoções ativas: ${list}. Ao confirmar, ela é criada mesmo assim.`,
+  overlapsWarn: (list: string) =>
+    `Estas noites já têm uma promoção ativa: ${list}. Se você confirmar, outra será criada para as mesmas noites; você pode revisá-las ou remover a anterior em Ofertas.`,
   promotionsCreated: (n: number) => `${n} promoç${n !== 1 ? "ões" : "ão"} criada${n !== 1 ? "s" : ""}`,
   willPublish: (n: number): [string, string] => [
     n !== 1 ? "Serão publicadas" : "Será publicada",
