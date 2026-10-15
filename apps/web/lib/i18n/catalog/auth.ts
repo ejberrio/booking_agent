@@ -24,6 +24,7 @@ const es = {
     title: "Crear tu cuenta",
     intro: "StayLever está en beta por invitación. Usa el código que te compartieron.",
     introOpen: "Crea tu cuenta para empezar a usar StayLever.",
+    haveCode: "Tengo un código de invitación",
     code: "Código de invitación (SL-XXXX-XXXX)",
     submit: "Crear cuenta",
     sent: "¡Listo! Te enviamos un correo para confirmar tu cuenta. Revisa tu bandeja (y el spam).",
@@ -79,6 +80,7 @@ const es = {
       disabled: "Esta cuenta está desactivada.",
       invite_required: "No encontramos una cuenta con ese Google. StayLever está en beta por invitación: usa tu código para crearla.",
       invite_invalid: "El código no es válido, venció o ya se usó.",
+      beta_full: "La beta está llena por ahora. Déjanos tu correo y te avisamos.",
     },
   },
   account: {
@@ -131,6 +133,7 @@ const en: Shape = {
     title: "Create your account",
     intro: "StayLever is in invite-only beta. Use the code you were given.",
     introOpen: "Create your account to start using StayLever.",
+    haveCode: "I have an invite code",
     code: "Invitation code (SL-XXXX-XXXX)",
     submit: "Create account",
     sent: "Done! We emailed you a link to confirm your account. Check your inbox (and spam).",
@@ -186,6 +189,7 @@ const en: Shape = {
       disabled: "This account is disabled.",
       invite_required: "We couldn't find an account for that Google user. StayLever is invite-only: use your code to create one.",
       invite_invalid: "The code is invalid, expired or already used.",
+      beta_full: "The beta is full for now. Leave your email and we'll let you know.",
     },
   },
   account: {
@@ -236,6 +240,7 @@ const pt: Shape = {
     title: "Criar sua conta",
     intro: "O StayLever está em beta por convite. Use o código que você recebeu.",
     introOpen: "Crie sua conta para começar a usar o StayLever.",
+    haveCode: "Tenho um código de convite",
     code: "Código de convite (SL-XXXX-XXXX)",
     submit: "Criar conta",
     sent: "Pronto! Enviamos um e-mail para confirmar sua conta. Veja sua caixa de entrada (e o spam).",
@@ -291,6 +296,7 @@ const pt: Shape = {
       disabled: "Esta conta está desativada.",
       invite_required: "Não encontramos uma conta para esse Google. O StayLever está em beta por convite: use seu código para criá-la.",
       invite_invalid: "O código não é válido, expirou ou já foi usado.",
+      beta_full: "A beta está cheia por enquanto. Deixe seu e-mail e avisamos.",
     },
   },
   account: {

@@ -85,6 +85,8 @@ const es = {
             "precio, publicar en tu channel manager lo que apruebes, enviarte correos de acceso y " +
             "avisos al celular, y mantener la seguridad. No vendemos tus datos, no hacemos " +
             "publicidad y no los usamos para entrenar modelos de IA propios.",
+          "Un resumen semanal por correo con tus sugerencias y eventos nuevos; lo apagas desde el " +
+            "mismo correo o en Ajustes.",
         ],
       },
       {
@@ -107,6 +109,17 @@ const es = {
             "(fechas, precio y canal) para las estadísticas de precios.",
           "Si borras tu cuenta desde Ajustes, eliminamos de inmediato todos sus datos; las copias " +
             "de seguridad de la base de datos desaparecen solas en un máximo de 7 días.",
+        ],
+      },
+      {
+        title: "Página pública e informe gratis",
+        body: [
+          "Para pedir el informe gratis no necesitas cuenta: guardamos el municipio y los precios " +
+            "que escribes, sin tu nombre ni tu correo. Para limitar abusos usamos un código derivado " +
+            "de tu IP que cambia cada día; no guardamos la IP. Contamos visitas e informes solo como " +
+            "totales por día, sin cookies ni rastreo.",
+          "Si te unes a la lista de espera, guardamos tu correo con tu autorización solo para " +
+            "avisarte de la beta; lo borramos cuando te invitamos, si nos lo pides o a los 12 meses.",
         ],
       },
       {
@@ -219,6 +232,8 @@ const en: Shape = {
             "publish what you approve to your channel manager, send you sign-in emails and phone " +
             "alerts, and keep things secure. We do not sell your data, show ads, or use it to " +
             "train our own AI models.",
+          "A weekly email summary with your suggestions and new events; you can turn it off from " +
+            "the email itself or in Settings.",
         ],
       },
       {
@@ -241,6 +256,17 @@ const en: Shape = {
             "price and channel) for price statistics.",
           "If you delete your account in Settings, we erase all its data right away; database " +
             "backups disappear automatically within 7 days.",
+        ],
+      },
+      {
+        title: "Public page and free report",
+        body: [
+          "You don't need an account to request the free report: we keep the town and prices you " +
+            "type, without your name or email. To limit abuse we use a code derived from your IP " +
+            "that changes every day; we don't store the IP. We count visits and reports only as " +
+            "daily totals, without cookies or tracking.",
+          "If you join the waitlist, we keep your email with your consent only to tell you about " +
+            "the beta; we delete it when we invite you, when you ask, or after 12 months.",
         ],
       },
       {
@@ -352,6 +378,8 @@ const pt: Shape = {
             "preço, publicar no seu channel manager o que você aprovar, enviar e-mails de acesso " +
             "e avisos ao celular, e manter a segurança. Não vendemos seus dados, não fazemos " +
             "publicidade e não os usamos para treinar modelos de IA próprios.",
+          "Um resumo semanal por e-mail com suas sugestões e eventos novos; você o desativa no " +
+            "próprio e-mail ou em Configurações.",
         ],
       },
       {
@@ -374,6 +402,17 @@ const pt: Shape = {
             "e canal) para as estatísticas de preços.",
           "Se você excluir sua conta em Configurações, apagamos todos os seus dados na hora; as " +
             "cópias de segurança do banco de dados desaparecem sozinhas em até 7 dias.",
+        ],
+      },
+      {
+        title: "Página pública e relatório grátis",
+        body: [
+          "Para pedir o relatório grátis você não precisa de conta: guardamos o município e os " +
+            "preços que você digita, sem seu nome nem seu e-mail. Para limitar abusos usamos um " +
+            "código derivado do seu IP que muda todo dia; não guardamos o IP. Contamos visitas e " +
+            "relatórios apenas como totais por dia, sem cookies nem rastreamento.",
+          "Se você entrar na lista de espera, guardamos seu e-mail com sua autorização apenas para " +
+            "avisar da beta; apagamos quando convidamos você, se pedir ou após 12 meses.",
         ],
       },
       {

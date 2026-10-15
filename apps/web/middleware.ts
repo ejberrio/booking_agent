@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { SESSION_COOKIE, looksLikeSessionToken } from "@/lib/session";
+import { SESSION_COOKIE, looksLikeSessionToken, sessionKindFor } from "@/lib/session";
 
 // Páginas y rutas sin sesión (feature 026). hooks: avisos de Beds24 (auth por clave propia).
 const PUBLIC = [
@@ -13,8 +13,10 @@ const PUBLIC = [
   "/welcome",
   "/privacy",
   "/terms",
+  "/unsubscribe",
   "/api/auth/",
   "/api/hooks/",
+  "/api/public/",
 ];
 
 export async function middleware(request: NextRequest) {
@@ -33,6 +35,11 @@ export async function middleware(request: NextRequest) {
       return NextResponse.json({ detail: "Sesión no válida" }, { status: 401 });
     }
     const url = request.nextUrl.clone();
+    if (pathname === "/" && sessionKindFor(request.headers.get("user-agent")) === "web") {
+      // Feature 030: sin sesión, la portada es la página pública (la app va a entrar).
+      url.pathname = "/welcome";
+      return NextResponse.redirect(url);
+    }
     url.pathname = "/login";
     url.search = pathname === "/" ? "" : `?next=${encodeURIComponent(pathname + search)}`;
     return NextResponse.redirect(url);

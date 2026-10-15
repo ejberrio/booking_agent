@@ -74,7 +74,8 @@ async def enable_account(account_id: int, ctx: RequestContext = Depends(require_
 
 @router.get("/settings")
 async def get_settings(session: AsyncSession = Depends(get_session)):
-    return {"registration_open": await invite_service.registration_open(session)}
+    state = await invite_service.registration_state(session)
+    return {"registration_open": state["enabled"]}
 
 
 class SettingsPatch(BaseModel):
@@ -86,6 +87,82 @@ async def patch_settings(req: SettingsPatch, session: AsyncSession = Depends(get
     await invite_service.set_registration_open(session, req.registration_open)
     await session.commit()
     return {"registration_open": req.registration_open}
+
+
+# --------- beta pública (feature 030) ---------
+
+
+@router.get("/beta")
+async def beta(session: AsyncSession = Depends(get_session)):
+    from app.services import public_service
+
+    state = await invite_service.registration_state(session)
+    return {
+        "enabled": state["enabled"],
+        "quota": state["quota"],
+        "used": state["used"],
+        "full": state["full"],
+        "city_budget": state["city_budget"],
+        "searches_today": await public_service.searches_today(session),
+        "reports_total": await public_service.reports_count(session),
+        "metrics": await public_service.metrics(session),
+        "waitlist": await public_service.waitlist(session),
+    }
+
+
+class BetaPatch(BaseModel):
+    enabled: bool | None = None
+    quota: int | None = Field(default=None, ge=0, le=100000)
+    city_budget: int | None = Field(default=None, ge=0, le=1000)
+
+
+@router.patch("/beta")
+async def patch_beta(req: BetaPatch, session: AsyncSession = Depends(get_session)):
+    await invite_service.update_registration(
+        session, enabled=req.enabled, quota=req.quota, city_budget=req.city_budget
+    )
+    await session.commit()
+    return await beta(session)
+
+
+@router.post("/waitlist/{entry_id}/invite")
+async def invite_from_waitlist(
+    entry_id: int,
+    session: AsyncSession = Depends(get_session),
+    ctx: RequestContext = Depends(require_platform_admin),
+):
+    from app.core.config import settings
+    from app.email import templates
+    from app.models.public import WaitlistEntry
+    from app.services.auth_service import get_email_sender
+
+    entry = await session.get(WaitlistEntry, entry_id)
+    if entry is None:
+        raise HTTPException(status_code=404, detail="No existe esa entrada")
+    sender = get_email_sender()
+    if sender is None:
+        raise HTTPException(status_code=503, detail="El correo no está disponible")
+    inv, code = await invite_service.create(
+        session, note="Lista de espera", days=invite_service.DEFAULT_DAYS, by_user_id=ctx.user_id
+    )
+    link = f"{settings.public_base_url.rstrip('/')}/register?code={code}"
+    email, lang = entry.email, entry.language
+    await session.delete(entry)  # el correo solo se guardaba para esto (Ley 1581)
+    await session.commit()
+    await sender.send(templates.waitlist_invite(email, lang, link, invite_service.DEFAULT_DAYS))
+    return {"invited": True, "invite_id": inv.id}
+
+
+@router.delete("/waitlist/{entry_id}")
+async def delete_waitlist(entry_id: int, session: AsyncSession = Depends(get_session)):
+    from app.models.public import WaitlistEntry
+
+    entry = await session.get(WaitlistEntry, entry_id)
+    if entry is None:
+        raise HTTPException(status_code=404, detail="No existe esa entrada")
+    await session.delete(entry)
+    await session.commit()
+    return {"deleted": True}
 
 
 # --------- uso de IA (feature 027) ---------

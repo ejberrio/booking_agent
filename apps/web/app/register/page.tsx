@@ -6,16 +6,21 @@ import { Suspense, useEffect, useState } from "react";
 import { AcceptTerms } from "@/components/auth/accept-terms";
 import { AuthShell, FormNote, postJson } from "@/components/auth/auth-shell";
 import { GoogleButton, useGoogleError } from "@/components/auth/google-button";
+import { REPORT_KEY } from "@/components/site/free-report";
+import { WaitlistForm } from "@/components/site/waitlist-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n";
 
-// Registro con código de invitación (feature 026, entrega 3). `?code=` lo rellena.
+// Registro (feature 026, entrega 3): con código de invitación (`?code=` lo rellena) o abierto con
+// cupo (feature 030). Lleno el cupo y sin código → lista de espera. `?report=` vincula el informe gratis.
 function RegisterForm() {
   const params = useSearchParams();
   const { m, lang } = useI18n();
   const t = m.auth;
   const [open, setOpen] = useState(false);
+  const [full, setFull] = useState(params.get("error") === "beta_full");
+  const [report, setReport] = useState<string | null>(params.get("report"));
   const [form, setForm] = useState({
     invite_code: params.get("code") ?? "",
     name: "",
@@ -34,9 +39,19 @@ function RegisterForm() {
   useEffect(() => {
     fetch("/api/auth/registration-status")
       .then((r) => r.json())
-      .then((d: { open?: boolean }) => setOpen(Boolean(d.open)))
+      .then((d: { open?: boolean; full?: boolean }) => {
+        setOpen(Boolean(d.open));
+        setFull(Boolean(d.full));
+      })
       .catch(() => null);
-  }, []);
+    if (!params.get("report")) {
+      try {
+        setReport(sessionStorage.getItem(REPORT_KEY));
+      } catch {
+        // sin almacenamiento
+      }
+    }
+  }, [params]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -50,10 +65,15 @@ function RegisterForm() {
       ...form,
       language: lang,
       accept_terms: accepted,
+      report,
     });
     setLoading(false);
     if (ok) {
       setSent(true);
+      return;
+    }
+    if (data.code === "beta_full") {
+      setFull(true);
       return;
     }
     setError(
@@ -77,9 +97,17 @@ function RegisterForm() {
     >
       {sent ? (
         <FormNote kind="ok">{t.register.sent}</FormNote>
+      ) : full && !form.invite_code ? (
+        <div className="space-y-3">
+          <WaitlistForm />
+          <button type="button" className="text-xs text-muted-foreground underline"
+            onClick={() => setFull(false)}>
+            {t.register.haveCode}
+          </button>
+        </div>
       ) : (
         <form onSubmit={onSubmit} className="space-y-3">
-          {!open && (
+          {(!open || form.invite_code) && (
             <Input
               placeholder={t.register.code}
               value={form.invite_code}
@@ -102,8 +130,8 @@ function RegisterForm() {
             {t.register.submit}
           </Button>
           {googleError && !error && <FormNote kind="error">{googleError}</FormNote>}
-          <GoogleButton mode="register" invite={open ? undefined : form.invite_code}
-            accepted={accepted} />
+          <GoogleButton mode="register" invite={form.invite_code || undefined}
+            accepted={accepted} report={report ?? undefined} />
         </form>
       )}
     </AuthShell>

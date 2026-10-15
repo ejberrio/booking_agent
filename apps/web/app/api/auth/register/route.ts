@@ -8,6 +8,7 @@ export async function POST(req: Request) {
     invite_code?: string;
     language?: string;
     accept_terms?: boolean;
+    report?: string | null;
   };
   const { status, data } = await callAuth(req, "register", {
     name: body.name ?? "",
@@ -16,6 +17,7 @@ export async function POST(req: Request) {
     invite_code: body.invite_code || null,
     language: body.language ?? "es",
     accept_terms: body.accept_terms === true,
+    report: body.report || null,
   });
   return relay(status, data);
 }

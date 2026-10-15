@@ -10,6 +10,7 @@ import extension from "@/lib/i18n/catalog/extension";
 import legal from "@/lib/i18n/catalog/legal";
 import offers from "@/lib/i18n/catalog/offers";
 import offline from "@/lib/i18n/catalog/offline";
+import pub from "@/lib/i18n/catalog/public";
 import rationale from "@/lib/i18n/catalog/rationale";
 import settings from "@/lib/i18n/catalog/settings";
 import shell from "@/lib/i18n/catalog/shell";
@@ -38,6 +39,7 @@ const AREAS = {
   rationale,
   offers,
   offline,
+  pub,
   connection,
   settings,
 };

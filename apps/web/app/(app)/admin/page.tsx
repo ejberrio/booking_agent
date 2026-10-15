@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Copy } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { BetaCard } from "@/components/admin/beta-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
@@ -28,7 +29,7 @@ export default function AdminPage() {
       <InvitesCard />
       <AccountsCard />
       <UsageAdminCard />
-      <RegistrationCard />
+      <BetaCard />
     </div>
   );
 }
@@ -180,36 +181,6 @@ function AccountsCard() {
     </Card>
   );
 }
-
-function RegistrationCard() {
-  const { m } = useI18n();
-  const t = m.admin.registration;
-  const qc = useQueryClient();
-  const s = useQuery({ queryKey: ["admin-settings"], queryFn: api.adminSettings });
-  const set = useMutation({
-    mutationFn: (open: boolean) => api.setRegistrationOpen(open),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-settings"] }),
-    onError: (e: Error) => toast.error(e.message),
-  });
-  const open = s.data?.registration_open ?? false;
-  return (
-    <Card className="space-y-2">
-      <CardTitle>{t.title}</CardTitle>
-      <CardDescription>{t.description}</CardDescription>
-      <div className="flex gap-2">
-        <Button className={open ? "" : "bg-muted text-foreground"} onClick={() => set.mutate(true)}
-          disabled={set.isPending || open}>
-          {t.on}
-        </Button>
-        <Button className={!open ? "" : "bg-muted text-foreground"} onClick={() => set.mutate(false)}
-          disabled={set.isPending || !open}>
-          {t.off}
-        </Button>
-      </div>
-    </Card>
-  );
-}
-
 
 function LimitsEditor({ row }: { row: AdminUsageRow }) {
   const { m } = useI18n();

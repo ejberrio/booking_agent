@@ -37,6 +37,6 @@ export async function GET(req: NextRequest) {
     return redirectWithSession(req, data.token, "/");
   }
   const err = typeof data.code === "string" ? data.code : "google_failed";
-  const page = err === "invite_required" || err === "invite_invalid" ? "register" : "login";
+  const page = ["invite_required", "invite_invalid", "beta_full"].includes(err) ? "register" : "login";
   return redirectTo(req, `/${page}?error=${err}`);
 }

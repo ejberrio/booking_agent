@@ -1,0 +1,10 @@
+# Research: Feature 030
+
+- **Lista de municipios** — Decision: archivo JSON versionado desde DIVIPOLA (DANE, datos.gov.co). Rationale: lista oficial, cambia muy poco, sin llamadas en vivo. Alternatives: API en vivo de datos.gov.co (dependencia y latencia innecesarias).
+- **Eventos del informe** — Decision: reutilizar `event` (público por ciudad) + `extract_events`; `city_scan` guarda la última búsqueda por ciudad (diaria o pública). Rationale: una sola fuente de verdad; lo que paga un informe sirve después a las cuentas. Alternatives: caché separada solo para informes (duplicaría eventos).
+- **Área metropolitana** — Decision: mapa fijo pequeño municipio → ciudad principal (Valle de Aburrá, Bogotá-Sabana, Cali, Barranquilla, Bucaramanga, Cúcuta, Pereira/AMCO); el informe une eventos de ambas. Rationale: Sabaneta vive de los eventos de Medellín.
+- **Precio sugerido** — Decision: `suggest_price_v2(base, event=...)` en la primera noche del evento; base = precio de fin de semana si cae viernes/sábado. Rationale: mismo cálculo que la app, sin datos de mercado (#148).
+- **Límite por visitante** — Decision: HMAC-SHA256(secreto, IP + fecha) truncado; contador diario en `public_quota`. Rationale: Ley 1581/minimización: no se guarda la IP, el hash cambia cada día. Alternatives: cookies (descartado: sin rastreo), captcha (solo si hay abuso; Cloudflare Turnstile gratis queda documentado).
+- **Cupo** — Decision: `platform_setting.registration_open = {enabled, quota}` + `account.signup_source='open'`; usado = cuentas abiertas no borradas. Rationale: el ajuste ya existe (026) y el admin ya lo ve.
+- **Informe → cuenta** — Decision: token aleatorio del informe viaja a /register (?report=) y Google (estado del flujo); al crear la cuenta se vincula; el correo con el informe completo se envía al verificar el correo (o al entrar con Google) una sola vez. Rationale: no enviar correos a direcciones sin verificar.
+- **Métricas** — Decision: `public_metric(day, key)` con contador; la landing avisa una visita por sesión de pestaña (sessionStorage), sin cookies. Alternatives: Plausible/Cloudflare Analytics (otro proveedor y otro aviso de privacidad).

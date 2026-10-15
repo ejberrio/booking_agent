@@ -123,7 +123,7 @@ async def test_registro_cerrado_abierto_y_correo_existente(client, mail):
     assert listed[0]["status"] == "active"
     # registro abierto: sin código
     await client.patch("/admin/settings", headers=_auth(admin), json={"registration_open": True})
-    assert (await client.get("/auth/registration-status")).json() == {"open": True}
+    assert (await client.get("/auth/registration-status")).json() == {"open": True, "full": False}
     assert (await _register(client, None, email="libre@example.com")).status_code == 202
 
 

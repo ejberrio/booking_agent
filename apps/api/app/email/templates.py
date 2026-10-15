@@ -108,3 +108,149 @@ def delete_code(to: str, lang: str | None, name: str, code: str) -> EmailMessage
 
 def account_deleted(to: str, lang: str | None, name: str) -> EmailMessage:
     return _plain("deleted", to, lang, name=name or "")
+
+
+# --------- feature 030: informe completo e invitación desde la lista de espera ---------
+
+_R = {
+    "es": {
+        "report_subject": "Tu informe de eventos y precios: {place}",
+        "report_intro": "Hola:\n\nEstos son los eventos más importantes de los próximos 3 meses en {place} y el precio que te sugerimos para esas noches (partiendo de {base} {cur} por noche):",
+        "report_none": "Por ahora no encontramos eventos grandes en {place}. Te avisaremos en la app cuando aparezcan.",
+        "report_more": "…y {n} evento(s) más en tu informe en vivo, que se actualiza cada semana.",
+        "report_outro": "Las sugerencias se actualizan cada día en tu cuenta:",
+        "report_cta": "Abrir mi informe",
+        "rel": {"high": "alta", "medium": "media", "low": "baja"},
+        "invite_subject": "Ya tienes cupo en la beta de StayLever",
+        "invite_body": "Hola:\n\nSe abrió un cupo para ti en la beta de StayLever. Crea tu cuenta con este enlace (vence en {days} días):\n{link}\n\nSi ya no te interesa, ignora este mensaje y borraremos tu correo.",
+        "invite_cta": "Crear mi cuenta",
+    },
+    "en": {
+        "report_subject": "Your events and pricing report: {place}",
+        "report_intro": "Hi,\n\nHere are the most important events for the next 3 months in {place} and the price we suggest for those nights (starting from {base} {cur} per night):",
+        "report_none": "We didn't find big events in {place} yet. We'll let you know in the app when they show up.",
+        "report_more": "…and {n} more event(s) in your live report, updated every week.",
+        "report_outro": "Suggestions are updated every day in your account:",
+        "report_cta": "Open my report",
+        "rel": {"high": "high", "medium": "medium", "low": "low"},
+        "invite_subject": "Your spot in the StayLever beta is ready",
+        "invite_body": "Hi,\n\nA spot opened for you in the StayLever beta. Create your account with this link (it expires in {days} days):\n{link}\n\nIf you're no longer interested, ignore this message and we'll delete your email.",
+        "invite_cta": "Create my account",
+    },
+    "pt": {
+        "report_subject": "Seu relatório de eventos e preços: {place}",
+        "report_intro": "Olá,\n\nEstes são os eventos mais importantes dos próximos 3 meses em {place} e o preço que sugerimos para essas noites (a partir de {base} {cur} por noite):",
+        "report_none": "Ainda não encontramos grandes eventos em {place}. Avisaremos no app quando aparecerem.",
+        "report_more": "…e mais {n} evento(s) no seu relatório ao vivo, atualizado toda semana.",
+        "report_outro": "As sugestões são atualizadas todos os dias na sua conta:",
+        "report_cta": "Abrir meu relatório",
+        "rel": {"high": "alta", "medium": "média", "low": "baixa"},
+        "invite_subject": "Sua vaga na beta do StayLever está pronta",
+        "invite_body": "Olá,\n\nAbriu uma vaga para você na beta do StayLever. Crie sua conta com este link (expira em {days} dias):\n{link}\n\nSe não tiver mais interesse, ignore esta mensagem e apagaremos seu e-mail.",
+        "invite_cta": "Criar minha conta",
+    },
+}
+
+
+EMAIL_EVENTS = 5  # el resto, en la app (la lista completa no va por correo)
+
+
+def _money(value: str) -> str:
+    try:
+        return f"{int(float(value)):,}".replace(",", ".")
+    except ValueError:
+        return value
+
+
+def full_report(to: str, lang: str | None, data: dict, link: str) -> EmailMessage:
+    t = _R[_lang(lang)]
+    place = data["municipality"]["label"]
+    cur = data.get("currency") or "COP"
+    lines = [t["report_intro"].format(place=place, base=_money(data["weekday_price"]), cur=cur)]
+    rows = []
+    for ev in data["events"][:EMAIL_EVENTS]:
+        when = ev["start_date"] if ev["end_date"] == ev["start_date"] else f"{ev['start_date']} → {ev['end_date']}"
+        rows.append(
+            f"• {when} — {ev['name']} ({t['rel'].get(ev['relevance'], ev['relevance'])}): "
+            f"{_money(ev['suggested_price'])} {cur} (+{ev['pct']}%)"
+        )
+    lines.append("\n".join(rows) if rows else t["report_none"].format(place=place))
+    if len(data["events"]) > EMAIL_EVENTS:
+        lines.append(t["report_more"].format(n=len(data["events"]) - EMAIL_EVENTS))
+    lines.append(f"{t['report_outro']}\n{link}")
+    text = "\n\n".join(lines)
+    return EmailMessage(to=to, subject=t["report_subject"].format(place=place), text=text,
+                        html=_html(text, link, t["report_cta"]))
+
+
+def waitlist_invite(to: str, lang: str | None, link: str, days: int) -> EmailMessage:
+    t = _R[_lang(lang)]
+    text = t["invite_body"].format(link=link, days=days)
+    return EmailMessage(to=to, subject=t["invite_subject"], text=text,
+                        html=_html(text, link, t["invite_cta"]))
+
+
+_D = {
+    "es": {
+        "subject": "Tu semana en StayLever: {n} noche(s) para revisar",
+        "subject_events": "Tu semana en StayLever: eventos nuevos en tu zona",
+        "hello": "Hola:",
+        "nights": "Noches de las próximas 2 semanas con precio sugerido:",
+        "manual": "Estás sin conexión: aprueba en StayLever y cópialo en cada plataforma:",
+        "events": "Eventos nuevos en tu zona esta semana:",
+        "cta": "Ver mis sugerencias",
+        "off": "¿No quieres este resumen? Apágalo aquí: {link}",
+        "rel": {"high": "alta", "medium": "media", "low": "baja"},
+    },
+    "en": {
+        "subject": "Your week on StayLever: {n} night(s) to review",
+        "subject_events": "Your week on StayLever: new events near you",
+        "hello": "Hi,",
+        "nights": "Nights in the next 2 weeks with a suggested price:",
+        "manual": "You're offline: approve in StayLever and copy it on each platform:",
+        "events": "New events near you this week:",
+        "cta": "See my suggestions",
+        "off": "Don't want this summary? Turn it off here: {link}",
+        "rel": {"high": "high", "medium": "medium", "low": "low"},
+    },
+    "pt": {
+        "subject": "Sua semana no StayLever: {n} noite(s) para revisar",
+        "subject_events": "Sua semana no StayLever: eventos novos na sua região",
+        "hello": "Olá,",
+        "nights": "Noites das próximas 2 semanas com preço sugerido:",
+        "manual": "Você está sem conexão: aprove no StayLever e copie em cada plataforma:",
+        "events": "Eventos novos na sua região esta semana:",
+        "cta": "Ver minhas sugestões",
+        "off": "Não quer este resumo? Desative aqui: {link}",
+        "rel": {"high": "alta", "medium": "média", "low": "baixa"},
+    },
+}
+
+
+def weekly_digest(to: str, lang: str | None, data: dict, link: str, off_link: str) -> EmailMessage:
+    t = _D[_lang(lang)]
+    parts = [t["hello"]]
+    if data["nights"]:
+        rows = []
+        for n in data["nights"]:
+            when = n["date_from"] if n["date_to"] == n["date_from"] else f"{n['date_from']} → {n['date_to']}"
+            cur = f"{_money(n['current'])} → " if n.get("current") else ""
+            why = f" ({n['reason']})" if n.get("reason") else ""
+            rows.append(f"• {when}: {cur}{_money(n['suggested'])}{why}")
+        parts.append(t["nights"] + "\n" + "\n".join(rows))
+        if data.get("manual") and data.get("links"):
+            parts.append(t["manual"] + "\n" + "\n".join(
+                f"• {x['channel'].capitalize()}: {x['url']}" for x in data["links"]))
+    if data["events"]:
+        parts.append(t["events"] + "\n" + "\n".join(
+            f"• {e['start_date']} — {e['name']} ({t['rel'].get(e['relevance'], e['relevance'])})"
+            for e in data["events"]))
+    parts.append(link)
+    text = "\n\n".join(parts) + "\n\n" + t["off"].format(link=off_link)
+    subject = (t["subject"].format(n=len(data["nights"])) if data["nights"]
+               else t["subject_events"])
+    html = _html("\n\n".join(parts), link, t["cta"]) + (
+        f'<p style="font-family:system-ui,sans-serif;font-size:12px;color:#666">'
+        f'{escape(t["off"].format(link=""))}<a href="{escape(off_link)}">{escape(off_link)}</a></p>'
+    )
+    return EmailMessage(to=to, subject=subject, text=text, html=html)

@@ -29,10 +29,13 @@ from app.models.mixins import _now
 from app.models.property import UnitType
 from app.search.tavily import TavilyProvider
 from app.services import (
+    auth_service,
+    digest_service,
     event_service,
     ical_service,
     intelligence_service,
     privacy_service,
+    public_service,
     push_service,
     sync_service,
     usage_service,
@@ -113,6 +116,9 @@ async def scan_account(
         total += run.suggestions_created
         events_found += run.events_found
         await push_service.notify_suggestions(session, run.id, run.suggestions_created)
+    if include_city:
+        # Feature 030: el informe público reutiliza esta búsqueda (caché por ciudad).
+        await public_service.mark_scanned(session, city_key, events_found)
     scanned_cities.add(city_key)
     await session.commit()
     return f"{city_key}: eventos={events_found} sugerencias={total}"
@@ -138,6 +144,9 @@ async def run_all(today: date | None = None, *, search=None, llm=None, market_fa
     today = today or date.today()
     async with platform_session() as session:
         modes = await active_accounts(session)
+        # Feature 030: contadores de visitantes de días anteriores y lista de espera > 12 meses.
+        await public_service.purge_old(session)
+        await session.commit()
     account_ids = list(modes)
     scanned_cities: set[str] = set()
     for account_id in account_ids:
@@ -185,6 +194,16 @@ async def run_all(today: date | None = None, *, search=None, llm=None, market_fa
                     summary += f" búsquedas omitidas por el tope diario={m_search.skipped}"
                 await session.commit()
                 print(f"scan_daily: cuenta {account_id} {summary}")
+                # Feature 030: los lunes, resumen semanal por correo (tras las sugerencias).
+                try:
+                    sent = await digest_service.send_weekly(
+                        session, account_id, usage_service.local_today(),
+                        auth_service.get_email_sender(),
+                    )
+                    if sent:
+                        print(f"scan_daily: cuenta {account_id} resumen semanal enviado={sent}")
+                except Exception as exc:  # noqa: BLE001 — el correo no frena el escaneo
+                    print(f"scan_daily: cuenta {account_id} resumen falló ({type(exc).__name__}).")
         except Exception as exc:  # noqa: BLE001 — el fallo de una cuenta no detiene a las demás
             print(f"scan_daily: cuenta {account_id} falló ({type(exc).__name__}); se continúa.")
             await _record_failure(account_id, exc)
