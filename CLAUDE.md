@@ -1,9 +1,9 @@
 <!-- SPECKIT START -->
-Feature activa: **030-public-report** (página pública, informe gratis, registro abierto con cupo; issue #147).
-Plan: `specs/030-public-report/plan.md`. Rutas sin sesión `/public/*` (solo vía servidor web con `x-client-ip`),
-`public_service` (caché `city_scan` + presupuesto diario, límite por HMAC diario de IP), municipios DIVIPOLA,
-cupo en `registration_open` + `account.signup_source`. Anteriores: 029 (sin conexión), 032 (asistente en bloque),
-027 (límites de IA), 028 (Ley 1581), 026 (principio VI).
+Feature activa: **034-event-sources** (boleteras, agendas, festivos; área metropolitana en ambos sentidos).
+Spec: `specs/034-event-sources/spec.md`. `event_sources_service` (TuBoleta, Ticketmaster CO, Plaza Mayor:
+JSON-LD/API, robots.txt, sin evadir bloqueos, `EVENT_SOURCES_DISABLED`), `holidays_co` (Ley Emiliani),
+`municipalities.area_keys` (+`colombia`), búsquedas dirigidas semanales. Anteriores: 033 (eventos del área),
+030 (página pública), 029 (sin conexión), 032, 027, 028, 026 (principio VI).
 <!-- SPECKIT END -->
 
 # Booking AI Agent

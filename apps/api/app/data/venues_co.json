@@ -1,0 +1,19 @@
+[
+  {"key": "daviarena", "name": "DAVIarena", "aliases": ["daviarena", "davi arena", "arena primavera"], "municipality": "05631", "capacity": 17000},
+  {"key": "atanasio", "name": "Estadio Atanasio Girardot", "aliases": ["atanasio girardot", "estadio atanasio"], "municipality": "05001", "capacity": 45000},
+  {"key": "macarena", "name": "Centro de Eventos La Macarena", "aliases": ["la macarena", "centro de eventos la macarena"], "municipality": "05001", "capacity": 10000},
+  {"key": "plazamayor", "name": "Plaza Mayor", "aliases": ["plaza mayor"], "municipality": "05001", "capacity": 5000},
+  {"key": "elrodeo", "name": "City Hall El Rodeo", "aliases": ["city hall el rodeo", "el rodeo"], "municipality": "05001", "capacity": 5000},
+  {"key": "metropolitano", "name": "Teatro Metropolitano", "aliases": ["teatro metropolitano"], "municipality": "05001", "capacity": 1600},
+  {"key": "movistararena", "name": "Movistar Arena", "aliases": ["movistar arena"], "municipality": "11001", "capacity": 14000},
+  {"key": "medplus", "name": "Coliseo MedPlus", "aliases": ["coliseo medplus", "coliseo live"], "municipality": "11001", "capacity": 20000},
+  {"key": "campin", "name": "Estadio El Campín", "aliases": ["el campin", "estadio el campin", "vive claro", "distrito cultural"], "municipality": "11001", "capacity": 36000},
+  {"key": "simonbolivar", "name": "Parque Simón Bolívar", "aliases": ["simon bolivar"], "municipality": "11001", "capacity": 50000},
+  {"key": "corferias", "name": "Corferias", "aliases": ["corferias"], "municipality": "11001", "capacity": 5000},
+  {"key": "teatromayor", "name": "Teatro Mayor Julio Mario Santo Domingo", "aliases": ["teatro mayor"], "municipality": "11001", "capacity": 1300},
+  {"key": "canaveralejo", "name": "Arena Cañaveralejo", "aliases": ["canaveralejo"], "municipality": "76001", "capacity": 14000},
+  {"key": "pascualguerrero", "name": "Estadio Pascual Guerrero", "aliases": ["pascual guerrero"], "municipality": "76001", "capacity": 35000},
+  {"key": "metropolitanobq", "name": "Estadio Metropolitano Roberto Meléndez", "aliases": ["roberto melendez", "metropolitano de barranquilla"], "municipality": "08758", "capacity": 46000},
+  {"key": "edgarenteria", "name": "Estadio Edgar Rentería", "aliases": ["edgar renteria"], "municipality": "08001", "capacity": 20000},
+  {"key": "cccartagena", "name": "Centro de Convenciones Cartagena de Indias", "aliases": ["centro de convenciones cartagena", "cartagena de indias convention"], "municipality": "13001", "capacity": 4000}
+]

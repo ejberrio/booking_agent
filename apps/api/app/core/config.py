@@ -98,6 +98,8 @@ class Settings(BaseSettings):
     }
     ai_chat_limit_month: int = 300  # mensajes al asistente por cuenta y mes
     ai_search_limit_day: int = 5  # búsquedas web del escaneo por cuenta y día
+    # Feature 034: fuentes de eventos a apagar (coma): tuboleta, ticketmaster, plazamayor, all.
+    event_sources_disabled: str = ""
     ai_timezone: str = "America/Bogota"  # para el día y el mes de los contadores
 
     # Channel Manager (Beds24, API V1 con API Key de cuenta)

@@ -233,8 +233,8 @@ def price_for(ev: Event, weekday: Decimal, weekend: Decimal | None, today: date)
 
 
 def city_keys(m: Municipality) -> list[str]:
-    core = municipalities.metro_core(m.code)
-    return [m.city_key] + ([core.city_key] if core else [])
+    """Municipio + su área metropolitana (en ambos sentidos) + festivos nacionales."""
+    return municipalities.keys_for(m)
 
 
 async def build_events(

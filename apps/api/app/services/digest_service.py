@@ -22,7 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.models.account import Account
 from app.models.auth import AppUser, Membership
-from app.models.enums import Relevance, SuggestionStatus
+from app.models.enums import EventKind, Relevance, SuggestionStatus
 from app.models.market import Event, PriceSuggestion
 from app.models.mixins import _now
 from app.services import event_service, intelligence_service, pricing_service
@@ -96,7 +96,8 @@ async def build(session: AsyncSession, account_id: int, today: date) -> dict | N
         (
             await session.execute(
                 select(Event).where(
-                    Event.city.in_(keys), Event.created_at >= week_ago, Event.start_date >= today
+                    Event.city.in_(keys), Event.created_at >= week_ago, Event.start_date >= today,
+                    Event.kind != EventKind.holiday,  # los festivos no son "eventos nuevos"
                 )
             )
         ).scalars().all(),

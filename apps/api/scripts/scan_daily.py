@@ -27,11 +27,12 @@ from app.models.account import Account, AccountStatus
 from app.models.enums import SyncStatus
 from app.models.intelligence import IntelligenceRun
 from app.models.mixins import _now
-from app.models.property import UnitType
+from app.models.property import Property, UnitType
 from app.search.tavily import TavilyProvider
 from app.services import (
     auth_service,
     digest_service,
+    event_sources_service,
     event_service,
     ical_service,
     intelligence_service,
@@ -137,7 +138,8 @@ async def _refresh_area(session: AsyncSession, city: str, scanned: set[str], sea
     if search is None or llm is None:
         return ""
     notes = []
-    for key in municipalities.area_keys(city)[1:]:
+    core_key = municipalities.area_core_key(city)
+    for key in [core_key] if core_key != event_service.normalize_city(city) else []:
         if key in scanned or await public_service.is_fresh(session, key):
             continue
         core = municipalities.by_city_key(key)
@@ -148,6 +150,42 @@ async def _refresh_area(session: AsyncSession, city: str, scanned: set[str], sea
         scanned.add(key)
         notes.append(f" área {key}: eventos={found}")
     return "".join(notes)
+
+
+async def refresh_event_sources(
+    session: AsyncSession, account_ids: list[int], *, search, llm, today: date
+) -> None:
+    """Feature 034: boleteras, agendas, búsquedas dirigidas (semanal por ciudad principal) y
+    festivos, una vez por corrida para todas las cuentas. Un fallo no detiene el escaneo."""
+    try:
+        n = await event_sources_service.refresh_holidays_weekly(session, today)
+        await session.commit()
+        if n:
+            print(f"scan_daily: festivos y puentes={n}")
+    except Exception as exc:  # noqa: BLE001
+        await session.rollback()
+        print(f"scan_daily: festivos falló ({type(exc).__name__}).")
+    cities = (
+        await session.execute(
+            select(Property.city).where(Property.account_id.in_(account_ids)).distinct()
+        )
+    ).scalars().all() if account_ids else []
+    done: set[str] = set()
+    for city in cities:
+        core = municipalities.area_core_key(city)
+        if core in done:
+            continue
+        done.add(core)
+        try:
+            note = await event_sources_service.refresh_area(
+                session, city, search=search, llm=llm, today=today
+            )
+            await session.commit()
+            if note:
+                print(f"scan_daily: eventos {core}: {note}")
+        except Exception as exc:  # noqa: BLE001
+            await session.rollback()
+            print(f"scan_daily: eventos {core} falló ({type(exc).__name__}).")
 
 
 async def _record_failure(account_id: int, exc: Exception) -> None:
@@ -173,6 +211,7 @@ async def run_all(today: date | None = None, *, search=None, llm=None, market_fa
         # Feature 030: contadores de visitantes de días anteriores y lista de espera > 12 meses.
         await public_service.purge_old(session)
         await session.commit()
+        await refresh_event_sources(session, list(modes), search=search, llm=llm, today=today)
     account_ids = list(modes)
     scanned_cities: set[str] = set()
     for account_id in account_ids:
