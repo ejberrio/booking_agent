@@ -108,5 +108,29 @@ def metro_core(code: str) -> Municipality | None:
     return get(core) if core else None
 
 
+@lru_cache(maxsize=1)
+def _by_key() -> dict[str, Municipality]:
+    out: dict[str, Municipality] = {}
+    for m in _all().values():
+        out.setdefault(m.city_key, m)
+    return out
+
+
+def by_city_key(key: str) -> Municipality | None:
+    return _by_key().get(key)
+
+
+def area_keys(city: str | None) -> list[str]:
+    """Claves de `event.city` de la zona de una propiedad: su municipio y, si es parte de un
+    área metropolitana, la ciudad principal ("Sabaneta" → ["sabaneta", "medellin"]).
+
+    `city` es el texto libre de la propiedad ("Sabaneta", "Medellín, Antioquia").
+    """
+    key = normalize_city(city)
+    m = by_city_key(key)
+    core = metro_core(m.code) if m else None
+    return [key] + ([core.city_key] if core and core.city_key != key else [])
+
+
 def count() -> int:
     return len(_all())

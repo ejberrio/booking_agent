@@ -121,7 +121,7 @@ def _aware(dt: datetime) -> datetime:
     return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
 
 
-async def _fresh(session: AsyncSession, city_key: str) -> bool:
+async def is_fresh(session: AsyncSession, city_key: str) -> bool:
     row = await session.get(CityScan, city_key)
     return row is not None and _aware(row.scanned_at) > _now() - timedelta(days=CACHE_DAYS)
 
@@ -131,7 +131,7 @@ async def searches_today(session: AsyncSession) -> int:
     return row.value if row else 0
 
 
-async def _search_city(session: AsyncSession, m: Municipality, search, llm) -> int:
+async def search_city(session: AsyncSession, m: Municipality, search, llm) -> int:
     """Busca los eventos de un municipio (2 consultas) y los guarda como públicos."""
     from app.market.extractor import extract_events
     from app.services import event_service
@@ -157,7 +157,7 @@ async def ensure_events(
     session: AsyncSession, m: Municipality, *, search, llm, budget: int
 ) -> str:
     """'cached' | 'searched' | 'budget_exhausted' | 'unavailable' (sin búsqueda configurada)."""
-    if await _fresh(session, m.city_key):
+    if await is_fresh(session, m.city_key):
         return "cached"
     if search is None or llm is None:
         return "unavailable"
@@ -165,7 +165,7 @@ async def ensure_events(
         return "budget_exhausted"
     await bump(session, CITY_SEARCH)  # se cuenta antes: un fallo no permite gastar de más
     try:
-        found = await _search_city(session, m, search, llm)
+        found = await search_city(session, m, search, llm)
     except Exception as exc:  # noqa: BLE001 — el informe sigue con lo que haya guardado
         log.warning("busqueda publica fallida city=%s err=%s", m.city_key, type(exc).__name__)
         return "unavailable"
@@ -196,15 +196,6 @@ def _validate(inp: ReportInput) -> Municipality:
     return m
 
 
-def _name_key(name: str) -> str:
-    """'Beéle — Borondo Tour' y 'Beéle - Borondo Tour' son el mismo evento."""
-    import re
-    import unicodedata
-
-    plain = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode().lower()
-    return " ".join(re.sub(r"[^a-z0-9]+", " ", plain).split())
-
-
 async def _events(session: AsyncSession, keys: list[str], today: date) -> list[Event]:
     until = today + timedelta(days=HORIZON_DAYS)
     rows = (
@@ -217,13 +208,9 @@ async def _events(session: AsyncSession, keys: list[str], today: date) -> list[E
         )
     ).scalars().all()
     # Mismo evento visto en dos ciudades del área (p. ej. Medellín y Sabaneta): una vez.
-    seen, out = set(), []
-    for ev in sorted(rows, key=lambda e: (_REL_ORDER.get(e.relevance, 3), e.start_date)):
-        k = (_name_key(ev.name), ev.start_date)
-        if k not in seen:
-            seen.add(k)
-            out.append(ev)
-    return out
+    from app.services.event_service import unique_events
+
+    return unique_events(sorted(rows, key=lambda e: (_REL_ORDER.get(e.relevance, 3), e.start_date)))
 
 
 def price_for(ev: Event, weekday: Decimal, weekend: Decimal | None, today: date) -> dict:

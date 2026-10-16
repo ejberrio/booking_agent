@@ -70,7 +70,7 @@ def searches(monkeypatch):
         )
         return 1
 
-    monkeypatch.setattr(public_service, "_search_city", fake_search_city)
+    monkeypatch.setattr(public_service, "search_city", fake_search_city)
     monkeypatch.setattr(public_routes, "search_provider", lambda: object())
     monkeypatch.setattr(public_routes, "llm_provider", lambda: object())
     return calls
@@ -243,7 +243,7 @@ async def test_aislamiento_y_visitas(client, session, mail):
 
 
 def test_mismo_evento_con_otra_puntuacion_no_se_repite():
-    assert public_service._name_key("Beéle — Borondo Tour") == public_service._name_key(
+    assert event_service.name_key("Beéle — Borondo Tour") == event_service.name_key(
         "Beele - Borondo  tour")
 
 
