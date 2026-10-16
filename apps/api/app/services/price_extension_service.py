@@ -35,7 +35,7 @@ from app.models.enums import ChangeOrigin, Relevance, SyncIssueKind
 from app.models.market import Event
 from app.models.property import Property, UnitType
 from app.models.sync import SyncIssue
-from app.services import availability_service, event_service, pricing_service
+from app.services import availability_service, pricing_service
 
 DEFAULT_MONTHS = 18
 MAX_MONTHS = 24
@@ -161,11 +161,13 @@ async def _event_days(session: AsyncSession, unit: UnitType) -> set[date]:
     """Noches con evento de relevancia ALTA en la ciudad de la propiedad (los de relevancia
     media/baja cubren casi todo el calendario y dejarían la plantilla sin datos)."""
     prop = await session.get(Property, unit.property_id)
-    city = event_service.normalize_city(prop.city if prop else None)
+    from app.domain import municipalities
+
+    keys = municipalities.area_keys(prop.city if prop else None)
     out: set[date] = set()
     for ev in (
         await session.execute(
-            select(Event).where(Event.relevance == Relevance.high, Event.city == city)
+            select(Event).where(Event.relevance == Relevance.high, Event.city.in_(keys))
         )
     ).scalars():
         out.update(_days(ev.start_date, ev.end_date or ev.start_date))

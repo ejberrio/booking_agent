@@ -22,6 +22,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.domain import municipalities
 from app.domain import suggestion_repeat as repeat
 from app.domain.suggestion import EventSignal, suggest_price_v2
 from app.market.provider import MarketDataProvider, MarketSnapshot
@@ -30,7 +31,7 @@ from app.models.calendar import CalendarDay
 from app.models.enums import ChangeOrigin, Relevance, SuggestionStatus
 from app.models.market import Event, PriceSuggestion
 from app.models.property import Property, UnitType
-from app.services import event_service, pricing_service
+from app.services import pricing_service
 
 _REL_ORDER = {Relevance.low: 0, Relevance.medium: 1, Relevance.high: 2}
 _OCC_WINDOW = 7  # ±días para la señal de ocupación de la zona propia
@@ -270,7 +271,8 @@ async def generate_suggestions(
             await session.execute(
                 select(Event).where(
                     Event.start_date <= date_to,
-                    Event.city == event_service.normalize_city(prop.city),
+                    # Municipio + ciudad principal del área (Sabaneta → Medellín), feature 033.
+                    Event.city.in_(municipalities.area_keys(prop.city)),
                 )
             )
         ).scalars()

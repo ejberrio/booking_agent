@@ -88,18 +88,20 @@ async def build(session: AsyncSession, account_id: int, today: date) -> dict | N
             "suggested": str(s.suggested_price),
             "reason": reason[:120],
         })
-    city = event_service.normalize_city(await intelligence_service.property_city(session))
+    from app.domain import municipalities
+
+    keys = municipalities.area_keys(await intelligence_service.property_city(session))
     week_ago = _now() - timedelta(days=7)
-    new_events = sorted(
+    new_events = event_service.unique_events(sorted(
         (
             await session.execute(
                 select(Event).where(
-                    Event.city == city, Event.created_at >= week_ago, Event.start_date >= today
+                    Event.city.in_(keys), Event.created_at >= week_ago, Event.start_date >= today
                 )
             )
         ).scalars().all(),
         key=lambda e: (_REL.get(e.relevance, 3), e.start_date),
-    )[:MAX_EVENTS]
+    ))[:MAX_EVENTS]
     if not nights and not new_events:
         return None
     links = []

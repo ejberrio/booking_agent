@@ -25,6 +25,25 @@ def normalize_city(city: str | None) -> str:
     return " ".join(plain.lower().split())
 
 
+def name_key(name: str) -> str:
+    """Nombre comparable entre fuentes: 'Beéle — Borondo Tour' == 'Beele - borondo tour'."""
+    import re
+
+    plain = unicodedata.normalize("NFKD", name or "").encode("ascii", "ignore").decode().lower()
+    return " ".join(re.sub(r"[^a-z0-9]+", " ", plain).split())
+
+
+def unique_events(events):
+    """Quita el mismo evento visto en dos ciudades del área (mismo nombre y fecha de inicio)."""
+    seen, out = set(), []
+    for ev in events:
+        k = (name_key(ev.name), ev.start_date)
+        if k not in seen:
+            seen.add(k)
+            out.append(ev)
+    return out
+
+
 def make_dedup_key(name: str, start: date, location: str | None) -> str:
     """Clave estable de deduplicación: nombre + fecha + lugar, normalizados."""
     loc = (location or "").strip().lower()

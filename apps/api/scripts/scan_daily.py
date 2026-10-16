@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.channels.factory import get_adapter, has_credentials, set_channel_mode
 from app.db.tenancy import platform_session, tenant_session
+from app.domain import municipalities
 from app.llm.client import default_llm
 from app.models.account import Account, AccountStatus
 from app.models.enums import SyncStatus
@@ -95,8 +96,10 @@ async def scan_account(
     units = list((await session.execute(select(UnitType).order_by(UnitType.id))).scalars())
     if not units:
         return "sin unidades"
-    city_key = event_service.normalize_city(await intelligence_service.property_city(session))
+    city = await intelligence_service.property_city(session)
+    city_key = event_service.normalize_city(city)
     include_city = city_key not in scanned_cities
+    core_note = await _refresh_area(session, city, scanned_cities, search, llm)
     market = market_factory(session) if market_factory else None
     total = 0
     events_found = 0
@@ -121,7 +124,30 @@ async def scan_account(
         await public_service.mark_scanned(session, city_key, events_found)
     scanned_cities.add(city_key)
     await session.commit()
-    return f"{city_key}: eventos={events_found} sugerencias={total}"
+    return f"{city_key}: eventos={events_found} sugerencias={total}{core_note}"
+
+
+async def _refresh_area(session: AsyncSession, city: str, scanned: set[str], search, llm) -> str:
+    """Feature 033: la ciudad principal del área (Sabaneta → Medellín) también aporta eventos.
+
+    Se reutilizan los guardados (otra cuenta, el informe público o una corrida anterior); solo
+    se busca si nadie la buscó en los últimos 7 días (`city_scan`), con la búsqueda medida de
+    la cuenta.
+    """
+    if search is None or llm is None:
+        return ""
+    notes = []
+    for key in municipalities.area_keys(city)[1:]:
+        if key in scanned or await public_service.is_fresh(session, key):
+            continue
+        core = municipalities.by_city_key(key)
+        if core is None:
+            continue
+        found = await public_service.search_city(session, core, search, llm)
+        await public_service.mark_scanned(session, key, found)
+        scanned.add(key)
+        notes.append(f" área {key}: eventos={found}")
+    return "".join(notes)
 
 
 async def _record_failure(account_id: int, exc: Exception) -> None:
