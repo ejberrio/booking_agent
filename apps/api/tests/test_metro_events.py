@@ -16,12 +16,16 @@ pytestmark = pytest.mark.anyio
 
 
 def test_claves_del_area():
-    assert municipalities.area_keys("Sabaneta") == ["sabaneta", "medellin"]
-    assert municipalities.area_keys("Envigado, Antioquia") == ["envigado", "medellin"]
-    assert municipalities.area_keys("Medellín") == ["medellin"]
-    assert municipalities.area_keys("Guatapé") == ["guatape"]
-    assert municipalities.area_keys("Ciudad inventada") == ["ciudad inventada"]
-    assert municipalities.area_keys("Soacha") == ["soacha", "bogota"]
+    sab = municipalities.area_keys("Sabaneta")
+    med = municipalities.area_keys("Medellín, Antioquia")
+    # 034: en ambos sentidos (la DAVIarena queda en Sabaneta) + festivos nacionales
+    assert sab[:2] == ["sabaneta", "medellin"] and "envigado" in sab and sab[-1] == "colombia"
+    assert med[0] == "medellin" and "sabaneta" in med and "itagui" in med
+    assert municipalities.area_keys("Guatapé") == ["guatape", "colombia"]
+    assert municipalities.area_keys("Ciudad inventada") == ["ciudad inventada", "colombia"]
+    assert municipalities.area_keys("Soacha")[:2] == ["soacha", "bogota"]
+    assert municipalities.area_core_key("Envigado") == "medellin"
+    assert municipalities.area_core_key("Guatapé") == "guatape"
 
 
 async def test_sabaneta_recibe_eventos_de_medellin_sin_duplicados(session):

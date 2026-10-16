@@ -124,7 +124,7 @@ async def test_recorre_cuentas_ciudad_una_vez_y_aisla_fallos(session, monkeypatc
     async with maker() as plat:
         mark_platform(plat)
         cities = sorted({e.city for e in (await plat.execute(select(Event))).scalars()})
-        assert cities == ["cartagena", "medellin"]
+        assert cities == ["cartagena", "colombia", "medellin"]  # 034: festivos nacionales
         runs = list((await plat.execute(select(IntelligenceRun))).scalars())
     by_acc = {r.account_id: r for r in runs}
     assert by_acc[1].status == SyncStatus.success and by_acc[3].status == SyncStatus.success

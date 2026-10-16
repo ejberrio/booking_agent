@@ -1,5 +1,6 @@
 from collections.abc import AsyncGenerator
 
+import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
@@ -61,3 +62,11 @@ async def other_session(session) -> AsyncGenerator[AsyncSession, None]:
         set_tenant(s, OTHER_ACCOUNT_ID)
         s.info["maker"] = maker
         yield s
+
+
+@pytest.fixture(autouse=True)
+def _no_event_sources(monkeypatch):
+    """Feature 034: las pruebas nunca leen boleteras reales (las suyas usan transporte falso)."""
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "event_sources_disabled", "all")

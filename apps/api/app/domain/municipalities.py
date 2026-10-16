@@ -120,16 +120,41 @@ def by_city_key(key: str) -> Municipality | None:
     return _by_key().get(key)
 
 
-def area_keys(city: str | None) -> list[str]:
-    """Claves de `event.city` de la zona de una propiedad: su municipio y, si es parte de un
-    área metropolitana, la ciudad principal ("Sabaneta" → ["sabaneta", "medellin"]).
+NATIONAL = "colombia"  # clave de `event.city` para festivos y puentes (feature 034)
 
+
+def area_members(core_code: str) -> list[Municipality]:
+    return [m for c in _METRO_CORE.get(core_code, ()) if (m := get(c))]
+
+
+def area_keys(city: str | None) -> list[str]:
+    """Claves de `event.city` de la zona de una propiedad (features 033 y 034).
+
+    Su municipio, todo su área metropolitana en ambos sentidos (Sabaneta → Medellín y Medellín
+    → Sabaneta, Envigado…: la DAVIarena queda en Sabaneta) y los festivos nacionales.
     `city` es el texto libre de la propiedad ("Sabaneta", "Medellín, Antioquia").
     """
     key = normalize_city(city)
     m = by_city_key(key)
+    return keys_for(m) if m is not None else [key, NATIONAL]
+
+
+def keys_for(m: Municipality) -> list[str]:
+    keys = [m.city_key]
+    core = metro_core(m.code) or (m if m.code in _METRO_CORE else None)
+    if core is not None:
+        for k in [core.city_key] + [x.city_key for x in area_members(core.code)]:
+            if k not in keys:
+                keys.append(k)
+    return keys + [NATIONAL]
+
+
+def area_core_key(city: str | None) -> str:
+    """Clave de la ciudad principal del área (o la del propio municipio si no tiene área)."""
+    key = normalize_city(city)
+    m = by_city_key(key)
     core = metro_core(m.code) if m else None
-    return [key] + ([core.city_key] if core and core.city_key != key else [])
+    return core.city_key if core else key
 
 
 def count() -> int:

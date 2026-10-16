@@ -66,7 +66,9 @@ async def build_scan_queries(
     from app.models.market import PointOfInterest
 
     cfg = await get_or_create_scan_config(session)
-    zone = await effective_zone(session, cfg)
+    # Feature 034: las consultas de ciudad no llevan la dirección de la propiedad (sesgaba los
+    # resultados hacia el barrio); la zona configurada a mano se respeta.
+    zone = cfg.zone or await property_city(session)
     kinds = cfg.event_kinds or "conciertos ferias convenciones festivales"
 
     queries = (

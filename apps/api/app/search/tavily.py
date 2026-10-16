@@ -21,12 +21,14 @@ class TavilyProvider:
         if self._owns:
             await self._client.aclose()
 
-    async def search(self, query: str, *, max_results: int = 5) -> list[SearchResult]:
-        if query in self._cache:
-            return self._cache[query]
+    async def search(self, query: str, *, max_results: int = 5, **opts) -> list[SearchResult]:
+        """`opts` (feature 034): include_domains, search_depth, topic, time_range… de Tavily."""
+        key = query + repr(sorted(opts.items()))
+        if key in self._cache:
+            return self._cache[key]
         resp = await self._client.post(
             f"{settings.search_base_url.rstrip('/')}/search",
-            json={"api_key": self.api_key, "query": query, "max_results": max_results},
+            json={"api_key": self.api_key, "query": query, "max_results": max_results, **opts},
         )
         data = resp.json()
         results = [
@@ -38,5 +40,5 @@ class TavilyProvider:
             )
             for r in data.get("results", [])
         ]
-        self._cache[query] = results
+        self._cache[key] = results
         return results

@@ -166,13 +166,13 @@ class MeteredSearch:
         self.skipped = 0
         self._done: int | None = None
 
-    async def search(self, query: str, *, max_results: int = 5):
+    async def search(self, query: str, *, max_results: int = 5, **opts):
         if self._done is None:
             self._done = await searches_on(self._session, self._day)
         if self._done >= self._limit:
             self.skipped += 1
             return []
-        results = await self._inner.search(query, max_results=max_results)
+        results = await self._inner.search(query, max_results=max_results, **opts)
         self._done += 1
         price = settings.ai_prices.get("search")
         await record(self._session, SEARCH, day=self._day,
