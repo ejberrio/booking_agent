@@ -313,6 +313,10 @@ export const api = {
     }),
   syncIcal: () => req<IcalReport>(`/manual/ical/sync`, { method: "POST" }),
   myReport: () => req<MyReport>(`/report/mine`),
+  reportEvent: (body: { name: string; start_date: string; end_date?: string; venue?: string }) =>
+    req<{ status: "exists" | "verified" | "unverified"; message: string; remaining_today: number }>(
+      `/events/report`, { method: "POST", body: JSON.stringify(body) },
+    ),
   digest: () => req<{ enabled: boolean; available: boolean }>(`/account/digest`),
   setDigest: (enabled: boolean) =>
     req<{ enabled: boolean; available: boolean }>(`/account/digest`, {
