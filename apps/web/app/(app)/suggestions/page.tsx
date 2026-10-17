@@ -12,6 +12,7 @@ import { api } from "@/lib/api";
 import { shortRange } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import type { BatchResult } from "@/lib/types";
+import { ReportEvent } from "@/components/events/report-event";
 import { OfflineBanner } from "@/components/offline/offline-card";
 
 export default function SuggestionsPage() {
@@ -96,7 +97,10 @@ export default function SuggestionsPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4 pb-20">
-      <h1 className="text-xl font-semibold">{t.title}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-xl font-semibold">{t.title}</h1>
+        <ReportEvent />
+      </div>
       <p className="text-sm text-muted-foreground">{t.intro}</p>
       <OfflineBanner />
 

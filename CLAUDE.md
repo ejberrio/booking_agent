@@ -1,5 +1,5 @@
 <!-- SPECKIT START -->
-Feature activa: **034-event-sources** (boleteras, agendas, festivos; área metropolitana en ambos sentidos).
+Feature activa: **035-report-events** (consultar/reportar eventos: `event_report_service`, `/events`, herramientas `get_events`/`report_event`, spec `specs/035-report-events/spec.md`). Antes: **034-event-sources** (boleteras, agendas, festivos; área metropolitana en ambos sentidos).
 Spec: `specs/034-event-sources/spec.md`. `event_sources_service` (TuBoleta, Ticketmaster CO, Plaza Mayor:
 JSON-LD/API, robots.txt, sin evadir bloqueos, `EVENT_SOURCES_DISABLED`), `holidays_co` (Ley Emiliani),
 `municipalities.area_keys` (+`colombia`), búsquedas dirigidas semanales. Anteriores: 033 (eventos del área),
