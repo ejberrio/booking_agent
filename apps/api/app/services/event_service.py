@@ -34,15 +34,34 @@ def name_key(name: str) -> str:
     return " ".join(re.sub(r"[^a-z0-9]+", " ", plain).split())
 
 
+def _rank(ev) -> tuple:
+    """Mejor versión de un evento: la de una fuente oficial, luego la más importante."""
+    rel = {"low": 0, "medium": 1, "high": 2}.get(getattr(ev.relevance, "value", ev.relevance), 0)
+    official = bool(ev.source_url) and not str(ev.source_url).startswith("reportado:")
+    return (not official, not ev.source_url, -rel, ev.id or 0)
+
+
 def unique_events(events):
-    """Quita el mismo evento visto en dos ciudades del área (mismo nombre y fecha de inicio)."""
-    seen, out = set(), []
+    """Un evento por (nombre parecido, fecha): el mismo visto en dos ciudades del área o con
+    otro nombre ("Martin Garrix" / "Martin Garrix Show"). Conserva el orden de llegada y elige
+    la mejor versión de cada grupo (`_rank`)."""
+    return [min(g, key=_rank) for g in event_groups(events)]
+
+
+def event_groups(events) -> list[list]:
+    """Agrupa por fecha y nombre parecido a CUALQUIERA del grupo ("Juanes" ~ "Concierto de
+    Juanes" ~ "Juanes · World Tour 2026")."""
+    groups: list[list] = []
     for ev in events:
-        k = (name_key(ev.name), ev.start_date)
-        if k not in seen:
-            seen.add(k)
-            out.append(ev)
-    return out
+        for g in groups:
+            if g[0].start_date == ev.start_date and any(
+                similar_names(m.name, ev.name) for m in g
+            ):
+                g.append(ev)
+                break
+        else:
+            groups.append([ev])
+    return groups
 
 
 def make_dedup_key(name: str, start: date, location: str | None) -> str:
@@ -73,7 +92,10 @@ async def upsert_event(
     if existing is None:
         # Feature 034: el mismo evento con otro nombre ("Hebert Vargas · Éxito tras Éxito" de la
         # boletera vs "Concierto de Hebert Vargas" de una búsqueda) no se duplica.
-        existing = await _similar(session, [city_key], start_date, name)
+        # En toda el área metropolitana (034/036): Hebert Vargas en Sabaneta = en Medellín.
+        from app.domain import municipalities
+
+        existing = await _similar(session, municipalities.area_keys(city_key), start_date, name)
     if existing is not None:
         if source_url and not existing.source_url:
             existing.source_url = source_url[:500]
@@ -173,3 +195,51 @@ def _aware(dt):
     from datetime import UTC
 
     return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
+
+
+async def dedupe_area(session: AsyncSession, keys: list[str], today: date,
+                      *, window_days: int = 10) -> dict:
+    """Limpieza de eventos repetidos o con fecha equivocada en un área (feature 036).
+
+    1. Mismo día y nombre parecido → se queda la mejor versión (fuente oficial, luego la más
+       importante); completa recinto y fecha de fin si le faltaban.
+    2. Un evento encontrado por búsqueda (sin enlace oficial) con nombre parecido a uno de una
+       boletera en otra fecha cercana (±10 días) → fecha equivocada: se borra.
+    Los festivos no se tocan.
+    """
+    rows = (
+        await session.execute(
+            select(Event).where(Event.city.in_(keys), Event.start_date >= today,
+                                Event.kind != EventKind.holiday)
+            .order_by(Event.start_date, Event.id)
+        )
+    ).scalars().all()
+    merged = wrong_date = 0
+    alive = []
+    for group in event_groups(rows):
+        keep = min(group, key=_rank)
+        for d in group:
+            if d is keep:
+                continue
+            keep.end_date = keep.end_date or d.end_date
+            keep.location = keep.location or d.location
+            if _REL_RANK.get(d.relevance, 0) > _REL_RANK.get(keep.relevance, 0):
+                keep.relevance = d.relevance
+            await session.delete(d)
+            merged += 1
+        alive.append(keep)
+    # Fecha equivocada: solo conciertos grandes de una boletera (una sola noche). Ballet,
+    # teatro o congresos pueden tener varias funciones y no se tocan.
+    official = [e for e in alive if _rank(e)[0] is False and e.kind is EventKind.concert
+                and e.relevance is Relevance.high]
+    for e in alive:
+        if e.source_url or e.kind is not EventKind.concert:
+            continue
+        for o in official:
+            gap = abs((o.start_date - e.start_date).days)
+            if 0 < gap <= window_days and similar_names(o.name, e.name):
+                await session.delete(e)
+                wrong_date += 1
+                break
+    await session.flush()
+    return {"merged": merged, "wrong_date": wrong_date}

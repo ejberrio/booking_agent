@@ -180,6 +180,10 @@ async def refresh_event_sources(
             note = await event_sources_service.refresh_area(
                 session, city, search=search, llm=llm, today=today
             )
+            # Feature 036: repetidos y fechas equivocadas del área, después de las fuentes.
+            clean = await event_service.dedupe_area(session, municipalities.area_keys(city), today)
+            if clean["merged"] or clean["wrong_date"]:
+                note += f"; limpieza={clean}"
             await session.commit()
             if note:
                 print(f"scan_daily: eventos {core}: {note}")
