@@ -129,6 +129,7 @@ const es = {
       email_api_key: "Correo (Resend API key)",
       google_oauth_client_id: "Google OAuth — ID de cliente",
       google_oauth_client_secret: "Google OAuth — secreto de cliente",
+      apify_api_token: "Apify API token",
     },
     services: {
       openai_api_key: "Agente de chat y extracción de eventos",
@@ -140,8 +141,11 @@ const es = {
       email_api_key: "Correos de verificación y recuperación de contraseña",
       google_oauth_client_id: "Entrar con Google",
       google_oauth_client_secret: "Entrar con Google",
+      apify_api_token: "Piloto de precios de la competencia (interno)",
     },
     help: {
+      apify_api_token:
+        'console.apify.com → Settings → API & Integrations → copia el "Personal API token" (empieza por "apify_api_"). Solo para el piloto interno de precios de la competencia.',
       openai_api_key:
         'platform.openai.com → Settings → API keys → "Create new secret key" (permisos: All). Empieza por "sk-" y solo se muestra una vez: cópiala y pégala aquí. Requiere saldo en Settings → Billing.',
       anthropic_api_key:
@@ -316,6 +320,7 @@ const en: Shape = {
       email_api_key: "Email (Resend API key)",
       google_oauth_client_id: "Google OAuth — client ID",
       google_oauth_client_secret: "Google OAuth — client secret",
+      apify_api_token: "Apify API token",
     },
     services: {
       openai_api_key: "Chat agent and event extraction",
@@ -327,8 +332,11 @@ const en: Shape = {
       email_api_key: "Confirmation and password recovery emails",
       google_oauth_client_id: "Sign in with Google",
       google_oauth_client_secret: "Sign in with Google",
+      apify_api_token: "Competitor pricing pilot (internal)",
     },
     help: {
+      apify_api_token:
+        'console.apify.com → Settings → API & Integrations → copy the "Personal API token" (starts with "apify_api_"). Only for the internal competitor pricing pilot.',
       openai_api_key:
         'platform.openai.com → Settings → API keys → "Create new secret key" (permissions: All). It starts with "sk-" and is only shown once: copy it and paste it here. Requires a balance in Settings → Billing.',
       anthropic_api_key:
@@ -501,6 +509,7 @@ const pt: Shape = {
       email_api_key: "E-mail (Resend API key)",
       google_oauth_client_id: "Google OAuth — ID do cliente",
       google_oauth_client_secret: "Google OAuth — segredo do cliente",
+      apify_api_token: "Apify API token",
     },
     services: {
       openai_api_key: "Agente de chat e extração de eventos",
@@ -512,8 +521,11 @@ const pt: Shape = {
       email_api_key: "E-mails de confirmação e recuperação de senha",
       google_oauth_client_id: "Entrar com Google",
       google_oauth_client_secret: "Entrar com Google",
+      apify_api_token: "Piloto de preços da concorrência (interno)",
     },
     help: {
+      apify_api_token:
+        'console.apify.com → Settings → API & Integrations → copie o "Personal API token" (começa com "apify_api_"). Só para o piloto interno de preços da concorrência.',
       openai_api_key:
         'platform.openai.com → Settings → API keys → "Create new secret key" (permissões: All). Começa com "sk-" e só é exibida uma vez: copie e cole aqui. Exige saldo em Settings → Billing.',
       anthropic_api_key:

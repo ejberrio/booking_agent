@@ -128,6 +128,7 @@ class Settings(BaseSettings):
     # Busqueda web (eventos / mercado)
     search_provider: str = "tavily"
     search_api_key: str | None = None
+    apify_api_token: str | None = None  # feature 037 (piloto de mercado)
     search_base_url: str = "https://api.tavily.com"
 
     # Sugerencias: no repetir lo que el host ya decidió (aplicó o rechazó). Solo se

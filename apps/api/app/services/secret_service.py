@@ -87,6 +87,13 @@ SECRET_NAMES: dict[str, dict[str, str]] = {
         "service": "Entrar con Google",
         "test": "none",
     },
+    # Feature 037: piloto interno de precios de la competencia (#148), solo agregados.
+    "apify_api_token": {
+        "scope": "platform",
+        "label": "Apify API token",
+        "service": "Piloto de precios de la competencia (interno)",
+        "test": "none",
+    },
 }
 
 PLATFORM = "platform"
