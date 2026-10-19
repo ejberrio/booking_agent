@@ -66,3 +66,22 @@ class PointOfInterest(Base, AccountOwned, TimestampMixin):
     date_from: Mapped[date | None] = mapped_column(Date, nullable=True)
     date_to: Mapped[date | None] = mapped_column(Date, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class EventReport(Base, AccountOwned, TimestampMixin):
+    """Evento que el anfitrión reportó como faltante (feature 035).
+
+    `status`: exists (ya estaba), verified (confirmado con una búsqueda → `event` público),
+    unverified (no se pudo confirmar → solo una nota privada en su calendario).
+    """
+
+    __tablename__ = "event_report"
+
+    name: Mapped[str] = mapped_column(String(200))
+    start_date: Mapped[date] = mapped_column(Date, index=True)
+    end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    venue: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    status: Mapped[str] = mapped_column(String(12))
+    event_id: Mapped[int | None] = mapped_column(
+        ForeignKey("event.id", ondelete="SET NULL"), nullable=True
+    )

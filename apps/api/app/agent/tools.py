@@ -137,6 +137,33 @@ READ_TOOLS = [
         False,
     ),
     ToolSpec(
+        "get_events",
+        "Eventos ya conocidos en la zona de la propiedad (su municipio, el área metropolitana "
+        "y los festivos/puentes) entre dos fechas: nombre, fechas, recinto, importancia y "
+        "origen. Sin costo. Úsala para '¿qué eventos hay…?' y para explicar sugerencias.",
+        {
+            "type": "object",
+            "properties": {"date_from": _STR, "date_to": _STR},
+            "required": ["date_from", "date_to"],
+        },
+        False,
+    ),
+    ToolSpec(
+        "report_event",
+        "El host reporta un evento que NO aparece en get_events (llama a get_events antes). "
+        "StayLever lo verifica con una búsqueda: si se confirma, lo agrega para su zona y "
+        "recalcula sus sugerencias de esas fechas; si no, queda como nota en su calendario. "
+        "Máximo 3 por día. No cambia precios. Pide nombre y fecha si faltan.",
+        {
+            "type": "object",
+            "properties": {
+                "name": _STR, "start_date": _STR, "end_date": _STR, "venue": _STR,
+            },
+            "required": ["name", "start_date"],
+        },
+        False,
+    ),
+    ToolSpec(
         "sync_calendar",
         "Sincroniza AHORA con el Channel Manager: importa reservas nuevas, cancelaciones, "
         "cambios de fechas, precios y disponibilidad. Úsala cuando el host diga que algo "
@@ -470,6 +497,27 @@ async def _exec_read(session: AsyncSession, name: str, args: dict) -> Any:
             }
             for v, cur, direction in await _pending_suggestions(session, args)
         ]
+
+    if name == "get_events":
+        from app.services import event_report_service
+
+        return await event_report_service.list_events(
+            session, date.fromisoformat(args["date_from"]), date.fromisoformat(args["date_to"])
+        )
+
+    if name == "report_event":
+        from app.services import event_report_service
+
+        try:
+            res = await event_report_service.report_metered(
+                session, name=str(args.get("name") or ""),
+                start_date=date.fromisoformat(args["start_date"]),
+                end_date=date.fromisoformat(args["end_date"]) if args.get("end_date") else None,
+                venue=args.get("venue"),
+            )
+        except (event_report_service.ReportError, ValueError) as exc:
+            return {"error": str(exc)}
+        return {"status": res.status, "message": res.message, "event": res.event}
 
     if name == "sync_calendar":
         from app.services import sync_service
