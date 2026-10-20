@@ -35,6 +35,8 @@ from datetime import date, timedelta
 import httpx
 
 ACTOR = "tri_angle~new-fast-airbnb-scraper"
+ROOM_ACTOR = "tri_angle~airbnb-rooms-urls-scraper"  # un anuncio puntual (el propio)
+DEBUG = False
 API = "https://api.apify.com/v2"
 
 
@@ -47,7 +49,8 @@ class Zone:
     radius_km: float
     min_bedrooms: int
     max_bedrooms: int
-    own_price: dict[str, float] = field(default_factory=dict)  # fecha → precio propio/noche
+    own_price: dict[str, float] = field(default_factory=dict)  # fecha → tarifa base propia/noche
+    own_listing: str | None = None  # URL del anuncio propio: total del huésped con el mismo método
 
 
 def km(lat1, lon1, lat2, lon2) -> float:
@@ -96,7 +99,8 @@ def bedrooms(item: dict) -> int | None:
     for k in ("bedrooms", "bedroomCount", "numberOfBedrooms"):
         if item.get(k) is not None:
             return int(_num(item[k]) or 0)
-    text = " ".join(str(item.get(k) or "") for k in ("subtitle", "name", "title", "structuredContent"))
+    subs = item.get("subtitles") if isinstance(item.get("subtitles"), list) else []
+    text = " · ".join([str(x) for x in subs] + [str(item.get(k) or "") for k in ("name", "title")])
     for word in text.lower().replace(",", " ").split("·"):
         w = word.strip()
         if "bedroom" in w or "habitaci" in w:
@@ -115,11 +119,11 @@ def percentile(sorted_vals: list[float], p: float) -> float:
 
 
 async def run_actor(client: httpx.AsyncClient, token: str, inp: dict, *, max_items: int,
-                    max_usd: float) -> tuple[list[dict], dict]:
+                    max_usd: float, actor: str = ACTOR) -> tuple[list[dict], dict]:
     headers = {"Authorization": f"Bearer {token}"}
     t0 = time.monotonic()
     r = await client.post(
-        f"{API}/acts/{ACTOR}/runs",
+        f"{API}/acts/{actor}/runs",
         params={"waitForFinish": 240, "maxItems": max_items, "maxTotalChargeUsd": max_usd},
         json=inp, headers=headers, timeout=300,
     )
@@ -131,11 +135,19 @@ async def run_actor(client: httpx.AsyncClient, token: str, inp: dict, *, max_ite
     items = (await client.get(f"{API}/datasets/{run['defaultDatasetId']}/items",
                               params={"clean": 1, "format": "json"}, headers=headers,
                               timeout=120)).json()
+    # El costo final se asienta unos segundos después: se calcula con los cobros del actor.
+    run = (await client.get(f"{API}/actor-runs/{run['id']}", headers=headers)).json()["data"]
+    events = ((run.get("pricingInfo") or {}).get("pricingPerEvent") or {}).get("actorChargeEvents") or {}
+    charged = run.get("chargedEventCounts") or {}
+    usd = sum(n * float((events.get(k) or {}).get("eventPriceUsd") or 0) for k, n in charged.items())
+    if not usd and items:  # el cobro aún no se asentó: estimado con el precio del evento principal
+        primary = next((v for v in events.values() if v.get("isPrimaryEvent")), {})
+        usd = len(items) * float(primary.get("eventPriceUsd") or 0)
     meta = {
         "status": run.get("status"),
         "seconds": round(time.monotonic() - t0, 1),
-        "usd": run.get("usageTotalUsd"),
-        "charged": run.get("chargedEventCounts"),
+        "usd": round(max(usd, float(run.get("usageTotalUsd") or 0)), 4),
+        "charged": charged,
         "items": len(items),
     }
     return items, meta
@@ -159,6 +171,13 @@ async def pilot(zones: list[Zone], windows: list[tuple[date, date]], token: str,
                 except httpx.HTTPError as exc:
                     zr["windows"].append({"check_in": ci.isoformat(), "error": type(exc).__name__})
                     continue
+                if DEBUG and items:
+                    first = items[0]
+                    print("campos:", sorted(first.keys()))
+                    for k in ("price", "pricing", "coordinates", "location", "bedrooms", "subtitle",
+                              "roomType", "structuredContent"):
+                        if k in first:
+                            print(" ", k, "=", json.dumps(first[k], ensure_ascii=False)[:400])
                 prices, near, with_price, parse_fail = [], 0, 0, 0
                 for it in items:
                     lat, lon = coords(it)
@@ -179,18 +198,38 @@ async def pilot(zones: list[Zone], windows: list[tuple[date, date]], token: str,
                                             "price_night": round(p)})
                 prices.sort()
                 own = z.own_price.get(ci.isoformat())
-                pct = (sum(1 for x in prices if x <= own) / len(prices)) if (own and prices) else None
+                own_guest, own_meta = None, None
+                if z.own_listing:
+                    try:
+                        rows, own_meta = await run_actor(
+                            client, token,
+                            {"startUrls": [{"url": z.own_listing}], "checkIn": ci.isoformat(),
+                             "checkOut": co.isoformat(), "currency": "COP", "locale": "es-419",
+                             "adults": 2, "enrichUserProfiles": False},
+                            max_items=1, max_usd=0.02, actor=ROOM_ACTOR)
+                        if DEBUG and rows:
+                            print("propio campos:", sorted(rows[0].keys()))
+                            for k in ("price", "pricing"):
+                                if k in rows[0]:
+                                    print(" ", k, "=", json.dumps(rows[0][k], ensure_ascii=False)[:400])
+                        own_guest = nightly_price(rows[0], nights) if rows else None
+                    except httpx.HTTPError:
+                        own_guest = None
+                ref = own_guest or own
+                pct = (sum(1 for x in prices if x <= ref) / len(prices)) if (ref and prices) else None
                 zr["windows"].append({
                     "check_in": ci.isoformat(), "nights": nights, **meta,
                     "with_price": with_price, "parse_fail": parse_fail, "comparables": near,
                     "median": round(statistics.median(prices)) if prices else None,
                     "p25": round(percentile(prices, 0.25)) if prices else None,
                     "p75": round(percentile(prices, 0.75)) if prices else None,
-                    "own_price": own, "own_percentile": round(pct * 100) if pct is not None else None,
+                    "own_price": own, "own_guest_night": round(own_guest) if own_guest else None,
+                    "own_percentile": round(pct * 100) if pct is not None else None,
+                    "own_usd": (own_meta or {}).get("usd"),
                 })
             report["zones"].append(zr)
-    report["usd_total"] = round(sum((w.get("usd") or 0) for z in report["zones"]
-                                    for w in z["windows"]), 4)
+    report["usd_total"] = round(sum((w.get("usd") or 0) + (w.get("own_usd") or 0)
+                                    for z in report["zones"] for w in z["windows"]), 4)
     return report
 
 
@@ -239,7 +278,12 @@ async def main() -> None:
     ap.add_argument("--max-usd", type=float, default=0.20, help="tope de gasto por corrida")
     ap.add_argument("--windows", type=int, default=6)
     ap.add_argument("--with-cartagena", action="store_true")
+    ap.add_argument("--min-bedrooms", type=int, default=2)
+    ap.add_argument("--own-listing", default=None, help="URL del anuncio propio en Airbnb")
+    ap.add_argument("--debug", action="store_true", help="muestra la forma (no los datos) del 1er anuncio")
     args = ap.parse_args()
+    global DEBUG
+    DEBUG = args.debug
 
     from app.db.session import SessionLocal
     from app.services import secret_service
@@ -252,7 +296,8 @@ async def main() -> None:
 
     windows = default_windows(date.today())[: args.windows]
     home = Zone("Mayorca/Sabaneta (tu apartamento)", "Sabaneta, Antioquia, Colombia",
-                6.159490, -75.606309, 2.0, 2, 4, await _own_prices(windows))
+                6.159490, -75.606309, 2.0, args.min_bedrooms, 4, await _own_prices(windows),
+                args.own_listing)
     zones = [home]
     if args.with_cartagena:
         zones.append(Zone("Cartagena (centro/Bocagrande)", "Cartagena, Bolívar, Colombia",
@@ -266,7 +311,8 @@ async def main() -> None:
         for w in z["windows"]:
             print("  ", {k: w.get(k) for k in ("check_in", "status", "items", "with_price",
                                                "comparables", "median", "p25", "p75",
-                                               "own_price", "own_percentile", "usd", "seconds")})
+                                               "own_price", "own_guest_night", "own_percentile",
+                                               "usd", "own_usd", "seconds")})
     print("USD total:", report["usd_total"])
 
 
