@@ -11,6 +11,8 @@ const es = {
     `mercado ~${adr} pero con solo ${samples} tarifa(s): confianza baja, no se usa como ancla`,
   marketDiscarded: (adr: string) =>
     `mercado ~${adr} descartado: no es comparable con tu tarifa`,
+  marketCap: (p90: string, br: number | null) =>
+    `techo de mercado: el 90% de la zona${br ? ` (${br} hab.)` : ""} cobra hasta ~${p90}`,
   source: "fuente",
 };
 
@@ -25,6 +27,7 @@ const en: Shape = {
   marketLow: (adr, samples) =>
     `market ~${adr} but only ${samples} rate(s): low confidence, not used as an anchor`,
   marketDiscarded: (adr) => `market ~${adr} discarded: not comparable with your rate`,
+  marketCap: (p90, br) => `market ceiling: 90% of the area${br ? ` (${br} BR)` : ""} charges up to ~${p90}`,
   source: "source",
 };
 
@@ -37,6 +40,7 @@ const pt: Shape = {
   marketLow: (adr, samples) =>
     `mercado ~${adr}, mas com apenas ${samples} tarifa(s): confiança baixa, não é usado como âncora`,
   marketDiscarded: (adr) => `mercado ~${adr} descartado: não é comparável com a sua tarifa`,
+  marketCap: (p90, br) => `teto de mercado: 90% da região${br ? ` (${br} quartos)` : ""} cobra até ~${p90}`,
   source: "fonte",
 };
 

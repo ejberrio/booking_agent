@@ -299,6 +299,12 @@ async def generate_suggestions(
             month = (month.replace(day=28) + timedelta(days=4)).replace(day=1)
 
     horizon_from = max(date_from, today)
+    # Feature 038: techo de mercado (p90 de la zona y su tamaño) por noche, si hay datos.
+    from app.services import market_band_service
+
+    caps = await market_band_service.caps_for(
+        session, prop.city, market_band_service.unit_bedrooms(unit), horizon_from, date_to
+    )
     decisions = await _prior_decisions(session, unit_type_id, horizon_from, date_to)
     logs = await _price_logs(session, unit_type_id, horizon_from, date_to)
     threshold = Decimal(str(settings.suggestion_repeat_threshold_pct))
@@ -327,6 +333,7 @@ async def generate_suggestions(
             market=snap,
             min_price=min_p,
             max_price=max_p,
+            market_cap=caps.get(day),
         )
         prior = decisions.get(day)
         if out is not None and repeat.should_propose(
@@ -338,7 +345,8 @@ async def generate_suggestions(
             tolerance_pct=tolerance,
         ):
             # Clave de agrupación: misma señal dominante, mismo precio y misma decisión previa.
-            key = (ev.id if ev else None, occ, gap is not None, out.price, prior)
+            capped = any(f.kind == "market_cap" for f in out.factors)
+            key = (ev.id if ev else None, occ, gap is not None, capped, out.price, prior)
             per_day.append((day, key, out, snap, prior))
         day += timedelta(days=1)
 

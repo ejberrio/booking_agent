@@ -104,7 +104,7 @@ export interface PromotionApplyResult {
 }
 
 export interface SuggestionFactor {
-  kind: "event" | "occupancy" | "gap" | "market";
+  kind: "event" | "occupancy" | "gap" | "market" | "market_cap";
   label: string;
   pct?: number | null;
   event?: {
@@ -121,6 +121,9 @@ export interface SuggestionFactor {
   source?: string;
   state?: "used" | "low_confidence" | "discarded";
   weight?: number;
+  p90?: string; // feature 038: techo de mercado
+  p75?: string | null;
+  bedrooms?: number | null;
 }
 
 export interface Suggestion {

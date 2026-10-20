@@ -17,7 +17,7 @@ from app.models.audit import PriceChangeLog, PromotionChangeLog
 from app.models.availability import AvailabilityChangeLog
 from app.models.booking import Booking
 from app.models.calendar import CalendarDay, CalendarNote, Rate
-from app.models.market import Event, EventReport, PointOfInterest, PriceSuggestion
+from app.models.market import Event, EventReport, MarketBand, PointOfInterest, PriceSuggestion
 from app.models.pricing import NativeDeal, PricingRule, Promotion
 from app.models.usage import AIUsage
 from app.models.public import CityScan, PublicMetric, PublicQuota, PublicReport, WaitlistEntry
@@ -29,6 +29,7 @@ from app.models.sync import ChannelManagerConnection, SyncIssue, SyncRun
 from app.models.webhook import WebhookEvent
 
 __all__ = [
+    "MarketBand",
     "EventReport",
     "CityScan",
     "PublicMetric",

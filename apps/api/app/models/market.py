@@ -85,3 +85,25 @@ class EventReport(Base, AccountOwned, TimestampMixin):
     event_id: Mapped[int | None] = mapped_column(
         ForeignKey("event.id", ondelete="SET NULL"), nullable=True
     )
+
+
+class MarketBand(Base):
+    """Percentiles del precio por noche del mercado (sin cargos) por zona, habitaciones y
+    fecha (feature 038). Fuente inicial: PriceLabs Market Dashboard ("Precios Futuros").
+
+    Datos de PLATAFORMA (agregados, sin anuncios ni personas): sirven de techo a las
+    sugerencias por evento (p90) y para avisar cuando un precio queda fuera del mercado.
+    """
+
+    __tablename__ = "market_band"
+    __table_args__ = (UniqueConstraint("city", "bedrooms", "day", name="uq_market_band"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    city: Mapped[str] = mapped_column(String(80), index=True)  # ciudad principal del área
+    bedrooms: Mapped[int] = mapped_column(default=0)  # 0 = todas
+    day: Mapped[date] = mapped_column(Date, index=True)
+    p25: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    p50: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    p75: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    p90: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    source: Mapped[str] = mapped_column(String(40), default="pricelabs")

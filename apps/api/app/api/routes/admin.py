@@ -165,6 +165,38 @@ async def delete_waitlist(entry_id: int, session: AsyncSession = Depends(get_ses
     return {"deleted": True}
 
 
+# --------- mercado (feature 038) ---------
+
+
+class MarketBandsIn(BaseModel):
+    city: str = Field(min_length=2, max_length=80)
+    bedrooms: int = Field(default=0, ge=0, le=20)
+    source: str = Field(default="pricelabs", max_length=40)
+    rows: list[list | dict] = Field(min_length=1, max_length=800)
+
+
+@router.post("/market-bands")
+async def import_market_bands(req: MarketBandsIn, session: AsyncSession = Depends(get_session)):
+    """Importa percentiles de precio por fecha (p. ej. PriceLabs → Precios Futuros)."""
+    from app.services import market_band_service
+
+    try:
+        n = await market_band_service.import_rows(
+            session, city=req.city, bedrooms=req.bedrooms, rows=req.rows, source=req.source
+        )
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=400, detail=f"Filas inválidas: {exc}") from None
+    await session.commit()
+    return {"imported": n, "bands": await market_band_service.summary(session)}
+
+
+@router.get("/market-bands")
+async def market_bands(session: AsyncSession = Depends(get_session)):
+    from app.services import market_band_service
+
+    return await market_band_service.summary(session)
+
+
 # --------- uso de IA (feature 027) ---------
 
 
