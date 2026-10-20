@@ -52,6 +52,9 @@ class MarketCap:
     p50: Decimal | None = None
     bedrooms: int | None = None
     source: str = "pricelabs"
+    # Feature 039: con ocupación baja, los eventos medianos/pequeños topan en el p75 (el motor
+    # pone ese valor en `p90` y marca `level="p75"`); grandes y puentes siguen en el p90.
+    level: str = "p90"
 
 
 @dataclass(frozen=True)
@@ -186,10 +189,13 @@ def suggest_price_v2(
             Factor(
                 kind="market_cap",
                 label=(
-                    f"techo de mercado: el 90% de la zona cobra hasta ~{market_cap.p90:.0f}"
+                    f"techo de mercado: el {75 if market_cap.level == 'p75' else 90}% de la "
+                    f"zona cobra hasta ~{market_cap.p90:.0f}"
                     + (f" ({market_cap.bedrooms} hab.)" if market_cap.bedrooms else "")
+                    + (" — ocupación baja: evento pequeño o mediano" if market_cap.level == "p75"
+                       else "")
                 ),
-                data={"p90": str(market_cap.p90),
+                data={"p90": str(market_cap.p90), "level": market_cap.level,
                       "p75": str(market_cap.p75) if market_cap.p75 is not None else None,
                       "bedrooms": market_cap.bedrooms, "source": market_cap.source},
             )

@@ -61,3 +61,50 @@ async def test_motor_usa_el_p90_de_la_zona_y_su_tamano(session):
     assert any(b["city"] == "medellin" and b["bedrooms"] == 3 and b["days"] == 7 for b in summary)
     assert (await session.execute(select(PriceSuggestion))).scalars().first() is not None
     assert TODAY < E1
+
+
+async def _bands(session):
+    await market_band_service.import_rows(
+        session, city="Medellín", bedrooms=3,
+        rows=[[(E1 + timedelta(days=i)).isoformat(), 160000, 230000, 300000, 400000]
+              for i in range(-2, 5)])
+
+
+async def test_demanda_baja_eventos_medianos_topan_en_p75(session):
+    prop, unit = await _seed(session, base="350000")
+    unit.name = "Three-Bedroom Apartment"
+    session.add(_event(rel=Relevance.medium))  # +15% = 402.5k
+    await _bands(session)
+    await session.flush()
+    sug = next(s for s in await _generate(session, unit) if s.date_from == E1)
+    cap = next(f for f in sug.rationale["factors"] if f["kind"] == "market_cap")
+    assert sug.suggested_price == D("300000") and cap["level"] == "p75"
+
+
+async def test_eventos_grandes_y_puentes_siguen_en_p90(session):
+    from app.models.enums import EventKind
+
+    prop, unit = await _seed(session, base="350000")
+    unit.name = "Three-Bedroom Apartment"
+    puente = _event(name="Puente festivo: prueba", rel=Relevance.medium)
+    puente.kind = EventKind.holiday
+    session.add(puente)
+    await _bands(session)
+    await session.flush()
+    sug = next(s for s in await _generate(session, unit) if s.date_from == E1)
+    assert sug.suggested_price == D("400000")  # +15% = 402.5k → p90
+
+
+async def test_con_ocupacion_normal_el_techo_es_el_p90(session):
+    from app.models.calendar import CalendarDay
+
+    prop, unit = await _seed(session, base="350000")
+    unit.name = "Three-Bedroom Apartment"
+    session.add(_event(rel=Relevance.medium))
+    for i in range(12):  # 12 de 30 noches ocupadas (40%): demanda normal
+        session.add(CalendarDay(unit_type_id=unit.id, date=TODAY + timedelta(days=20 + i),
+                                units_available=0))
+    await _bands(session)
+    await session.flush()
+    sug = next(s for s in await _generate(session, unit) if s.date_from == E1)
+    assert sug.suggested_price == D("400000")

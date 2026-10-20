@@ -28,7 +28,7 @@ from app.domain.suggestion import EventSignal, suggest_price_v2
 from app.market.provider import MarketDataProvider, MarketSnapshot
 from app.models.audit import PriceChangeLog
 from app.models.calendar import CalendarDay
-from app.models.enums import ChangeOrigin, Relevance, SuggestionStatus
+from app.models.enums import ChangeOrigin, EventKind, Relevance, SuggestionStatus
 from app.models.market import Event, PriceSuggestion
 from app.models.property import Property, UnitType
 from app.services import pricing_service
@@ -36,6 +36,9 @@ from app.services import pricing_service
 _REL_ORDER = {Relevance.low: 0, Relevance.medium: 1, Relevance.high: 2}
 _OCC_WINDOW = 7  # ±días para la señal de ocupación de la zona propia
 _GAP_WINDOW = 14  # ventana de hueco próximo (host, clarify)
+# Feature 039: ocupación de los próximos días por debajo de esto = demanda baja.
+LOW_DEMAND_WINDOW = 30
+LOW_DEMAND_OCC = 0.30
 
 
 # --------- supersede (US5) ---------
@@ -197,6 +200,18 @@ def _event_for(events: list[Event], day: date) -> Event | None:
     return best
 
 
+def _cap_for(cap, ev: Event | None, low_demand: bool):
+    """Feature 039: con demanda baja, solo los eventos grandes y los festivos/puentes pueden
+    acercarse al p90; los medianos, pequeños o sin evento topan en el p75."""
+    from dataclasses import replace
+
+    if cap is None or not low_demand or cap.p75 is None:
+        return cap
+    if ev is not None and (ev.relevance == Relevance.high or ev.kind == EventKind.holiday):
+        return cap
+    return replace(cap, p90=cap.p75, level="p75")
+
+
 def _occupancy_high(occupied: set[date], day: date) -> bool:
     """Demanda propia alta: ≥50% de los días de la ventana ±7 ya están tomados."""
     window = [day + timedelta(days=i) for i in range(-_OCC_WINDOW, _OCC_WINDOW + 1)]
@@ -305,6 +320,8 @@ async def generate_suggestions(
     caps = await market_band_service.caps_for(
         session, prop.city, market_band_service.unit_bedrooms(unit), horizon_from, date_to
     )
+    window = [today + timedelta(days=i) for i in range(LOW_DEMAND_WINDOW)]
+    low_demand = sum(1 for d in window if d in occupied) / LOW_DEMAND_WINDOW < LOW_DEMAND_OCC
     decisions = await _prior_decisions(session, unit_type_id, horizon_from, date_to)
     logs = await _price_logs(session, unit_type_id, horizon_from, date_to)
     threshold = Decimal(str(settings.suggestion_repeat_threshold_pct))
@@ -333,7 +350,7 @@ async def generate_suggestions(
             market=snap,
             min_price=min_p,
             max_price=max_p,
-            market_cap=caps.get(day),
+            market_cap=_cap_for(caps.get(day), ev, low_demand),
         )
         prior = decisions.get(day)
         if out is not None and repeat.should_propose(
