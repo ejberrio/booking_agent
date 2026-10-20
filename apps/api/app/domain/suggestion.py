@@ -44,6 +44,17 @@ class EventSignal:
 
 
 @dataclass(frozen=True)
+class MarketCap:
+    """Percentiles del mercado para esa noche (feature 038): el p90 es el techo."""
+
+    p90: Decimal
+    p75: Decimal | None = None
+    p50: Decimal | None = None
+    bedrooms: int | None = None
+    source: str = "pricelabs"
+
+
+@dataclass(frozen=True)
 class Factor:
     kind: str  # "event" | "occupancy" | "gap" | "market"
     label: str  # resumen en español (referencia y respaldo para datos viejos)
@@ -77,13 +88,15 @@ def suggest_price_v2(
     market: MarketSnapshot | None = None,
     min_price: Decimal | None = None,
     max_price: Decimal | None = None,
+    market_cap: MarketCap | None = None,
 ) -> SuggestionOutputV2 | None:
     """Sugerencia para un precio base, o None sin señales primarias / cambio nulo.
 
     El mercado por sí solo no dispara sugerencias (evita ruido); ancla las que
     disparan evento/ocupación/hueco.
     """
-    if event is None and not occupancy_high and gap_days_ahead is None:
+    above_market = market_cap is not None and base > market_cap.p90
+    if event is None and not occupancy_high and gap_days_ahead is None and not above_market:
         return None
 
     factor_pct = D("0")
@@ -164,6 +177,24 @@ def suggest_price_v2(
                 )
             )
 
+    # Techo de mercado (feature 038): nadie del 90 % de la zona cobra más que el p90 esa
+    # noche; ni un evento justifica pasarlo. Si el precio ya está por encima, se sugiere
+    # bajar hacia el p90 (con el tope bajista de −15% de abajo: gradual).
+    if market_cap is not None and target > market_cap.p90:
+        target = market_cap.p90.quantize(D("1"))
+        factors.append(
+            Factor(
+                kind="market_cap",
+                label=(
+                    f"techo de mercado: el 90% de la zona cobra hasta ~{market_cap.p90:.0f}"
+                    + (f" ({market_cap.bedrooms} hab.)" if market_cap.bedrooms else "")
+                ),
+                data={"p90": str(market_cap.p90),
+                      "p75": str(market_cap.p75) if market_cap.p75 is not None else None,
+                      "bedrooms": market_cap.bedrooms, "source": market_cap.source},
+            )
+        )
+
     # Límites SIEMPRE: tope bajista −15%, piso y techo de la regla.
     floor_discount = (base * (D("1") - MAX_DISCOUNT)).quantize(D("1"))
     if target < floor_discount:
@@ -176,7 +207,7 @@ def suggest_price_v2(
     if target == base:
         return None  # sin cambio significativo
 
-    primary = sum([event is not None, occupancy_high, gap_days_ahead is not None])
+    primary = sum([event is not None, occupancy_high, gap_days_ahead is not None, above_market])
     anchored = 1 if market_ok else 0
     confidence = _CONFIDENCE.get(min(3, primary + anchored), D("0.5"))
     text = "; ".join(f.label for f in factors)

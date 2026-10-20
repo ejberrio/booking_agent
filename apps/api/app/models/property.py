@@ -62,6 +62,9 @@ class UnitType(Base, AccountOwned, TimestampMixin):
     property_id: Mapped[int] = mapped_column(ForeignKey("property.id"))
     name: Mapped[str] = mapped_column(String(200))
     units_count: Mapped[int] = mapped_column(default=1)
+    # Habitaciones (feature 038): para comparar con el mercado de su tamaño. NULL = se deduce
+    # del nombre ("Three-Bedroom", "3BR", "3 habitaciones") o no se usa.
+    bedrooms: Mapped[int | None] = mapped_column(nullable=True)
     external_ref: Mapped[str | None] = mapped_column(String(120), nullable=True)
 
     property: Mapped[Property] = relationship(back_populates="unit_types")

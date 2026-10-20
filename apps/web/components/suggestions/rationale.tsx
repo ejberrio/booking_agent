@@ -24,6 +24,9 @@ function factorText(f: SuggestionFactor, r: Messages["rationale"]): string {
     if (f.state === "low_confidence") return r.marketLow(adr, f.samples ?? 0);
     return r.marketDiscarded(adr);
   }
+  if (f.kind === "market_cap" && f.p90) {
+    return r.marketCap(formatNumber(Number(f.p90)), f.bedrooms ?? null);
+  }
   return f.label;
 }
 

@@ -53,3 +53,8 @@ google-services.json
 
 # Copias de datos descargadas desde Ajustes → Tus datos (feature 028): datos personales
 staylever-[0-9]*.json
+
+# Datos privados de pilotos e investigación (no van al repo público)
+apps/api/_pilot/
+apps/api/_apply.py
+docs/research/
