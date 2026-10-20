@@ -124,6 +124,7 @@ export interface SuggestionFactor {
   p90?: string; // feature 038: techo de mercado
   p75?: string | null;
   bedrooms?: number | null;
+  level?: "p75" | "p90"; // feature 039
 }
 
 export interface Suggestion {

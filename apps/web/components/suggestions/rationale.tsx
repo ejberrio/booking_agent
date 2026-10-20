@@ -25,7 +25,7 @@ function factorText(f: SuggestionFactor, r: Messages["rationale"]): string {
     return r.marketDiscarded(adr);
   }
   if (f.kind === "market_cap" && f.p90) {
-    return r.marketCap(formatNumber(Number(f.p90)), f.bedrooms ?? null);
+    return r.marketCap(formatNumber(Number(f.p90)), f.bedrooms ?? null, f.level === "p75");
   }
   return f.label;
 }
