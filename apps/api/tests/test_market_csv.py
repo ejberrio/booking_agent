@@ -135,3 +135,27 @@ async def test_validaciones_y_solo_el_administrador(client, mail):
     r = await client.post("/admin/market-bands/csv", headers={"Authorization": f"Bearer {tok}"},
                           json={"city": "Medellín", "bedrooms": 3, "csv": _csv()})
     assert r.status_code == 403
+
+
+async def test_un_anio_se_carga_con_una_sola_consulta(session):
+    from sqlalchemy import event
+
+    rows = [[(TODAY + timedelta(days=i)).isoformat(), 160000, 220000, 290000, 350000 + i]
+            for i in range(365)]
+    await svc.import_rows(session, city="Medellín", bedrooms=3, rows=rows[:100])
+    selects: list[str] = []
+    engine = session.bind.sync_engine
+
+    def count(conn, cursor, statement, params, context, executemany):
+        if statement.lstrip().upper().startswith("SELECT") and "market_band" in statement:
+            selects.append(statement)
+
+    event.listen(engine, "before_cursor_execute", count)
+    try:
+        n = await svc.import_rows(session, city="Medellín", bedrooms=3, rows=rows)
+    finally:
+        event.remove(engine, "before_cursor_execute", count)
+    assert n == 365 and len(selects) == 1
+    bands = (await session.execute(select(MarketBand))).scalars().all()
+    assert len(bands) == 365  # las 100 que ya existían se reemplazan, no se duplican
+    assert {b.p90 for b in bands if b.day == TODAY} == {Decimal("350000")}

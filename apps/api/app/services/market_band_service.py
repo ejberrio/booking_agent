@@ -133,10 +133,14 @@ def parse_csv(text: str, today: date | None = None) -> ParsedCsv:
 
 async def import_rows(session: AsyncSession, *, city: str, bedrooms: int, rows: list,
                       source: str = "pricelabs") -> int:
-    """`rows` = [[fecha, p25, p50, p75, p90], …] (o dicts con esas claves). Reemplaza por fecha."""
+    """`rows` = [[fecha, p25, p50, p75, p90], …] (o dicts con esas claves). Reemplaza por fecha.
+
+    Una sola consulta trae las fechas que ya existen y todo se guarda en un único flush: un año
+    de fechas (~360) carga en un instante en vez de una consulta por fecha (feature 040).
+    """
     key = municipalities.area_core_key(city)
     now = datetime.now(UTC)
-    n = 0
+    parsed: dict[date, tuple] = {}
     for r in rows:
         if isinstance(r, dict):
             d, p25, p50, p75, p90 = (r.get("date") or r.get("day"), r.get("p25"), r.get("p50"),
@@ -146,21 +150,30 @@ async def import_rows(session: AsyncSession, *, city: str, bedrooms: int, rows: 
         day = date.fromisoformat(str(d)[:10])
         if _dec(p90) is None:
             continue
-        band = (
+        parsed[day] = (_dec(p25), _dec(p50), _dec(p75), _dec(p90))
+    if not parsed:
+        return 0
+    existing = {
+        b.day: b
+        for b in (
             await session.execute(
-                select(MarketBand).where(MarketBand.city == key, MarketBand.bedrooms == bedrooms,
-                                         MarketBand.day == day)
+                select(MarketBand).where(
+                    MarketBand.city == key, MarketBand.bedrooms == bedrooms,
+                    MarketBand.day >= min(parsed), MarketBand.day <= max(parsed),
+                )
             )
-        ).scalar_one_or_none()
+        ).scalars()
+    }
+    for day, (p25, p50, p75, p90) in parsed.items():
+        band = existing.get(day)
         if band is None:
             band = MarketBand(city=key, bedrooms=bedrooms, day=day)
             session.add(band)
-        band.p25, band.p50, band.p75, band.p90 = _dec(p25), _dec(p50), _dec(p75), _dec(p90)
+        band.p25, band.p50, band.p75, band.p90 = p25, p50, p75, p90
         band.source = source[:40]
         band.updated_at = now
-        n += 1
     await session.flush()
-    return n
+    return len(parsed)
 
 
 async def caps_for(session: AsyncSession, city: str | None, bedrooms: int | None,
