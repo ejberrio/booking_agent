@@ -39,7 +39,10 @@ hacerla el administrador de plataforma en ~3 minutos por zona, sin tocar código
 - `market_band.updated_at`: columna opcional nueva (migración `d0e1f2a3b4c6`). Volver a la versión anterior es seguro.
 
 ## Fuera de alcance
-- Descargar el CSV automáticamente desde PriceLabs (no hay API pública de Market Dashboard; se preguntó a soporte el 20-oct).
+- Descargar los percentiles automáticamente. PriceLabs sí lo permite con la Customer API (`GET /v1/neighborhood_data`, USD 1 por anuncio al mes), pero hay dos condiciones:
+  - va atada a un anuncio propio cuyo origen de datos apunte al Market Dashboard;
+  - falta confirmar que funcione con «Sync Prices» apagado y que la licencia permita este uso.
+  Si sirve, será una feature aparte; mientras tanto, el CSV queda como respaldo.
 - Guardar «Median Booked Price» y el número de reservas.
 - Recordatorio automático mensual por correo.
 
