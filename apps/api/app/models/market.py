@@ -1,13 +1,13 @@
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Date, Enum, ForeignKey, Numeric, String, UniqueConstraint
+from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
 from app.models.account import AccountOwned
 from app.models.enums import EventKind, Relevance, SuggestionStatus
-from app.models.mixins import JSONBType, TimestampMixin
+from app.models.mixins import JSONBType, TimestampMixin, _now
 
 
 class Event(Base, TimestampMixin):
@@ -107,3 +107,7 @@ class MarketBand(Base):
     p75: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     p90: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     source: Mapped[str] = mapped_column(String(40), default="pricelabs")
+    # última carga de esta fecha (feature 040): para saber si los datos están viejos
+    updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=_now
+    )

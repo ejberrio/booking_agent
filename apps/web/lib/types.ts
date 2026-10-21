@@ -647,6 +647,27 @@ export type MyReport = {
   generated_at: string | null;
 };
 
+export type MarketBandSummary = {
+  city: string;
+  bedrooms: number;
+  source: string;
+  days: number;
+  from: string;
+  to: string;
+  p50_avg: number | null;
+  updated_at: string | null;
+};
+
+export type MarketCsvResult = {
+  imported: number;
+  past: number;
+  invalid: number;
+  city: string;
+  from: string;
+  to: string;
+  bands: MarketBandSummary[];
+};
+
 export type AdminBeta = {
   enabled: boolean;
   quota: number;

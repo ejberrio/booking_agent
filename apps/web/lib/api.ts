@@ -49,6 +49,8 @@ import type {
   PushDevice,
   Unit,
   AdminBeta,
+  MarketBandSummary,
+  MarketCsvResult,
   MyReport,
 } from "@/lib/types";
 
@@ -322,6 +324,13 @@ export const api = {
     req<{ enabled: boolean; available: boolean }>(`/account/digest`, {
       method: "PUT", body: JSON.stringify({ enabled }),
     }),
+  marketBands: () => req<MarketBandSummary[]>(`/admin/market-bands`),
+  uploadMarketCsv: (body: { city: string; bedrooms: number; csv: string }) =>
+    req<MarketCsvResult>(`/admin/market-bands/csv`, { method: "POST", body: JSON.stringify(body) }),
+  deleteMarketBands: (city: string, bedrooms: number) =>
+    req<{ deleted: number }>(
+      `/admin/market-bands?city=${encodeURIComponent(city)}&bedrooms=${bedrooms}`, { method: "DELETE" },
+    ),
   adminBeta: () => req<AdminBeta>(`/admin/beta`),
   patchBeta: (body: { enabled?: boolean; quota?: number; city_budget?: number }) =>
     req<AdminBeta>(`/admin/beta`, { method: "PATCH", body: JSON.stringify(body) }),

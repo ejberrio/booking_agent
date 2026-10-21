@@ -1,8 +1,9 @@
 """Percentiles de precio del mercado por zona, habitaciones y fecha (feature 038).
 
 Fuente inicial: PriceLabs Market Dashboard → "Precios Futuros" (precio por noche SIN cargos,
-p25/p50/p75/p90), que el administrador de plataforma importa por zona. Son datos agregados de
-plataforma: no hay anuncios ni personas.
+p25/p50/p75/p90), que el administrador de plataforma carga por zona y habitaciones subiendo el
+CSV desde Administración (feature 040). Son datos agregados de plataforma: no hay anuncios ni
+personas.
 
 Uso: techo de las sugerencias (p90) y aviso cuando un precio queda por encima del mercado.
 La zona es la ciudad principal del área metropolitana (Sabaneta → Medellín), como los eventos.
@@ -10,11 +11,14 @@ La zona es la ciudad principal del área metropolitana (Sabaneta → Medellín),
 
 from __future__ import annotations
 
+import csv
+import io
 import re
-from datetime import date
+from dataclasses import dataclass, field
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain import municipalities
@@ -44,10 +48,94 @@ def _dec(v) -> Decimal | None:
     return Decimal(str(round(float(v))))
 
 
+MAX_DAYS_AHEAD = 400  # PriceLabs publica ~1 año hacia adelante
+_DATE_HEAD = re.compile(r"^(dates?|fechas?|d[ií]a|stay ?dates?)$", re.I)
+_PCT_HEAD = re.compile(r"(?:\b(25|50|75|90)(?:th|º|°)?\b.*percentil|percentil\w*\D*(25|50|75|90)\b)", re.I)
+
+
+class CsvError(ValueError):
+    pass
+
+
+@dataclass
+class ParsedCsv:
+    rows: list[list] = field(default_factory=list)  # [[fecha, p25, p50, p75, p90], …] desde hoy
+    past: int = 0  # filas de fechas pasadas (historial que trae el CSV): se ignoran
+    invalid: int = 0  # filas sin fecha o con percentiles vacíos o desordenados
+
+
+def _num(v: str) -> float | None:
+    v = (v or "").strip().replace("$", "").replace(" ", "")
+    if not v or v.lower() in {"nan", "none", "-", "-na", "n/a"}:
+        return None
+    if "," in v and "." not in v:  # 157260,5 → 157260.5
+        v = v.replace(",", ".")
+    try:
+        return float(v.replace(",", ""))
+    except ValueError:
+        return None
+
+
+def parse_csv(text: str, today: date | None = None) -> ParsedCsv:
+    """Lee el CSV de PriceLabs → "Precios Futuros" → Descargar CSV.
+
+    Encabezado esperado: `Dates, 25th Percentile, 50th Percentile, 75th Percentile,
+    90th Percentile, …` (también en español: "Fecha", "Percentil 25"…). Las columnas se
+    reconocen por nombre, así que el orden y las columnas extra no importan. Se guardan solo
+    las fechas desde hoy (el CSV trae también ~2 años de historial).
+    """
+    today = today or date.today()
+    text = (text or "").lstrip("\ufeff")
+    lines = [ln for ln in text.splitlines() if ln.strip()]
+    if len(lines) < 2:
+        raise CsvError("El archivo está vacío o no tiene filas de datos.")
+    try:
+        dialect = csv.Sniffer().sniff(lines[0], delimiters=",;\t")
+    except csv.Error:
+        dialect = csv.excel
+    reader = csv.reader(io.StringIO("\n".join(lines)), dialect)
+    header = [h.strip() for h in next(reader)]
+    date_col = next((i for i, h in enumerate(header) if _DATE_HEAD.match(h)), None)
+    cols: dict[int, int] = {}
+    for i, h in enumerate(header):
+        m = _PCT_HEAD.search(h)
+        if m:
+            cols.setdefault(int(m.group(1) or m.group(2)), i)
+    missing = [str(p) for p in (25, 50, 75, 90) if p not in cols]
+    if date_col is None or missing:
+        raise CsvError(
+            "No reconozco el archivo: debe ser el CSV de \"Precios Futuros\" de PriceLabs, con "
+            "las columnas Dates y 25th/50th/75th/90th Percentile"
+            + (f" (faltan: {', '.join(missing)})" if missing else "") + "."
+        )
+    out = ParsedCsv()
+    horizon = today.toordinal() + MAX_DAYS_AHEAD
+    for r in reader:
+        try:
+            day = date.fromisoformat(r[date_col].strip()[:10])
+        except (IndexError, ValueError):
+            out.invalid += 1
+            continue
+        if day < today:
+            out.past += 1
+            continue
+        if day.toordinal() > horizon:
+            continue
+        vals = [_num(r[cols[p]]) if cols[p] < len(r) else None for p in (25, 50, 75, 90)]
+        if any(v is None or v <= 0 for v in vals) or vals != sorted(vals):
+            out.invalid += 1
+            continue
+        out.rows.append([day.isoformat(), *vals])
+    if not out.rows:
+        raise CsvError("El archivo no trae fechas desde hoy en adelante con los cuatro percentiles.")
+    return out
+
+
 async def import_rows(session: AsyncSession, *, city: str, bedrooms: int, rows: list,
                       source: str = "pricelabs") -> int:
     """`rows` = [[fecha, p25, p50, p75, p90], …] (o dicts con esas claves). Reemplaza por fecha."""
     key = municipalities.area_core_key(city)
+    now = datetime.now(UTC)
     n = 0
     for r in rows:
         if isinstance(r, dict):
@@ -69,6 +157,7 @@ async def import_rows(session: AsyncSession, *, city: str, bedrooms: int, rows: 
             session.add(band)
         band.p25, band.p50, band.p75, band.p90 = _dec(p25), _dec(p50), _dec(p75), _dec(p90)
         band.source = source[:40]
+        band.updated_at = now
         n += 1
     await session.flush()
     return n
@@ -95,13 +184,34 @@ async def caps_for(session: AsyncSession, city: str | None, bedrooms: int | None
     return out
 
 
-async def summary(session: AsyncSession) -> list[dict]:
-    rows = (await session.execute(select(MarketBand))).scalars().all()
-    agg: dict[tuple, dict] = {}
-    for b in rows:
-        k = (b.city, b.bedrooms, b.source)
-        a = agg.setdefault(k, {"city": b.city, "bedrooms": b.bedrooms, "source": b.source,
-                               "days": 0, "from": b.day, "to": b.day})
-        a["days"] += 1
-        a["from"], a["to"] = min(a["from"], b.day), max(a["to"], b.day)
-    return [{**a, "from": a["from"].isoformat(), "to": a["to"].isoformat()} for a in agg.values()]
+async def delete_zone(session: AsyncSession, *, city: str, bedrooms: int) -> int:
+    """Borra los percentiles de una zona y tamaño (p. ej. si se cargó el filtro equivocado)."""
+    key = municipalities.area_core_key(city)
+    res = await session.execute(
+        delete(MarketBand).where(MarketBand.city == key, MarketBand.bedrooms == bedrooms)
+    )
+    await session.flush()
+    return res.rowcount or 0
+
+
+async def summary(session: AsyncSession, today: date | None = None) -> list[dict]:
+    """Una fila por zona y tamaño: fechas cubiertas desde hoy, rango, mediana típica y última
+    carga (para ver si hay que refrescar)."""
+    today = today or date.today()
+    q = (
+        select(MarketBand.city, MarketBand.bedrooms, MarketBand.source,
+               func.count(MarketBand.id), func.min(MarketBand.day), func.max(MarketBand.day),
+               func.avg(MarketBand.p50), func.max(MarketBand.updated_at))
+        .where(MarketBand.day >= today)
+        .group_by(MarketBand.city, MarketBand.bedrooms, MarketBand.source)
+        .order_by(MarketBand.city, MarketBand.bedrooms)
+    )
+    out = []
+    for city, bedrooms, source, days, d_from, d_to, p50, updated in (await session.execute(q)).all():
+        out.append({
+            "city": city, "bedrooms": bedrooms, "source": source, "days": days,
+            "from": d_from.isoformat(), "to": d_to.isoformat(),
+            "p50_avg": round(float(p50)) if p50 is not None else None,
+            "updated_at": updated.isoformat() if updated else None,
+        })
+    return out

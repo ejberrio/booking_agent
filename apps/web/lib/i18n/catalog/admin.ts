@@ -45,6 +45,36 @@ const es = {
     on: "Abierto",
     off: "Solo con invitación",
   },
+  market: {
+    title: "Mercado (PriceLabs)",
+    description:
+      "Percentiles de precio por noche de cada zona. Las sugerencias no pasan del p90 (del p75 con ocupación baja). Refréscalos cada mes.",
+    steps: [
+      "En PriceLabs abre el Market Dashboard de la zona.",
+      "Arriba, en Habitaciones, elige el tamaño (p. ej. 3).",
+      "Baja a «Precios Futuros» y pulsa «Descargar CSV».",
+      "Aquí elige el municipio y las mismas habitaciones, y sube el archivo.",
+    ],
+    city: "Municipio de la zona",
+    bedrooms: "Habitaciones",
+    allBedrooms: "Todas",
+    file: "Archivo CSV",
+    upload: "Cargar",
+    uploading: "Cargando…",
+    loaded: (n: number, from: string, to: string) => `Cargadas ${n} fechas (${from} a ${to}).`,
+    skipped: (past: number, invalid: number) =>
+      `${past} fechas pasadas ignoradas${invalid ? ` · ${invalid} filas con datos incompletos` : ""}.`,
+    empty: "Aún no hay datos de mercado: las sugerencias no tienen techo.",
+    zone: "Zona",
+    range: "Fechas",
+    median: "Mediana típica",
+    updated: "Última carga",
+    stale: "vieja: refréscala",
+    endsSoon: "se acaba pronto",
+    remove: "Borrar",
+    confirmRemove: (zone: string, b: string) => `¿Borrar los datos de ${zone} (${b} hab.)? Las sugerencias de esa zona quedan sin techo.`,
+    removed: "Datos borrados",
+  },
 };
 
 type Shape = typeof es;
@@ -92,6 +122,36 @@ const en: Shape = {
     on: "Open",
     off: "Invitation only",
   },
+  market: {
+    title: "Market (PriceLabs)",
+    description:
+      "Nightly price percentiles per area. Suggestions never go above the p90 (p75 when occupancy is low). Refresh them every month.",
+    steps: [
+      "In PriceLabs, open the area's Market Dashboard.",
+      "At the top, under Bedrooms, pick the size (e.g. 3).",
+      "Scroll to “Future Prices” and click “Download CSV”.",
+      "Here, pick the municipality and the same bedrooms, and upload the file.",
+    ],
+    city: "Area municipality",
+    bedrooms: "Bedrooms",
+    allBedrooms: "All",
+    file: "CSV file",
+    upload: "Upload",
+    uploading: "Uploading…",
+    loaded: (n: number, from: string, to: string) => `Loaded ${n} dates (${from} to ${to}).`,
+    skipped: (past: number, invalid: number) =>
+      `${past} past dates ignored${invalid ? ` · ${invalid} rows with incomplete data` : ""}.`,
+    empty: "No market data yet: suggestions have no ceiling.",
+    zone: "Area",
+    range: "Dates",
+    median: "Typical median",
+    updated: "Last upload",
+    stale: "old: refresh it",
+    endsSoon: "ends soon",
+    remove: "Delete",
+    confirmRemove: (zone: string, b: string) => `Delete the data for ${zone} (${b} BR)? Suggestions in that area will have no ceiling.`,
+    removed: "Data deleted",
+  },
 };
 
 const pt: Shape = {
@@ -136,6 +196,36 @@ const pt: Shape = {
       "Desligado: só se cadastra quem tem um código de convite (beta). Ligado: qualquer pessoa com e-mail.",
     on: "Aberto",
     off: "Só com convite",
+  },
+  market: {
+    title: "Mercado (PriceLabs)",
+    description:
+      "Percentis de preço por noite de cada região. As sugestões não passam do p90 (do p75 com ocupação baixa). Atualize todo mês.",
+    steps: [
+      "No PriceLabs, abra o Market Dashboard da região.",
+      "No topo, em Quartos, escolha o tamanho (ex.: 3).",
+      "Desça até «Preços Futuros» e clique em «Baixar CSV».",
+      "Aqui, escolha o município e os mesmos quartos, e envie o arquivo.",
+    ],
+    city: "Município da região",
+    bedrooms: "Quartos",
+    allBedrooms: "Todos",
+    file: "Arquivo CSV",
+    upload: "Enviar",
+    uploading: "Enviando…",
+    loaded: (n: number, from: string, to: string) => `Carregadas ${n} datas (${from} a ${to}).`,
+    skipped: (past: number, invalid: number) =>
+      `${past} datas passadas ignoradas${invalid ? ` · ${invalid} linhas com dados incompletos` : ""}.`,
+    empty: "Ainda não há dados de mercado: as sugestões não têm teto.",
+    zone: "Região",
+    range: "Datas",
+    median: "Mediana típica",
+    updated: "Último envio",
+    stale: "antigo: atualize",
+    endsSoon: "acaba logo",
+    remove: "Apagar",
+    confirmRemove: (zone: string, b: string) => `Apagar os dados de ${zone} (${b} quartos)? As sugestões dessa região ficam sem teto.`,
+    removed: "Dados apagados",
   },
 };
 

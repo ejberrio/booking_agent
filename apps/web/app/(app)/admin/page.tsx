@@ -5,6 +5,7 @@ import { Copy } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { BetaCard } from "@/components/admin/beta-card";
+import { MarketCard } from "@/components/admin/market-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
@@ -30,6 +31,7 @@ export default function AdminPage() {
       <AccountsCard />
       <UsageAdminCard />
       <BetaCard />
+      <MarketCard />
     </div>
   );
 }
