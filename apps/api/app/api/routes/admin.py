@@ -197,6 +197,46 @@ async def market_bands(session: AsyncSession = Depends(get_session)):
     return await market_band_service.summary(session)
 
 
+class MarketCsvIn(BaseModel):
+    city: str = Field(min_length=2, max_length=80)
+    bedrooms: int = Field(default=0, ge=0, le=20)
+    csv: str = Field(min_length=10, max_length=400_000)  # ~3 años de fechas ≈ 80 KB
+
+
+@router.post("/market-bands/csv")
+async def import_market_csv(req: MarketCsvIn, session: AsyncSession = Depends(get_session)):
+    """Carga el CSV de PriceLabs → "Precios Futuros" para una zona y un número de habitaciones
+    (feature 040). Reemplaza las fechas que ya existían; las demás se conservan."""
+    from app.domain import municipalities
+    from app.services import market_band_service
+
+    key = municipalities.area_core_key(req.city)
+    if municipalities.by_city_key(key) is None:
+        raise HTTPException(status_code=400, detail=f"No reconozco el municipio \"{req.city}\".")
+    try:
+        parsed = market_band_service.parse_csv(req.csv)
+    except market_band_service.CsvError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from None
+    n = await market_band_service.import_rows(
+        session, city=req.city, bedrooms=req.bedrooms, rows=parsed.rows, source="pricelabs"
+    )
+    await session.commit()
+    return {
+        "imported": n, "past": parsed.past, "invalid": parsed.invalid, "city": key,
+        "from": parsed.rows[0][0], "to": parsed.rows[-1][0],
+        "bands": await market_band_service.summary(session),
+    }
+
+
+@router.delete("/market-bands")
+async def delete_market_bands(city: str, bedrooms: int, session: AsyncSession = Depends(get_session)):
+    from app.services import market_band_service
+
+    n = await market_band_service.delete_zone(session, city=city, bedrooms=bedrooms)
+    await session.commit()
+    return {"deleted": n, "bands": await market_band_service.summary(session)}
+
+
 # --------- uso de IA (feature 027) ---------
 
 

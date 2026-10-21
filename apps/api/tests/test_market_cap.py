@@ -57,7 +57,7 @@ async def test_motor_usa_el_p90_de_la_zona_y_su_tamano(session):
     assert sugs and sugs[0].suggested_price == D("400000")
     kinds = [f["kind"] for f in sugs[0].rationale["factors"]]
     assert "event" in kinds and "market_cap" in kinds
-    summary = await market_band_service.summary(session)
+    summary = await market_band_service.summary(session, today=E1 - timedelta(days=2))
     assert any(b["city"] == "medellin" and b["bedrooms"] == 3 and b["days"] == 7 for b in summary)
     assert (await session.execute(select(PriceSuggestion))).scalars().first() is not None
     assert TODAY < E1
