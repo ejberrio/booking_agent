@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
 import { dateTime, formatCOP, shortDate } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
+import type { MarketFeedRun, PriceLabsListing } from "@/lib/types";
 
 const STALE_DAYS = 35;
 const ENDS_SOON_DAYS = 60;
@@ -99,6 +100,8 @@ export function MarketCard() {
       </Button>
       {result && <p className="text-sm text-muted-foreground">{result}</p>}
 
+      <FeedSection city={city} bedrooms={bedrooms} bLabel={bLabel} />
+
       {q.data && q.data.length === 0 && <p className="text-sm text-muted-foreground">{t.empty}</p>}
       {q.data && q.data.length > 0 && (
         <div className="overflow-x-auto">
@@ -151,5 +154,105 @@ export function MarketCard() {
         </div>
       )}
     </Card>
+  );
+}
+
+/** Carga automática por la API de PriceLabs (feature 041). Usa el municipio y las habitaciones
+ * de arriba; el anuncio se elige de la lista que devuelve PriceLabs. */
+function FeedSection({ city, bedrooms, bLabel }: { city: string; bedrooms: number; bLabel: (n: number) => string }) {
+  const { m, lang } = useI18n();
+  const t = m.admin.market.api;
+  const qc = useQueryClient();
+  const feeds = useQuery({ queryKey: ["admin-market-feeds"], queryFn: api.marketFeeds });
+  const [listings, setListings] = useState<PriceLabsListing[] | null>(null);
+  const [picked, setPicked] = useState("");
+  const after = (r: MarketFeedRun) => {
+    qc.setQueryData(["admin-market-feeds"], r.feeds);
+    qc.invalidateQueries({ queryKey: ["admin-market"] });
+    if (r.result.ok) toast.success(`${r.result.imported} · ${r.result.from} – ${r.result.to}`);
+    else toast.error(r.result.error ?? "PriceLabs");
+  };
+  const load = useMutation({
+    mutationFn: api.pricelabsListings,
+    onSuccess: setListings,
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const save = useMutation({
+    mutationFn: () => {
+      const li = listings?.find((l) => `${l.pms}|${l.id}` === picked);
+      if (!li) throw new Error(t.pick);
+      return api.saveMarketFeed({ city: city.trim(), bedrooms, listing_id: li.id, pms: li.pms });
+    },
+    onSuccess: after,
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const run = useMutation({ mutationFn: api.runMarketFeed, onSuccess: after, onError: (e: Error) => toast.error(e.message) });
+  const remove = useMutation({
+    mutationFn: api.deleteMarketFeed,
+    onSuccess: (r) => qc.setQueryData(["admin-market-feeds"], r.feeds),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="space-y-3 border-t border-border pt-4">
+      <div>
+        <p className="text-sm font-medium">{t.title}</p>
+        <p className="text-xs text-muted-foreground">{t.description}</p>
+      </div>
+      {listings === null ? (
+        <Button className="bg-muted text-foreground" onClick={() => load.mutate()} disabled={load.isPending}>
+          {t.load}
+        </Button>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+          <label className="space-y-1 text-sm">
+            <span className="font-medium">{t.listing}</span>
+            <select
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              value={picked}
+              onChange={(e) => setPicked(e.target.value)}
+            >
+              <option value="">{t.pick}</option>
+              {listings.map((l) => (
+                <option key={`${l.pms}|${l.id}`} value={`${l.pms}|${l.id}`}>
+                  {l.name ?? l.id} · {l.city ?? "?"}{l.bedrooms != null ? ` · ${l.bedrooms}` : ""}
+                  {l.sync ? "" : ` · ${t.syncOff}`}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Button onClick={() => save.mutate()} disabled={!picked || city.trim().length < 2 || save.isPending}>
+            {t.save} ({city.trim()} · {bLabel(bedrooms)})
+          </Button>
+        </div>
+      )}
+      {feeds.data && feeds.data.length === 0 && <p className="text-xs text-muted-foreground">{t.empty}</p>}
+      {feeds.data && feeds.data.length > 0 && (
+        <ul className="divide-y text-xs">
+          {feeds.data.map((f) => (
+            <li key={f.id} className="flex flex-wrap items-start gap-2 py-2">
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <p className="font-medium capitalize">
+                  {f.city} · {bLabel(f.bedrooms)} · <span className="font-normal normal-case">{f.pms}/{f.listing_id}</span>
+                </p>
+                <p className={f.last_status?.startsWith("error") ? "text-amber-600" : "text-muted-foreground"}>
+                  {f.last_run_at ? `${dateTime(f.last_run_at, lang)} — ${f.last_status ?? ""}` : t.never}
+                </p>
+              </div>
+              <Button className="bg-muted text-foreground" onClick={() => run.mutate(f.id)} disabled={run.isPending}>
+                {t.run}
+              </Button>
+              <Button
+                className="bg-muted text-foreground"
+                disabled={remove.isPending}
+                onClick={() => window.confirm(t.confirmRemove) && remove.mutate(f.id)}
+              >
+                {t.remove}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

@@ -122,6 +122,7 @@ const es = {
     labels: {
       openai_api_key: "OpenAI API key",
       anthropic_api_key: "Anthropic API key",
+      pricelabs_api_key: "PriceLabs API key",
       search_api_key: "Tavily API key",
       beds24_refresh_token: "Beds24 refresh token",
       beds24_webhook_key: "Clave de avisos de Beds24",
@@ -133,6 +134,7 @@ const es = {
     services: {
       openai_api_key: "Agente de chat y extracción de eventos",
       anthropic_api_key: "Agente de chat (proveedor alternativo)",
+      pricelabs_api_key: "Percentiles de mercado (PriceLabs)",
       search_api_key: "Escaneo de eventos y mercado",
       beds24_refresh_token: "Todo el canal (precios, reservas, disponibilidad)",
       beds24_webhook_key: "Reservas en tiempo real (avisos de Beds24)",
@@ -146,6 +148,8 @@ const es = {
         'platform.openai.com → Settings → API keys → "Create new secret key" (permisos: All). Empieza por "sk-" y solo se muestra una vez: cópiala y pégala aquí. Requiere saldo en Settings → Billing.',
       anthropic_api_key:
         'console.anthropic.com → Settings → API Keys → "Create Key". Empieza por "sk-ant-" y solo se muestra una vez. Requiere créditos en Settings → Billing. Opcional: solo se usa si eliges Anthropic como proveedor del chat.',
+      pricelabs_api_key:
+        'app.pricelabs.co → Account Settings → API Details → «Enable» → «I Need API Access» (cuesta USD 1 por anuncio al mes). Copia la clave y pégala aquí.',
       search_api_key:
         'app.tavily.com → Overview → API Keys → copia la clave (o crea una con "+"). Empieza por "tvly-". El plan gratis (1.000 créditos/mes) alcanza para el escaneo diario.',
       beds24_webhook_key:
@@ -309,6 +313,7 @@ const en: Shape = {
     labels: {
       openai_api_key: "OpenAI API key",
       anthropic_api_key: "Anthropic API key",
+      pricelabs_api_key: "PriceLabs API key",
       search_api_key: "Tavily API key",
       beds24_refresh_token: "Beds24 refresh token",
       beds24_webhook_key: "Beds24 notification key",
@@ -320,6 +325,7 @@ const en: Shape = {
     services: {
       openai_api_key: "Chat agent and event extraction",
       anthropic_api_key: "Chat agent (alternative provider)",
+      pricelabs_api_key: "Market percentiles (PriceLabs)",
       search_api_key: "Event and market scan",
       beds24_refresh_token: "The whole channel (prices, bookings, availability)",
       beds24_webhook_key: "Real-time bookings (Beds24 notifications)",
@@ -333,6 +339,8 @@ const en: Shape = {
         'platform.openai.com → Settings → API keys → "Create new secret key" (permissions: All). It starts with "sk-" and is only shown once: copy it and paste it here. Requires a balance in Settings → Billing.',
       anthropic_api_key:
         'console.anthropic.com → Settings → API Keys → "Create Key". It starts with "sk-ant-" and is only shown once. Requires credits in Settings → Billing. Optional: only used if you pick Anthropic as the chat provider.',
+      pricelabs_api_key:
+        'app.pricelabs.co → Account Settings → API Details → “Enable” → “I Need API Access” (USD 1 per listing per month). Copy the key and paste it here.',
       search_api_key:
         'app.tavily.com → Overview → API Keys → copy the key (or create one with "+"). It starts with "tvly-". The free plan (1,000 credits/month) is enough for the daily scan.',
       beds24_webhook_key:
@@ -494,6 +502,7 @@ const pt: Shape = {
     labels: {
       openai_api_key: "OpenAI API key",
       anthropic_api_key: "Anthropic API key",
+      pricelabs_api_key: "PriceLabs API key",
       search_api_key: "Tavily API key",
       beds24_refresh_token: "Beds24 refresh token",
       beds24_webhook_key: "Chave de avisos do Beds24",
@@ -505,6 +514,7 @@ const pt: Shape = {
     services: {
       openai_api_key: "Agente de chat e extração de eventos",
       anthropic_api_key: "Agente de chat (provedor alternativo)",
+      pricelabs_api_key: "Percentis de mercado (PriceLabs)",
       search_api_key: "Varredura de eventos e mercado",
       beds24_refresh_token: "Todo o canal (preços, reservas, disponibilidade)",
       beds24_webhook_key: "Reservas em tempo real (avisos do Beds24)",
@@ -518,6 +528,8 @@ const pt: Shape = {
         'platform.openai.com → Settings → API keys → "Create new secret key" (permissões: All). Começa com "sk-" e só é exibida uma vez: copie e cole aqui. Exige saldo em Settings → Billing.',
       anthropic_api_key:
         'console.anthropic.com → Settings → API Keys → "Create Key". Começa com "sk-ant-" e só é exibida uma vez. Exige créditos em Settings → Billing. Opcional: só é usada se você escolher a Anthropic como provedor do chat.',
+      pricelabs_api_key:
+        'app.pricelabs.co → Account Settings → API Details → «Enable» → «I Need API Access» (USD 1 por anúncio ao mês). Copie a chave e cole aqui.',
       search_api_key:
         'app.tavily.com → Overview → API Keys → copie a chave (ou crie uma com "+"). Começa com "tvly-". O plano gratuito (1.000 créditos/mês) basta para a varredura diária.',
       beds24_webhook_key:

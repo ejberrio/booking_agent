@@ -111,3 +111,25 @@ class MarketBand(Base):
     updated_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True, default=_now
     )
+
+
+class MarketFeed(Base, TimestampMixin):
+    """Carga automática de percentiles desde la Customer API de PriceLabs (feature 041).
+
+    Cada fila dice de qué anuncio de la cuenta de PriceLabs de la plataforma se leen los datos
+    del vecindario (`neighborhood_data`) para una zona y un tamaño. El origen de esos datos
+    (Market Dashboard + compset, p. ej. "3 habitaciones") se elige en PriceLabs, en el anuncio.
+    Datos de PLATAFORMA: sin anuncios de terceros ni personas.
+    """
+
+    __tablename__ = "market_feed"
+    __table_args__ = (UniqueConstraint("city", "bedrooms", name="uq_market_feed"),)
+
+    city: Mapped[str] = mapped_column(String(80))  # ciudad principal del área
+    bedrooms: Mapped[int] = mapped_column(default=0)  # 0 = todas
+    listing_id: Mapped[str] = mapped_column(String(80))
+    pms: Mapped[str] = mapped_column(String(40))
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    last_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_status: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    last_imported: Mapped[int | None] = mapped_column(nullable=True)

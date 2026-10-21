@@ -74,6 +74,22 @@ const es = {
     remove: "Borrar",
     confirmRemove: (zone: string, b: string) => `¿Borrar los datos de ${zone} (${b} hab.)? Las sugerencias de esa zona quedan sin techo.`,
     removed: "Datos borrados",
+    api: {
+      title: "Automático (API de PriceLabs)",
+      description:
+        "Cada día StayLever lee los percentiles del vecindario de un anuncio tuyo en PriceLabs y los carga solo. En PriceLabs, en ese anuncio, elige como origen de datos el Market Dashboard y el grupo de habitaciones. StayLever solo lee: no cambia nada en PriceLabs.",
+      noKey: "Primero pega la clave de la API de PriceLabs en Ajustes → Secretos.",
+      load: "Ver mis anuncios de PriceLabs",
+      listing: "Anuncio de PriceLabs",
+      pick: "Elige un anuncio…",
+      syncOff: "sync apagado",
+      save: "Guardar y probar",
+      run: "Probar ahora",
+      remove: "Quitar",
+      never: "aún no corre",
+      empty: "Sin configuración automática: los datos llegan solo por CSV.",
+      confirmRemove: "¿Quitar la carga automática de esta zona? Los datos ya cargados se conservan.",
+    },
   },
 };
 
@@ -151,6 +167,22 @@ const en: Shape = {
     remove: "Delete",
     confirmRemove: (zone: string, b: string) => `Delete the data for ${zone} (${b} BR)? Suggestions in that area will have no ceiling.`,
     removed: "Data deleted",
+    api: {
+      title: "Automatic (PriceLabs API)",
+      description:
+        "Every day StayLever reads the neighborhood percentiles of one of your PriceLabs listings and loads them. In PriceLabs, on that listing, set the data source to the Market Dashboard and the bedroom group. StayLever only reads: it changes nothing in PriceLabs.",
+      noKey: "First paste the PriceLabs API key in Settings → Secrets.",
+      load: "Show my PriceLabs listings",
+      listing: "PriceLabs listing",
+      pick: "Pick a listing…",
+      syncOff: "sync off",
+      save: "Save and test",
+      run: "Test now",
+      remove: "Remove",
+      never: "not run yet",
+      empty: "No automatic setup: data only arrives by CSV.",
+      confirmRemove: "Remove the automatic load for this area? Data already loaded is kept.",
+    },
   },
 };
 
@@ -226,6 +258,22 @@ const pt: Shape = {
     remove: "Apagar",
     confirmRemove: (zone: string, b: string) => `Apagar os dados de ${zone} (${b} quartos)? As sugestões dessa região ficam sem teto.`,
     removed: "Dados apagados",
+    api: {
+      title: "Automático (API do PriceLabs)",
+      description:
+        "Todo dia o StayLever lê os percentis da vizinhança de um anúncio seu no PriceLabs e os carrega. No PriceLabs, nesse anúncio, escolha como fonte de dados o Market Dashboard e o grupo de quartos. O StayLever só lê: não muda nada no PriceLabs.",
+      noKey: "Primeiro cole a chave da API do PriceLabs em Ajustes → Segredos.",
+      load: "Ver meus anúncios do PriceLabs",
+      listing: "Anúncio do PriceLabs",
+      pick: "Escolha um anúncio…",
+      syncOff: "sync desligado",
+      save: "Salvar e testar",
+      run: "Testar agora",
+      remove: "Remover",
+      never: "ainda não rodou",
+      empty: "Sem configuração automática: os dados chegam só por CSV.",
+      confirmRemove: "Remover a carga automática desta região? Os dados já carregados são mantidos.",
+    },
   },
 };
 

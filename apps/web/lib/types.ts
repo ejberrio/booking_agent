@@ -658,6 +658,32 @@ export type MarketBandSummary = {
   updated_at: string | null;
 };
 
+export type PriceLabsListing = {
+  id: string;
+  pms: string;
+  name: string | null;
+  city: string | null;
+  bedrooms: number | null;
+  sync: boolean;
+};
+
+export type MarketFeed = {
+  id: number;
+  city: string;
+  bedrooms: number;
+  listing_id: string;
+  pms: string;
+  enabled: boolean;
+  last_run_at: string | null;
+  last_status: string | null;
+  last_imported: number | null;
+};
+
+export type MarketFeedRun = {
+  result: { ok: boolean; error?: string; imported?: number; source?: string; category?: string; from?: string; to?: string };
+  feeds: MarketFeed[];
+};
+
 export type MarketCsvResult = {
   imported: number;
   past: number;

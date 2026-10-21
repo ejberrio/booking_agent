@@ -36,6 +36,7 @@ from app.services import (
     event_service,
     ical_service,
     intelligence_service,
+    market_feed_service,
     privacy_service,
     public_service,
     push_service,
@@ -216,6 +217,15 @@ async def run_all(today: date | None = None, *, search=None, llm=None, market_fa
         await public_service.purge_old(session)
         await session.commit()
         await refresh_event_sources(session, list(modes), search=search, llm=llm, today=today)
+        # Feature 041: percentiles de mercado desde la API de PriceLabs, antes de las
+        # sugerencias para que usen el techo del día. Sin configuración o sin clave: nada.
+        try:
+            for note in await market_feed_service.refresh_all(session, today=today):
+                print(f"scan_daily: mercado PriceLabs {note}")
+            await session.commit()
+        except Exception as exc:  # noqa: BLE001 — no detiene el escaneo
+            await session.rollback()
+            print(f"scan_daily: mercado PriceLabs falló ({type(exc).__name__}).")
     account_ids = list(modes)
     scanned_cities: set[str] = set()
     for account_id in account_ids:

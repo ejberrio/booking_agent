@@ -46,6 +46,13 @@ SECRET_NAMES: dict[str, dict[str, str]] = {
         "service": "Escaneo de eventos y mercado",
         "test": "search",
     },
+    # Feature 041: percentiles del Market Dashboard por la Customer API de PriceLabs.
+    "pricelabs_api_key": {
+        "scope": "platform",
+        "label": "PriceLabs API key",
+        "service": "Percentiles de mercado (PriceLabs Customer API)",
+        "test": "none",
+    },
     "beds24_refresh_token": {
         "scope": "account",
         "label": "Beds24 refresh token",

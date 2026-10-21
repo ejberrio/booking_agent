@@ -51,6 +51,9 @@ import type {
   AdminBeta,
   MarketBandSummary,
   MarketCsvResult,
+  MarketFeed,
+  MarketFeedRun,
+  PriceLabsListing,
   MyReport,
 } from "@/lib/types";
 
@@ -331,6 +334,13 @@ export const api = {
     req<{ deleted: number }>(
       `/admin/market-bands?city=${encodeURIComponent(city)}&bedrooms=${bedrooms}`, { method: "DELETE" },
     ),
+  pricelabsListings: () => req<PriceLabsListing[]>(`/admin/pricelabs/listings`),
+  marketFeeds: () => req<MarketFeed[]>(`/admin/market-feeds`),
+  saveMarketFeed: (body: { city: string; bedrooms: number; listing_id: string; pms: string }) =>
+    req<MarketFeedRun>(`/admin/market-feeds`, { method: "POST", body: JSON.stringify(body) }),
+  runMarketFeed: (id: number) => req<MarketFeedRun>(`/admin/market-feeds/${id}/run`, { method: "POST" }),
+  deleteMarketFeed: (id: number) =>
+    req<{ deleted: boolean; feeds: MarketFeed[] }>(`/admin/market-feeds/${id}`, { method: "DELETE" }),
   adminBeta: () => req<AdminBeta>(`/admin/beta`),
   patchBeta: (body: { enabled?: boolean; quota?: number; city_budget?: number }) =>
     req<AdminBeta>(`/admin/beta`, { method: "PATCH", body: JSON.stringify(body) }),

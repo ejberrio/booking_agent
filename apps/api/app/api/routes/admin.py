@@ -237,6 +237,101 @@ async def delete_market_bands(city: str, bedrooms: int, session: AsyncSession = 
     return {"deleted": n, "bands": await market_band_service.summary(session)}
 
 
+# --------- mercado por la API de PriceLabs (feature 041) ---------
+
+
+class MarketFeedIn(BaseModel):
+    city: str = Field(min_length=2, max_length=80)
+    bedrooms: int = Field(default=0, ge=0, le=20)
+    listing_id: str = Field(min_length=1, max_length=80)
+    pms: str = Field(min_length=1, max_length=40)
+    enabled: bool = True
+
+
+async def _with_client(fn):
+    from app.market.pricelabs import PriceLabsClient, PriceLabsError
+
+    try:
+        client = PriceLabsClient()
+    except PriceLabsError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from None
+    try:
+        return await fn(client)
+    except PriceLabsError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from None
+    finally:
+        await client.aclose()
+
+
+@router.get("/pricelabs/listings")
+async def pricelabs_listings():
+    """Anuncios de la cuenta de PriceLabs (para elegir de cuál leer el vecindario)."""
+    return await _with_client(lambda c: c.listings())
+
+
+@router.get("/market-feeds")
+async def market_feeds(session: AsyncSession = Depends(get_session)):
+    from app.services import market_feed_service
+
+    return await market_feed_service.list_feeds(session)
+
+
+@router.post("/market-feeds")
+async def save_market_feed(req: MarketFeedIn, session: AsyncSession = Depends(get_session)):
+    """Guarda la configuración y la prueba de una vez (importa si PriceLabs responde)."""
+    from app.services import market_feed_service
+
+    try:
+        feed = await market_feed_service.save_feed(
+            session, city=req.city, bedrooms=req.bedrooms, listing_id=req.listing_id,
+            pms=req.pms, enabled=req.enabled,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from None
+    result = await _run(session, feed)
+    await session.commit()
+    return {"result": result, "feeds": await market_feed_service.list_feeds(session)}
+
+
+async def _run(session, feed):
+    from app.market.pricelabs import PriceLabsClient, PriceLabsError
+    from app.services import market_feed_service
+
+    try:
+        client = PriceLabsClient()
+    except PriceLabsError as exc:
+        return {"ok": False, "error": str(exc)}
+    try:
+        return await market_feed_service.run_feed(session, feed, client)
+    finally:
+        await client.aclose()
+
+
+@router.post("/market-feeds/{feed_id}/run")
+async def run_market_feed(feed_id: int, session: AsyncSession = Depends(get_session)):
+    from app.models.market import MarketFeed
+    from app.services import market_feed_service
+
+    feed = await session.get(MarketFeed, feed_id)
+    if feed is None:
+        raise HTTPException(status_code=404, detail="No existe esa configuración")
+    result = await _run(session, feed)
+    await session.commit()
+    return {"result": result, "feeds": await market_feed_service.list_feeds(session)}
+
+
+@router.delete("/market-feeds/{feed_id}")
+async def delete_market_feed(feed_id: int, session: AsyncSession = Depends(get_session)):
+    from app.services import market_feed_service
+
+    try:
+        await market_feed_service.delete_feed(session, feed_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from None
+    await session.commit()
+    return {"deleted": True, "feeds": await market_feed_service.list_feeds(session)}
+
+
 # --------- uso de IA (feature 027) ---------
 
 
