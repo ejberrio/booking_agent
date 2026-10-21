@@ -26,6 +26,14 @@ Así se pueden refrescar cada día sin intervención.
 - **FR-007 Errores legibles, sin secretos:** 401 clave, 404 anuncio, 429 límite, 400 con su motivo.
   - Si el motivo menciona *sync*, se avisa que PriceLabs pide «Sync Prices» encendido.
 
+## Resultado de la prueba (21-oct-2026) — EN PAUSA
+- **Customer API:** la clave es válida y `GET /v1/listings` funciona. `neighborhood_data` responde 400 «Listing sync is not toggled ON in PriceLabs».
+- **Conector de IA (MCP), solo lectura:**
+  - `get_listing_neighborhood_market` responde lo mismo (400).
+  - `get_neighbourhood_data` responde 422 `ERR-MCP-LISTING-NOT-SYNCING`.
+  - `market_research` responde 403 `ERR-MCP-FEATURE-NOT-ENABLED`: hay que pedir a soporte que lo activen (beta gratis, 20 consultas al día).
+- **Conclusión:** sin encender Sync no hay percentiles por API. La rama queda sin pasar a producción y la fuente sigue siendo el CSV mensual (040).
+
 ## Riesgos abiertos
 - **Sync Prices:** la documentación lista «sync off» como causa de 400 en `neighborhood_data`, y el cobro es por anuncio que sincroniza. Si se confirma que exige sincronizar, NO se enciende sin decisión del anfitrión: PriceLabs empezaría a cambiar los precios en Beds24.
 - **Licencia:** los términos de PriceLabs (https://hello.pricelabs.co/tandc/) permiten el uso solo para el negocio propio, sin redistribuir. El anfitrión decidió el 21-oct-2026 seguir mientras responde soporte; si no lo permite, la fuente pasa a ser solo scraping.
