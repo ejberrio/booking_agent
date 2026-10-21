@@ -115,3 +115,11 @@ async def test_lista_anuncios_sin_datos_de_mas():
     await c.aclose()
     assert out == [{"id": "123", "pms": "beds24", "name": "Apto Mayorca", "city": "Sabaneta",
                     "bedrooms": 3, "sync": False}]
+
+
+async def test_clave_invalida_403_de_cloudflare_se_explica():
+    fake = FakePL(status=403, body={"error": {"code": "API_KEY_INVALID", "message": "An invalid api_key"}})
+    c = fake.client()
+    with pytest.raises(pl.PriceLabsError, match="rechazó la clave"):
+        await c.neighborhood("123", "beds24", 3)
+    await c.aclose()

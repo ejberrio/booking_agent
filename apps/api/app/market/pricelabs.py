@@ -41,8 +41,16 @@ def api_key() -> str | None:
 
 def _error(resp: httpx.Response) -> PriceLabsError:
     code = resp.status_code
-    if code == 401:
-        return PriceLabsError("PriceLabs rechazó la clave de la API (401). Revísala en Ajustes.")
+    if code in (401, 403):
+        try:
+            err = resp.json().get("error")
+        except ValueError:
+            err = None
+        if code == 401 or (isinstance(err, dict) and err.get("code") == "API_KEY_INVALID"):
+            return PriceLabsError(
+                f"PriceLabs rechazó la clave de la API ({code}). Revisa en PriceLabs → Detalles API "
+                "que la API esté activada y vuelve a copiar la clave en Ajustes."
+            )
     if code == 404:
         return PriceLabsError("PriceLabs no encuentra ese anuncio en la cuenta (404).")
     if code == 429:

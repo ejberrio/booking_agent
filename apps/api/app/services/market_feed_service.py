@@ -107,7 +107,7 @@ async def refresh_all(session: AsyncSession, *,
         for feed in feeds:
             r = await run_feed(session, feed, client, today)
             notes.append(f"{feed.city}/{feed.bedrooms}: {feed.last_status}")
-            if not r["ok"] and "401" in r["error"]:
+            if not r["ok"] and "rechazó la clave" in r["error"]:
                 break  # clave inválida: no tiene sentido seguir gastando consultas
     finally:
         await client.aclose()
