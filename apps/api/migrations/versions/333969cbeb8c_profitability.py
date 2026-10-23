@@ -2,7 +2,7 @@
 
 Solo agrega columnas opcionales y dos tablas: volver a la versión anterior del código es seguro.
 
-Revision ID: a1b2c3d4e5f7
+Revision ID: 333969cbeb8c
 Revises: d0e1f2a3b4c6
 Create Date: 2026-10-23 16:00:00.000000
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 from alembic import op
 
 
-revision: str = 'a1b2c3d4e5f7'
+revision: str = '333969cbeb8c'
 down_revision: str | None = 'd0e1f2a3b4c6'
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None

@@ -30,7 +30,7 @@ guardaba el valor de las reservas.
 - **FR-007 Privacidad:** el informe nunca incluye nombres de huéspedes. Los datos son de la cuenta (aislamiento, principio VI).
 
 ## Datos
-Migración `a1b2c3d4e5f7`:
+Migración `333969cbeb8c`:
 - `booking.amount`, `booking.commission`, `booking.currency` (opcionales);
 - tablas `unit_finance` (de la cuenta) y `fx_rate` (de la plataforma).
 
