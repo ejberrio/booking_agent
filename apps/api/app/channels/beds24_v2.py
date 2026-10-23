@@ -74,6 +74,24 @@ async def exchange_invite_code(
     return str(token)
 
 
+
+_CURRENCY = re.compile(r"\b(USD|COP|EUR|GBP|MXN|BRL)\b")
+
+
+def _money(b: dict) -> dict:
+    """Total y comisión de la reserva (feature 042). V2 no trae la moneda: se deduce de
+    `rateDescription` ("Base Price 357 USD", "COP 262907"); sin pista = la de la propiedad."""
+    try:
+        amount = Decimal(str(b.get("price") or 0))
+        commission = Decimal(str(b.get("commission") or 0))
+    except (ArithmeticError, ValueError):
+        return {}
+    if amount <= 0:
+        return {}
+    m = _CURRENCY.search(str(b.get("rateDescription") or ""))
+    return {"amount": amount, "commission": max(commission, Decimal(0)),
+            "currency": m.group(1) if m else None}
+
 class Beds24V2Adapter:
     def __init__(
         self,
@@ -285,6 +303,7 @@ class Beds24V2Adapter:
                     guest_name=(
                         f"{b.get('firstName') or ''} {b.get('lastName') or ''}".strip() or None
                     ),
+                    **_money(b),
                 )
             )
         return out

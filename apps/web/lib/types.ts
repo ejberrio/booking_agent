@@ -679,3 +679,41 @@ export type AdminBeta = {
   metrics: { day: string; key: string; value: number }[];
   waitlist: { id: number; email: string; language: string; municipality: string | null; created_at: string | null }[];
 };
+
+// Feature 042: rentabilidad mensual.
+export type ProfitabilityMonth = {
+  month: string;
+  future: boolean;
+  estimated: boolean;
+  nights: number;
+  occupancy: number;
+  stays: number;
+  gross: number;
+  commission: number;
+  cleaning: number;
+  fixed: number;
+  net: number;
+  adr: number | null;
+  reference_rent: number | null;
+  vs_rent: number | null;
+  by_channel: Record<string, number>;
+};
+
+export type Profitability = {
+  currency: string;
+  unit_type_id: number;
+  settings: { reference_rent: number | null; fixed_costs: number | null; cleaning_per_stay: number | null };
+  months: ProfitabilityMonth[];
+  summary: {
+    months: number;
+    occupancy: number;
+    gross: number;
+    net: number;
+    net_monthly_avg: number;
+    rent_monthly: number | null;
+    vs_rent_total: number | null;
+    breakeven_nights: number | null;
+    estimated: boolean;
+    missing_fx: boolean;
+  };
+};

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from datetime import date
+from datetime import date, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -36,6 +36,8 @@ from app.db.cross_account import PropertyOwnedElsewhere, property_taken_elsewher
 from app.models.mixins import _now
 from app.models.property import Channel, Property, UnitType
 from app.models.sync import ChannelManagerConnection, SyncIssue, SyncRun
+
+BOOKING_HISTORY_DAYS = 400  # feature 042: reservas del último año (con su valor)
 
 
 @dataclass(frozen=True)
@@ -275,7 +277,10 @@ async def import_remote(
         # (feature 012), nombre (016) y ESTADO/FECHAS (issue #91 — una
         # cancelación o modificación en el canal se refleja aquí; la
         # disponibilidad liberada llega sola por el calendario del CM).
-        for rb in await adapter.get_bookings(rp.external_id):
+        # Feature 042: un año hacia atrás para que la rentabilidad mensual tenga el valor y la
+        # comisión de las estancias pasadas (una sola consulta; sin esto el CM solo da futuras).
+        since = today - timedelta(days=BOOKING_HISTORY_DAYS)
+        for rb in await adapter.get_bookings(rp.external_id, since=since):
             unit = units_by_room.get(rb.room_external_id)
             if unit is None:
                 continue
@@ -297,6 +302,9 @@ async def import_remote(
                     external_ref=rb.external_id,
                     # Feature 028: el nombre de una estancia de hace más de 1 año no se guarda.
                     guest_name=rb.guest_name if keep_guest_name(rb.check_out, today) else None,
+                    amount=rb.amount,
+                    commission=rb.commission,
+                    currency=rb.currency,
                 )
                 session.add(new_booking)
                 created += 1
@@ -327,6 +335,15 @@ async def import_remote(
                 ):
                     existing_booking.guest_name = rb.guest_name
                     changed = True
+                # El valor no es un "cambio" que avisar: solo se actualiza si el CM lo reporta.
+                if rb.amount is not None and (
+                    existing_booking.amount != rb.amount
+                    or existing_booking.commission != rb.commission
+                    or existing_booking.currency != rb.currency
+                ):
+                    existing_booking.amount = rb.amount
+                    existing_booking.commission = rb.commission
+                    existing_booking.currency = rb.currency
                 if changed:
                     updated += 1
                 if was_status != status and status is BookingStatus.cancelled:

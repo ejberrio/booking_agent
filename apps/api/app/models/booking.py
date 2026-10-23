@@ -1,6 +1,7 @@
 from datetime import date
+from decimal import Decimal
 
-from sqlalchemy import Date, Enum, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Date, Enum, ForeignKey, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -28,3 +29,8 @@ class Booking(Base, AccountOwned, TimestampMixin):
     external_ref: Mapped[str | None] = mapped_column(String(120), nullable=True)
     # Dato personal: solo se muestra dentro de la app de su cuenta; nunca en logs.
     guest_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    # Feature 042: lo que reporta el channel manager (total cobrado y comisión del canal), en
+    # `currency` (Airbnb vía Beds24 puede venir en USD). None = el canal no lo informa.
+    amount: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+    commission: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+    currency: Mapped[str | None] = mapped_column(String(3), nullable=True)

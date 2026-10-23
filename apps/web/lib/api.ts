@@ -52,6 +52,7 @@ import type {
   MarketBandSummary,
   MarketCsvResult,
   MyReport,
+  Profitability,
 } from "@/lib/types";
 
 export interface PromotionInput {
@@ -331,6 +332,11 @@ export const api = {
     req<{ deleted: number }>(
       `/admin/market-bands?city=${encodeURIComponent(city)}&bedrooms=${bedrooms}`, { method: "DELETE" },
     ),
+  profitability: (unitTypeId: number) =>
+    req<Profitability>(`/profitability?unit_type_id=${unitTypeId}`),
+  saveProfitabilitySettings: (body: {
+    unit_type_id: number; reference_rent: number | null; fixed_costs: number | null; cleaning_per_stay: number | null;
+  }) => req<Profitability>(`/profitability/settings`, { method: "PUT", body: JSON.stringify(body) }),
   adminBeta: () => req<AdminBeta>(`/admin/beta`),
   patchBeta: (body: { enabled?: boolean; quota?: number; city_budget?: number }) =>
     req<AdminBeta>(`/admin/beta`, { method: "PATCH", body: JSON.stringify(body) }),

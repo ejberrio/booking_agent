@@ -58,3 +58,4 @@ staylever-[0-9]*.json
 apps/api/_pilot/
 apps/api/_apply.py
 docs/research/
+apps/api/_probe_b24.py

@@ -77,6 +77,10 @@ class RemoteBooking:
     channel: str | None = None
     # Nombre del huésped compuesto por el adaptador. None = el proveedor no lo reporta.
     guest_name: str | None = None
+    # Feature 042: total cobrado y comisión del canal en `currency` (None = no lo reporta).
+    amount: Decimal | None = None
+    commission: Decimal | None = None
+    currency: str | None = None
 
 
 @dataclass(frozen=True)

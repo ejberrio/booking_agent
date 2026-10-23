@@ -11,6 +11,7 @@ import extension from "@/lib/i18n/catalog/extension";
 import legal from "@/lib/i18n/catalog/legal";
 import offers from "@/lib/i18n/catalog/offers";
 import offline from "@/lib/i18n/catalog/offline";
+import profitability from "@/lib/i18n/catalog/profitability";
 import pub from "@/lib/i18n/catalog/public";
 import rationale from "@/lib/i18n/catalog/rationale";
 import settings from "@/lib/i18n/catalog/settings";
@@ -40,6 +41,7 @@ const AREAS = {
   suggestions,
   rationale,
   offers,
+  profitability,
   offline,
   pub,
   connection,
