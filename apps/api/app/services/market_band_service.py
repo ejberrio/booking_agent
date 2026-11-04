@@ -228,3 +228,74 @@ async def summary(session: AsyncSession, today: date | None = None) -> list[dict
             "updated_at": updated.isoformat() if updated else None,
         })
     return out
+
+
+# --------- ocupación típica por mes (feature 043, issue #185) ---------
+
+MARKET_LOW_OCC = Decimal("40")  # % de ocupación del mercado en el mes por debajo del cual es "flojo"
+
+
+async def import_occupancy(session: AsyncSession, *, city: str, bedrooms: int,
+                           months: dict[int, float], source: str = "pricelabs-mr") -> int:
+    """`months` = {1: 66.7, …, 12: 67.9} (% de ocupación). Reemplaza por mes."""
+    from app.models.market import MarketOccupancy
+
+    key = municipalities.area_core_key(city)
+    now = datetime.now(UTC)
+    existing = {
+        o.month: o
+        for o in (
+            await session.execute(
+                select(MarketOccupancy).where(MarketOccupancy.city == key,
+                                              MarketOccupancy.bedrooms == bedrooms)
+            )
+        ).scalars()
+    }
+    n = 0
+    for month, occ in months.items():
+        month = int(month)
+        if not 1 <= month <= 12 or occ is None or not 0 <= float(occ) <= 100:
+            raise ValueError(f"Mes u ocupación inválidos: {month} → {occ}")
+        row = existing.get(month)
+        if row is None:
+            row = MarketOccupancy(city=key, bedrooms=bedrooms, month=month)
+            session.add(row)
+        row.occupancy = Decimal(str(round(float(occ), 2)))
+        row.source = source[:40]
+        row.updated_at = now
+        n += 1
+    await session.flush()
+    return n
+
+
+async def occupancy_for(session: AsyncSession, city: str | None,
+                        bedrooms: int | None) -> dict[int, Decimal]:
+    """Ocupación típica por mes para la zona: del tamaño exacto o, si no hay, de "todas"."""
+    from app.models.market import MarketOccupancy
+
+    key = municipalities.area_core_key(city)
+    rows = (
+        await session.execute(
+            select(MarketOccupancy).where(MarketOccupancy.city == key,
+                                          MarketOccupancy.bedrooms.in_([bedrooms or 0, 0]))
+        )
+    ).scalars().all()
+    out: dict[int, Decimal] = {}
+    for r in sorted(rows, key=lambda r: r.bedrooms == 0):  # primero el tamaño exacto
+        out.setdefault(r.month, r.occupancy)
+    return out
+
+
+async def occupancy_summary(session: AsyncSession) -> list[dict]:
+    from app.models.market import MarketOccupancy
+
+    rows = (await session.execute(select(MarketOccupancy))).scalars().all()
+    agg: dict[tuple, dict] = {}
+    for r in rows:
+        a = agg.setdefault((r.city, r.bedrooms), {"city": r.city, "bedrooms": r.bedrooms,
+                                                   "source": r.source, "months": {},
+                                                   "updated_at": None})
+        a["months"][r.month] = float(r.occupancy)
+        if r.updated_at and (a["updated_at"] is None or r.updated_at.isoformat() > a["updated_at"]):
+            a["updated_at"] = r.updated_at.isoformat()
+    return sorted(agg.values(), key=lambda a: (a["city"], a["bedrooms"]))

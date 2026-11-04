@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -99,6 +99,8 @@ export function MarketCard() {
       </Button>
       {result && <p className="text-sm text-muted-foreground">{result}</p>}
 
+      <OccupancySection city={city} bedrooms={bedrooms} bLabel={bLabel} />
+
       {q.data && q.data.length === 0 && <p className="text-sm text-muted-foreground">{t.empty}</p>}
       {q.data && q.data.length > 0 && (
         <div className="overflow-x-auto">
@@ -151,5 +153,68 @@ export function MarketCard() {
         </div>
       )}
     </Card>
+  );
+}
+
+/** Ocupación típica del mercado por mes (feature 043, #185): decide si un mes está flojo en la
+ * zona antes de bajar el techo al p75. Usa el municipio y las habitaciones de arriba. */
+function OccupancySection({ city, bedrooms, bLabel }: { city: string; bedrooms: number; bLabel: (n: number) => string }) {
+  const { m, lang } = useI18n();
+  const t = m.admin.market.occ;
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ["admin-market-occ"], queryFn: api.marketOccupancy });
+  const [vals, setVals] = useState<string[]>(Array(12).fill(""));
+  const monthName = (i: number) =>
+    new Intl.DateTimeFormat(lang, { month: "short" }).format(new Date(2026, i, 1));
+  const zone = q.data?.find(
+    (z) => z.bedrooms === bedrooms && z.city === city.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""),
+  );
+  useEffect(() => {
+    setVals(Array.from({ length: 12 }, (_, i) => (zone?.months[String(i + 1)] != null ? String(zone.months[String(i + 1)]) : "")));
+  }, [zone]);
+  const save = useMutation({
+    mutationFn: () => {
+      const months: Record<number, number> = {};
+      vals.forEach((v, i) => {
+        if (v.trim() !== "") months[i + 1] = Number(v.replace(",", "."));
+      });
+      return api.saveMarketOccupancy({ city: city.trim(), bedrooms, months });
+    },
+    onSuccess: (r) => {
+      qc.setQueryData(["admin-market-occ"], r.zones);
+      toast.success(t.saved(r.saved));
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="space-y-3 border-t border-border pt-4">
+      <div>
+        <p className="text-sm font-medium">{t.title}</p>
+        <p className="text-xs text-muted-foreground">{t.description}</p>
+      </div>
+      <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+        {vals.map((v, i) => (
+          <label key={i} className="space-y-1 text-xs">
+            <span className="capitalize text-muted-foreground">{monthName(i)}</span>
+            <Input inputMode="decimal" value={v} placeholder="%"
+              onChange={(e) => setVals((old) => old.map((o, j) => (j === i ? e.target.value.replace(/[^\d.,]/g, "") : o)))} />
+          </label>
+        ))}
+      </div>
+      <Button onClick={() => save.mutate()} disabled={save.isPending || city.trim().length < 2 || vals.every((v) => v === "")}>
+        {t.save} ({city.trim()} · {bLabel(bedrooms)})
+      </Button>
+      {q.data && q.data.length > 0 && (
+        <ul className="space-y-1 text-xs text-muted-foreground">
+          {q.data.map((z) => (
+            <li key={`${z.city}-${z.bedrooms}`}>
+              <span className="capitalize">{z.city}</span> · {bLabel(z.bedrooms)} · {Object.keys(z.months).length} {t.months}
+              {z.updated_at ? ` · ${dateTime(z.updated_at, lang)}` : ""}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

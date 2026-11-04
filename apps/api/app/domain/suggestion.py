@@ -55,6 +55,8 @@ class MarketCap:
     # Feature 039: con ocupación baja, los eventos medianos/pequeños topan en el p75 (el motor
     # pone ese valor en `p90` y marca `level="p75"`); grandes y puentes siguen en el p90.
     level: str = "p90"
+    # Feature 043: ocupación típica del mercado en ese mes (%), cuando decide la demanda baja.
+    market_occ: Decimal | None = None
 
 
 @dataclass(frozen=True)
@@ -192,12 +194,16 @@ def suggest_price_v2(
                     f"techo de mercado: el {75 if market_cap.level == 'p75' else 90}% de la "
                     f"zona cobra hasta ~{market_cap.p90:.0f}"
                     + (f" ({market_cap.bedrooms} hab.)" if market_cap.bedrooms else "")
-                    + (" — ocupación baja: evento pequeño o mediano" if market_cap.level == "p75"
-                       else "")
+                    + ((" — ocupación baja"
+                        + (f" (la zona ronda el {market_cap.market_occ:.0f}% este mes)"
+                           if market_cap.market_occ is not None else "")
+                        + ": evento pequeño o mediano") if market_cap.level == "p75" else "")
                 ),
                 data={"p90": str(market_cap.p90), "level": market_cap.level,
                       "p75": str(market_cap.p75) if market_cap.p75 is not None else None,
-                      "bedrooms": market_cap.bedrooms, "source": market_cap.source},
+                      "bedrooms": market_cap.bedrooms, "source": market_cap.source,
+                      "market_occ": (str(market_cap.market_occ)
+                                     if market_cap.market_occ is not None else None)},
             )
         )
 

@@ -111,3 +111,25 @@ class MarketBand(Base):
     updated_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True, default=_now
     )
+
+
+class MarketOccupancy(Base):
+    """Ocupación típica del mercado por mes del año (feature 043, issue #185).
+
+    Fuente inicial: PriceLabs Market Research (ocupación promedio por mes de los anuncios de la
+    zona y tamaño, histórica). Datos de PLATAFORMA, agregados: nunca IDs de anuncios.
+    Sirve para no confundir "mi apartamento está vacío" con "el mes está flojo en la zona".
+    """
+
+    __tablename__ = "market_occupancy"
+    __table_args__ = (UniqueConstraint("city", "bedrooms", "month", name="uq_market_occupancy"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    city: Mapped[str] = mapped_column(String(80), index=True)  # ciudad principal del área
+    bedrooms: Mapped[int] = mapped_column(default=0)  # 0 = todas
+    month: Mapped[int] = mapped_column()  # 1–12
+    occupancy: Mapped[Decimal] = mapped_column(Numeric(5, 2))  # %
+    source: Mapped[str] = mapped_column(String(40), default="pricelabs-mr")
+    updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=_now
+    )
