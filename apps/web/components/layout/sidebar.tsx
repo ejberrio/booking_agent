@@ -10,6 +10,7 @@ import {
   Plug,
   Settings,
   ShieldCheck,
+  Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -27,6 +28,7 @@ const NAV = [
   { href: "/chat", key: "chat", icon: MessageSquare },
   { href: "/suggestions", key: "suggestions", icon: Lightbulb },
   { href: "/offers", key: "offers", icon: BadgePercent },
+  { href: "/profitability", key: "profitability", icon: Wallet },
   { href: "/onboarding", key: "connection", icon: Plug },
   { href: "/settings", key: "settings", icon: Settings },
 ] as const;

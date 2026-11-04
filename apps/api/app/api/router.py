@@ -16,6 +16,7 @@ from app.api.routes import (
     pois,
     preferences,
     pricing,
+    profitability,
     push,
     secrets,
     status,
@@ -49,3 +50,4 @@ api_router.include_router(admin.router, prefix="/admin", tags=["admin"], depende
 api_router.include_router(public.router, prefix="/public", tags=["public"])  # 030: sin sesión
 api_router.include_router(report.router, prefix="/report", tags=["report"], dependencies=_ctx)  # 030
 api_router.include_router(events.router, prefix="/events", tags=["events"], dependencies=_ctx)  # 035
+api_router.include_router(profitability.router, prefix="/profitability", tags=["profitability"], dependencies=_ctx)  # 042

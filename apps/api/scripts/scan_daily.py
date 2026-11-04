@@ -34,6 +34,7 @@ from app.services import (
     digest_service,
     event_sources_service,
     event_service,
+    fx_service,
     ical_service,
     intelligence_service,
     privacy_service,
@@ -241,6 +242,15 @@ async def run_all(today: date | None = None, *, search=None, llm=None, market_fa
                     print(f"scan_daily: cuenta {account_id} sin channel manager; se omite.")
                     continue
                 print(f"scan_daily: cuenta {account_id} {await sync_account(session, today)}")
+                # Feature 042: TRM de los días de llegada de reservas en USD (Airbnb vía Beds24).
+                try:
+                    n = await fx_service.refresh_for_bookings(session, today)
+                    await session.commit()
+                    if n:
+                        print(f"scan_daily: cuenta {account_id} TRM guardadas={n}")
+                except Exception as exc:  # noqa: BLE001 — la rentabilidad estima sin TRM
+                    await session.rollback()
+                    print(f"scan_daily: cuenta {account_id} TRM falló ({type(exc).__name__}).")
                 # Feature 027: IA y búsquedas medidas y limitadas por cuenta.
                 limit = await usage_service.search_limit(session, account_id)
                 m_search = (
