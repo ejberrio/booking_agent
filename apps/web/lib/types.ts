@@ -663,6 +663,7 @@ export type MarketOccupancyZone = {
   city: string;
   bedrooms: number;
   source: string;
+  default?: boolean; // feature 043: valores de fábrica que nadie ha reemplazado
   months: Record<string, number>;
   updated_at: string | null;
 };

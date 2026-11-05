@@ -81,6 +81,8 @@ const es = {
       save: "Guardar ocupación",
       saved: (n: number) => `Guardados ${n} meses`,
       months: "meses",
+      defaultTag: "de fábrica",
+      defaultHint: "Valores de fábrica (Market Research, oct-2026). Se usan mientras no guardes otros; lo que guardes reemplaza mes a mes.",
     },
   },
 };
@@ -166,6 +168,8 @@ const en: Shape = {
       save: "Save occupancy",
       saved: (n: number) => `Saved ${n} months`,
       months: "months",
+      defaultTag: "built-in",
+      defaultHint: "Built-in values (Market Research, Oct 2026). Used until you save others; what you save replaces them month by month.",
     },
   },
 };
@@ -249,6 +253,8 @@ const pt: Shape = {
       save: "Salvar ocupação",
       saved: (n: number) => `Salvos ${n} meses`,
       months: "meses",
+      defaultTag: "de fábrica",
+      defaultHint: "Valores de fábrica (Market Research, out-2026). São usados enquanto você não salvar outros; o que salvar substitui mês a mês.",
     },
   },
 };

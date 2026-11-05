@@ -45,9 +45,13 @@ async def test_carga_por_zona_y_tamano(session):
     await svc.import_occupancy(session, city="Medellín", bedrooms=3, months={9: 18})  # reemplaza
     occ = await svc.occupancy_for(session, "Envigado", 3)  # toda el área usa Medellín
     assert occ[9] == D("18") and occ[12] == D("67.9") and len(occ) == 12
-    assert await svc.occupancy_for(session, "Envigado", 2) == {}  # sin dato del tamaño ni "todas"
-    summary = await svc.occupancy_summary(session)
-    assert summary[0]["city"] == "medellin" and summary[0]["months"][1] == 66.7
+    # sin dato guardado del tamaño ni de "todas": valores de fábrica de la zona
+    two = await svc.occupancy_for(session, "Envigado", 2)
+    assert two[12] == D("67.9") and two[9] == D("17")
+    assert await svc.occupancy_for(session, "Cartagena", 2) == {}  # zona sin datos de fábrica
+    summary = {(z["city"], z["bedrooms"]): z for z in await svc.occupancy_summary(session)}
+    assert summary[("medellin", 3)]["months"][9] == 18 and not summary[("medellin", 3)]["default"]
+    assert summary[("medellin", 0)]["default"]  # de fábrica, nadie lo reemplazó
     with pytest.raises(ValueError):
         await svc.import_occupancy(session, city="Medellín", bedrooms=3, months={13: 50})
 
@@ -70,3 +74,14 @@ async def test_motor_usa_la_ocupacion_del_mes(session, monkeypatch):
     await svc.import_occupancy(session, city="Medellín", bedrooms=3, months={TODAY.month: 33})
     await _generate(session, unit)
     assert D("33") in seen
+
+
+async def test_valores_de_fabrica_sin_cargar_nada(session):
+    """Si nadie carga datos, Medellín (y su área) ya trae la ocupación de Market Research."""
+    occ = await svc.occupancy_for(session, "Sabaneta", 3)
+    assert len(occ) == 12 and occ[12] == D("67.9") and occ[9] == D("17")
+    assert await svc.occupancy_for(session, "Bogotá", 3) == {}
+    # lo que guarde el administrador reemplaza a los de fábrica
+    await svc.import_occupancy(session, city="Medellín", bedrooms=3, months={12: 30})
+    occ = await svc.occupancy_for(session, "Sabaneta", 3)
+    assert occ[12] == D("30") and occ[9] == D("17")  # mes guardado gana; el resto, de fábrica

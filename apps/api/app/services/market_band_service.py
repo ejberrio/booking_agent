@@ -13,10 +13,13 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 import re
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from decimal import Decimal
+from functools import lru_cache
+from pathlib import Path
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -268,9 +271,30 @@ async def import_occupancy(session: AsyncSession, *, city: str, bedrooms: int,
     return n
 
 
+_DEFAULTS_FILE = Path(__file__).resolve().parent.parent / "data" / "market_occupancy_defaults.json"
+
+
+@lru_cache(maxsize=1)
+def _defaults() -> tuple[str, dict[str, dict[int, dict[int, Decimal]]]]:
+    raw = json.loads(_DEFAULTS_FILE.read_text(encoding="utf-8"))
+    zones = {
+        city: {int(b): {int(m): Decimal(str(v)) for m, v in months.items()}
+               for b, months in sizes.items()}
+        for city, sizes in raw.get("zones", {}).items()
+    }
+    return raw.get("source", "default"), zones
+
+
+def default_occupancy(city_key: str, bedrooms: int | None) -> dict[int, Decimal]:
+    """Valores de fábrica para la zona: tamaño exacto o, si no hay, "todas" (0)."""
+    sizes = _defaults()[1].get(city_key, {})
+    return dict(sizes.get(bedrooms or 0) or sizes.get(0) or {})
+
+
 async def occupancy_for(session: AsyncSession, city: str | None,
                         bedrooms: int | None) -> dict[int, Decimal]:
-    """Ocupación típica por mes para la zona: del tamaño exacto o, si no hay, de "todas"."""
+    """Ocupación típica por mes para la zona: lo guardado en Administración (tamaño exacto o
+    "todas") y, para los meses sin dato guardado, los valores de fábrica (feature 043)."""
     from app.models.market import MarketOccupancy
 
     key = municipalities.area_core_key(city)
@@ -283,7 +307,7 @@ async def occupancy_for(session: AsyncSession, city: str | None,
     out: dict[int, Decimal] = {}
     for r in sorted(rows, key=lambda r: r.bedrooms == 0):  # primero el tamaño exacto
         out.setdefault(r.month, r.occupancy)
-    return out
+    return {**default_occupancy(key, bedrooms), **out}  # lo guardado gana mes a mes
 
 
 async def occupancy_summary(session: AsyncSession) -> list[dict]:
@@ -293,9 +317,16 @@ async def occupancy_summary(session: AsyncSession) -> list[dict]:
     agg: dict[tuple, dict] = {}
     for r in rows:
         a = agg.setdefault((r.city, r.bedrooms), {"city": r.city, "bedrooms": r.bedrooms,
-                                                   "source": r.source, "months": {},
-                                                   "updated_at": None})
+                                                   "source": r.source, "default": False,
+                                                   "months": {}, "updated_at": None})
         a["months"][r.month] = float(r.occupancy)
         if r.updated_at and (a["updated_at"] is None or r.updated_at.isoformat() > a["updated_at"]):
             a["updated_at"] = r.updated_at.isoformat()
+    source, zones = _defaults()
+    for city, sizes in zones.items():  # los de fábrica que nadie ha reemplazado
+        for b, months in sizes.items():
+            if (city, b) not in agg:
+                agg[(city, b)] = {"city": city, "bedrooms": b, "source": source, "default": True,
+                                  "months": {m: float(v) for m, v in months.items()},
+                                  "updated_at": None}
     return sorted(agg.values(), key=lambda a: (a["city"], a["bedrooms"]))
