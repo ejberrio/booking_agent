@@ -74,6 +74,14 @@ const es = {
     remove: "Borrar",
     confirmRemove: (zone: string, b: string) => `¿Borrar los datos de ${zone} (${b} hab.)? Las sugerencias de esa zona quedan sin techo.`,
     removed: "Datos borrados",
+    occ: {
+      title: "Ocupación típica por mes",
+      description:
+        "Ocupación promedio (%) de la zona en cada mes del año (PriceLabs Market Research). Con ella, la demanda baja exige que tu ocupación y la del mes en la zona estén bajas (menos de 40 %). Vacío = sin dato.",
+      save: "Guardar ocupación",
+      saved: (n: number) => `Guardados ${n} meses`,
+      months: "meses",
+    },
   },
 };
 
@@ -151,6 +159,14 @@ const en: Shape = {
     remove: "Delete",
     confirmRemove: (zone: string, b: string) => `Delete the data for ${zone} (${b} BR)? Suggestions in that area will have no ceiling.`,
     removed: "Data deleted",
+    occ: {
+      title: "Typical occupancy by month",
+      description:
+        "Average occupancy (%) of the area for each month of the year (PriceLabs Market Research). With it, low demand requires both your occupancy and the area's month to be low (under 40%). Empty = no data.",
+      save: "Save occupancy",
+      saved: (n: number) => `Saved ${n} months`,
+      months: "months",
+    },
   },
 };
 
@@ -226,6 +242,14 @@ const pt: Shape = {
     remove: "Apagar",
     confirmRemove: (zone: string, b: string) => `Apagar os dados de ${zone} (${b} quartos)? As sugestões dessa região ficam sem teto.`,
     removed: "Dados apagados",
+    occ: {
+      title: "Ocupação típica por mês",
+      description:
+        "Ocupação média (%) da região em cada mês do ano (PriceLabs Market Research). Com ela, a demanda baixa exige que a sua ocupação e a do mês na região estejam baixas (menos de 40%). Vazio = sem dado.",
+      save: "Salvar ocupação",
+      saved: (n: number) => `Salvos ${n} meses`,
+      months: "meses",
+    },
   },
 };
 

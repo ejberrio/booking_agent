@@ -51,6 +51,7 @@ import type {
   AdminBeta,
   MarketBandSummary,
   MarketCsvResult,
+  MarketOccupancyZone,
   MyReport,
   Profitability,
 } from "@/lib/types";
@@ -326,6 +327,11 @@ export const api = {
       method: "PUT", body: JSON.stringify({ enabled }),
     }),
   marketBands: () => req<MarketBandSummary[]>(`/admin/market-bands`),
+  marketOccupancy: () => req<MarketOccupancyZone[]>(`/admin/market-occupancy`),
+  saveMarketOccupancy: (body: { city: string; bedrooms: number; months: Record<number, number> }) =>
+    req<{ saved: number; zones: MarketOccupancyZone[] }>(`/admin/market-occupancy`, {
+      method: "POST", body: JSON.stringify(body),
+    }),
   uploadMarketCsv: (body: { city: string; bedrooms: number; csv: string }) =>
     req<MarketCsvResult>(`/admin/market-bands/csv`, { method: "POST", body: JSON.stringify(body) }),
   deleteMarketBands: (city: string, bedrooms: number) =>

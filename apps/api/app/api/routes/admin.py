@@ -237,6 +237,42 @@ async def delete_market_bands(city: str, bedrooms: int, session: AsyncSession = 
     return {"deleted": n, "bands": await market_band_service.summary(session)}
 
 
+# --------- ocupación típica del mercado por mes (feature 043) ---------
+
+
+class MarketOccupancyIn(BaseModel):
+    city: str = Field(min_length=2, max_length=80)
+    bedrooms: int = Field(default=0, ge=0, le=20)
+    months: dict[int, float] = Field(min_length=1, max_length=12)
+    source: str = Field(default="pricelabs-mr", max_length=40)
+
+
+@router.get("/market-occupancy")
+async def market_occupancy(session: AsyncSession = Depends(get_session)):
+    from app.services import market_band_service
+
+    return await market_band_service.occupancy_summary(session)
+
+
+@router.post("/market-occupancy")
+async def save_market_occupancy(req: MarketOccupancyIn, session: AsyncSession = Depends(get_session)):
+    """Ocupación promedio (%) por mes del año para una zona y tamaño (p. ej. PriceLabs Market
+    Research). Solo agregados: nunca IDs de anuncios."""
+    from app.domain import municipalities
+    from app.services import market_band_service
+
+    if municipalities.by_city_key(municipalities.area_core_key(req.city)) is None:
+        raise HTTPException(status_code=400, detail=f'No reconozco el municipio "{req.city}".')
+    try:
+        n = await market_band_service.import_occupancy(
+            session, city=req.city, bedrooms=req.bedrooms, months=req.months, source=req.source
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from None
+    await session.commit()
+    return {"saved": n, "zones": await market_band_service.occupancy_summary(session)}
+
+
 # --------- uso de IA (feature 027) ---------
 
 

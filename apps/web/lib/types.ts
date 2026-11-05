@@ -125,6 +125,7 @@ export interface SuggestionFactor {
   p75?: string | null;
   bedrooms?: number | null;
   level?: "p75" | "p90"; // feature 039
+  market_occ?: string | null; // feature 043: ocupación típica de la zona ese mes (%)
 }
 
 export interface Suggestion {
@@ -655,6 +656,14 @@ export type MarketBandSummary = {
   from: string;
   to: string;
   p50_avg: number | null;
+  updated_at: string | null;
+};
+
+export type MarketOccupancyZone = {
+  city: string;
+  bedrooms: number;
+  source: string;
+  months: Record<string, number>;
   updated_at: string | null;
 };
 

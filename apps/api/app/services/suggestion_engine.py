@@ -200,16 +200,24 @@ def _event_for(events: list[Event], day: date) -> Event | None:
     return best
 
 
-def _cap_for(cap, ev: Event | None, low_demand: bool):
+def _cap_for(cap, ev: Event | None, low_demand: bool, market_occ: Decimal | None = None):
     """Feature 039: con demanda baja, solo los eventos grandes y los festivos/puentes pueden
-    acercarse al p90; los medianos, pequeños o sin evento topan en el p75."""
+    acercarse al p90; los medianos, pequeños o sin evento topan en el p75.
+
+    Feature 043 (#185): si hay ocupación típica del mercado para ese mes, la demanda baja
+    exige además que el MES esté flojo en la zona (< MARKET_LOW_OCC). Así un apartamento vacío
+    en diciembre no baja su techo si la zona suele llenarse."""
     from dataclasses import replace
 
+    from app.services.market_band_service import MARKET_LOW_OCC
+
+    if market_occ is not None and market_occ >= MARKET_LOW_OCC:
+        low_demand = False
     if cap is None or not low_demand or cap.p75 is None:
         return cap
     if ev is not None and (ev.relevance == Relevance.high or ev.kind == EventKind.holiday):
         return cap
-    return replace(cap, p90=cap.p75, level="p75")
+    return replace(cap, p90=cap.p75, level="p75", market_occ=market_occ)
 
 
 def _occupancy_high(occupied: set[date], day: date) -> bool:
@@ -322,6 +330,10 @@ async def generate_suggestions(
     )
     window = [today + timedelta(days=i) for i in range(LOW_DEMAND_WINDOW)]
     low_demand = sum(1 for d in window if d in occupied) / LOW_DEMAND_WINDOW < LOW_DEMAND_OCC
+    # Feature 043: ocupación típica del mercado por mes (PriceLabs Market Research), si hay.
+    market_occ = await market_band_service.occupancy_for(
+        session, prop.city, market_band_service.unit_bedrooms(unit)
+    )
     decisions = await _prior_decisions(session, unit_type_id, horizon_from, date_to)
     logs = await _price_logs(session, unit_type_id, horizon_from, date_to)
     threshold = Decimal(str(settings.suggestion_repeat_threshold_pct))
@@ -350,7 +362,7 @@ async def generate_suggestions(
             market=snap,
             min_price=min_p,
             max_price=max_p,
-            market_cap=_cap_for(caps.get(day), ev, low_demand),
+            market_cap=_cap_for(caps.get(day), ev, low_demand, market_occ.get(day.month)),
         )
         prior = decisions.get(day)
         if out is not None and repeat.should_propose(
