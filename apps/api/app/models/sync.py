@@ -13,7 +13,7 @@ from app.models.enums import (
     SyncIssueKind,
     SyncStatus,
 )
-from app.models.mixins import TimestampMixin, _now
+from app.models.mixins import JSONBType, TimestampMixin, _now
 
 
 class ChannelManagerConnection(Base, AccountOwned, TimestampMixin):
@@ -36,6 +36,13 @@ class ChannelManagerConnection(Base, AccountOwned, TimestampMixin):
     # Feature 026: antes en variables de entorno (BEDS24_PROP_ID / BEDS24_PROMO_OFFER_ID).
     default_prop_ref: Mapped[str | None] = mapped_column(String(40), nullable=True)
     promo_offer_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Feature 044: habitaciones de Beds24 que la cuenta sincroniza (None = todas) y salud de la
+    # conexión (desde cuándo está caída y cuándo se avisó, para avisar una sola vez).
+    selected_rooms: Mapped[list | None] = mapped_column(JSONBType, nullable=True)
+    invalid_since: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_error: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    alerted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    reminded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class SyncRun(Base, AccountOwned, TimestampMixin):

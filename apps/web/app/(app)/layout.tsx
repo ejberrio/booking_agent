@@ -1,4 +1,5 @@
 import { FloatingChat } from "@/components/chat/floating-chat";
+import { ConnectionBanner } from "@/components/connection/connection-banner";
 import { Sidebar } from "@/components/layout/sidebar";
 import { TermsGate } from "@/components/legal/terms-gate";
 import { NativeBridge } from "@/components/native/native-bridge";
@@ -9,7 +10,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <ChatProvider>
       <div className="min-h-screen">
         <Sidebar />
-        <main className="px-4 pb-6 pt-16 md:ml-56 md:px-8 md:pt-6">{children}</main>
+        <main className="px-4 pb-6 pt-16 md:ml-56 md:px-8 md:pt-6">
+          <ConnectionBanner />
+          {children}
+        </main>
       </div>
       {/* Asistente desde cualquier pantalla, con la misma conversación que la sección Chat (feature 024). */}
       <FloatingChat />

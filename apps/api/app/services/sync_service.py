@@ -160,6 +160,8 @@ async def test_connection(
         conn.status = ConnectionStatus.invalid
     except ChannelError:
         conn.status = ConnectionStatus.invalid
+    if conn.status == ConnectionStatus.connected:
+        conn.invalid_since = conn.last_error = conn.alerted_at = conn.reminded_at = None
     await session.flush()
     return conn
 
@@ -197,10 +199,25 @@ async def import_remote(
 
     created = updated = issues = 0
     props = await adapter.get_properties()
+    # Feature 044: solo las habitaciones elegidas en el asistente (None = todas) y una propiedad
+    # conectada a otra cuenta se salta sin detener las demás.
+    from app.services import connection_service
+
+    selected = await connection_service.selected_rooms(session)
+    imported = 0
+    taken: list[str] = []
     for rp in props:
-        prop = await _upsert_property(session, rp)
+        rooms = [r for r in rp.rooms if selected is None or str(r.external_id) in selected]
+        if not rooms:
+            continue
+        try:
+            prop = await _upsert_property(session, rp)
+        except PropertyOwnedElsewhere:
+            taken.append(str(rp.external_id))
+            continue
+        imported += 1
         units_by_room: dict[str, UnitType] = {}
-        for room in rp.rooms:
+        for room in rooms:
             unit = await _upsert_unit(session, prop, room.external_id, room.name, room.units_count)
             units_by_room[room.external_id] = unit
 
@@ -354,6 +371,9 @@ async def import_remote(
                 ):
                     _event("modified", existing_booking)
 
+    if taken and not imported:
+        # Nada importable: todas las elegidas son de otra cuenta (mismo mensaje de siempre).
+        raise PropertyOwnedElsewhere("Esta propiedad ya está conectada a otra cuenta de StayLever")
     run.created_count = created
     run.updated_count = updated
     run.issue_count = issues

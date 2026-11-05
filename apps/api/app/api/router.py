@@ -9,6 +9,7 @@ from app.api.routes import (
     auth,
     bookings,
     calendar_notes,
+    connection,
     events,
     chat,
     health,
@@ -51,3 +52,4 @@ api_router.include_router(public.router, prefix="/public", tags=["public"])  # 0
 api_router.include_router(report.router, prefix="/report", tags=["report"], dependencies=_ctx)  # 030
 api_router.include_router(events.router, prefix="/events", tags=["events"], dependencies=_ctx)  # 035
 api_router.include_router(profitability.router, prefix="/profitability", tags=["profitability"], dependencies=_ctx)  # 042
+api_router.include_router(connection.router, prefix="/connection", tags=["connection"], dependencies=_ctx)  # 044
