@@ -1,0 +1,10 @@
+{
+  "_comment": "Ocupación típica (%) por mes, de fábrica (feature 043). Se usa cuando Administración no ha guardado datos para la zona. Fuente: PriceLabs Market Research, Sabaneta 3 habitaciones, 237 anuncios de Airbnb, consultado el 23-oct-2026. Solo agregados. '0' = cualquier tamaño (aproximación con los mismos valores).",
+  "source": "pricelabs-mr-2026-10",
+  "zones": {
+    "medellin": {
+      "3": {"1": 66.7, "2": 50, "3": 38.7, "4": 32.2, "5": 23.3, "6": 21.4, "7": 40.4, "8": 50, "9": 17, "10": 32.3, "11": 52.5, "12": 67.9},
+      "0": {"1": 66.7, "2": 50, "3": 38.7, "4": 32.2, "5": 23.3, "6": 21.4, "7": 40.4, "8": 50, "9": 17, "10": 32.3, "11": 52.5, "12": 67.9}
+    }
+  }
+}

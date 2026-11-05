@@ -21,7 +21,9 @@ deja plata sobre la mesa.
 ## Datos
 Migración `0b5c228ff717`, que agrega la tabla `market_occupancy`. Volver a la versión anterior es seguro.
 
-## Datos iniciales (Medellín/Sabaneta, 3 habitaciones; Market Research del 23-oct-2026, 237 anuncios)
+- **FR-005 Valores de fábrica** (`app/data/market_occupancy_defaults.json`): si Administración no ha guardado nada para una zona y tamaño, el motor usa estos valores. Lo guardado gana **mes a mes**. Hoy solo existen para el área de Medellín, con 3 habitaciones y «todas» como aproximación con los mismos valores. En Administración aparecen precargados con la etiqueta «de fábrica».
+
+## Valores de fábrica (Medellín/Sabaneta, 3 habitaciones; Market Research del 23-oct-2026, 237 anuncios)
 
 | Ene | Feb | Mar | Abr | May | Jun | Jul | Ago | Sep | Oct | Nov | Dic |
 |---|---|---|---|---|---|---|---|---|---|---|---|

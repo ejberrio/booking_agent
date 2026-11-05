@@ -192,6 +192,7 @@ function OccupancySection({ city, bedrooms, bLabel }: { city: string; bedrooms: 
       <div>
         <p className="text-sm font-medium">{t.title}</p>
         <p className="text-xs text-muted-foreground">{t.description}</p>
+        {zone?.default && <p className="mt-1 text-xs text-amber-600">{t.defaultHint}</p>}
       </div>
       <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
         {vals.map((v, i) => (
@@ -211,6 +212,7 @@ function OccupancySection({ city, bedrooms, bLabel }: { city: string; bedrooms: 
             <li key={`${z.city}-${z.bedrooms}`}>
               <span className="capitalize">{z.city}</span> · {bLabel(z.bedrooms)} · {Object.keys(z.months).length} {t.months}
               {z.updated_at ? ` · ${dateTime(z.updated_at, lang)}` : ""}
+              {z.default && <Badge variant="muted" className="ml-1">{t.defaultTag}</Badge>}
             </li>
           ))}
         </ul>
