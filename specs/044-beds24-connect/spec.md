@@ -85,10 +85,10 @@ Es el principal freno para sumar anfitriones beta (#149) y para la Fase 1.
 - **SC-003** Cuando el token deja de servir, el anfitrión recibe aviso en menos de 24 h (la siguiente corrida diaria o el primer error).
 - **SC-004** Al pasar de «sin conexión» a conectado no se pierde ninguna sugerencia, nota ni registro de precios, y no quedan reservas duplicadas.
 
-## Decisiones por confirmar con el anfitrión
-1. **Selección por defecto:** todo marcado (recomendado) o nada marcado.
-2. **Avisos de conexión caída:** celular + correo + banner, con un recordatorio a los 3 días (recomendado), o solo banner.
-3. **Modo manual → conectado:** asociar cada apartamento manual a una habitación de Beds24 (recomendado), o empezar de cero e importar todo nuevo.
+## Decisiones del anfitrión (5-nov-2026)
+1. **Selección por defecto:** todo marcado; el anfitrión desmarca lo que no quiere.
+2. **Avisos de conexión caída:** celular + correo una vez, banner en la app y un recordatorio a los 3 días.
+3. **Modo manual → conectado:** asociar cada apartamento manual a su habitación de Beds24, conservando el historial y conciliando las reservas de iCal.
 
 ## Fuera de alcance
 - Crear la cuenta de Beds24 por el anfitrión.
