@@ -5,7 +5,7 @@ const es = {
     title: "¿Cómo quieres empezar?",
     connectTitle: "Conectar mi channel manager",
     connectText: "Si usas Beds24, StayLever importa tu apartamento y publica los precios que apruebes.",
-    connectCta: "Ir a Ajustes",
+    connectCta: "Conectar Beds24",
     manualTitle: "Usar sin conexión",
     manualText:
       "Crea tu apartamento a mano en 2 minutos. StayLever te sugiere precios con eventos y " +
@@ -70,7 +70,7 @@ const en: Shape = {
     title: "How do you want to start?",
     connectTitle: "Connect my channel manager",
     connectText: "If you use Beds24, StayLever imports your apartment and publishes the prices you approve.",
-    connectCta: "Go to Settings",
+    connectCta: "Connect Beds24",
     manualTitle: "Use it offline",
     manualText:
       "Create your apartment by hand in 2 minutes. StayLever suggests prices from events and " +
@@ -131,7 +131,7 @@ const pt: Shape = {
     title: "Como você quer começar?",
     connectTitle: "Conectar meu channel manager",
     connectText: "Se você usa o Beds24, o StayLever importa seu apartamento e publica os preços que você aprovar.",
-    connectCta: "Ir para Ajustes",
+    connectCta: "Conectar o Beds24",
     manualTitle: "Usar sem conexão",
     manualText:
       "Crie seu apartamento à mão em 2 minutos. O StayLever sugere preços com eventos e " +

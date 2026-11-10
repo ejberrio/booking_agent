@@ -53,6 +53,8 @@ import type {
   MarketCsvResult,
   MarketOccupancyZone,
   MyReport,
+  Beds24Rooms,
+  ConnectionInfo,
   Profitability,
 } from "@/lib/types";
 
@@ -416,6 +418,16 @@ export const api = {
   getWebhookStatus: () => req<WebhookStatus>(`/hooks/beds24/status`),
   generateWebhookKey: () =>
     req<{ header_line: string; hint: string }>(`/hooks/beds24/key`, { method: "POST" }),
+
+  // Feature 044: asistente «Conectar Beds24»
+  connection: () => req<ConnectionInfo>(`/connection`),
+  redeemConnection: (code: string) =>
+    req<Beds24Rooms>(`/connection/beds24/redeem`, { method: "POST", body: JSON.stringify({ code }) }),
+  beds24Rooms: () => req<Beds24Rooms>(`/connection/beds24/rooms`),
+  saveBeds24Selection: (room_ids: string[] | null) =>
+    req<{ selected_rooms: string[] | null }>(`/connection/beds24/selection`, {
+      method: "PUT", body: JSON.stringify({ room_ids }),
+    }),
 
   // Sync
   testConnection: () => req<ConnectionStatus>(`/sync/test`, { method: "POST" }),

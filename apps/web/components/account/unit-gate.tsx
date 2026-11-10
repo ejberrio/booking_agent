@@ -48,7 +48,7 @@ export function UnitGate({ children }: { children: React.ReactNode }) {
             <PlugZap className="text-primary" size={24} />
             <h3 className="font-semibold">{t.connectTitle}</h3>
             <p className="text-sm text-muted-foreground">{t.connectText}</p>
-            <Link href="/settings" className="inline-block">
+            <Link href="/onboarding" className="inline-block">
               <Button className="bg-muted text-foreground">{t.connectCta}</Button>
             </Link>
           </div>

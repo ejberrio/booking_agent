@@ -19,6 +19,7 @@ from datetime import date, timedelta
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.channels.errors import AuthError
 from app.channels.factory import get_adapter, has_credentials, set_channel_mode
 from app.db.tenancy import platform_session, tenant_session
 from app.domain import municipalities
@@ -31,6 +32,7 @@ from app.models.property import Property, UnitType
 from app.search.tavily import TavilyProvider
 from app.services import (
     auth_service,
+    connection_service,
     digest_service,
     event_sources_service,
     event_service,
@@ -73,11 +75,25 @@ async def sync_account(session: AsyncSession, today: date) -> str:
         )
         # Avisos al celular de reservas que el webhook no informó (feature 025).
         await push_service.notify_booking_events(session, events)
+        # Feature 044: la conexión respondió → estado sano (y limpia una caída anterior).
+        await connection_service.record_ok(session)
         await session.commit()
         return (
             f"sync #{run.id} {run.status.value} creadas={run.created_count} "
             f"actualizadas={run.updated_count} incidencias={run.issue_count}"
         )
+    except AuthError:
+        # Feature 044: Beds24 rechazó el token → conexión caída, aviso una sola vez.
+        await session.rollback()
+        try:
+            alerted = await connection_service.record_auth_failure(
+                session, "Beds24 rechazó el acceso (token revocado o vencido)"
+            )
+            await session.commit()
+        except Exception:  # noqa: BLE001
+            await session.rollback()
+            alerted = False
+        return f"sync falló (AuthError); conexión marcada caída{' y avisada' if alerted else ''}"
     except Exception as exc:  # solo el tipo: nunca mensajes que puedan llevar secretos
         await session.rollback()
         return f"sync falló ({type(exc).__name__}); se continúa"
@@ -242,6 +258,14 @@ async def run_all(today: date | None = None, *, search=None, llm=None, market_fa
                     print(f"scan_daily: cuenta {account_id} sin channel manager; se omite.")
                     continue
                 print(f"scan_daily: cuenta {account_id} {await sync_account(session, today)}")
+                # Feature 044: recordatorio si la conexión sigue caída tras 3 días.
+                try:
+                    if await connection_service.remind_if_due(session):
+                        print(f"scan_daily: cuenta {account_id} recordatorio de conexión enviado")
+                    await session.commit()
+                except Exception as exc:  # noqa: BLE001
+                    await session.rollback()
+                    print(f"scan_daily: cuenta {account_id} recordatorio falló ({type(exc).__name__}).")
                 # Feature 042: TRM de los días de llegada de reservas en USD (Airbnb vía Beds24).
                 try:
                     n = await fx_service.refresh_for_bookings(session, today)

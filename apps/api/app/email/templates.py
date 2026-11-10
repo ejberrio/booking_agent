@@ -8,6 +8,12 @@ from app.email.base import EmailMessage
 
 _T = {
     "es": {
+        "connlost_subject": "Se perdió la conexión de StayLever con Beds24",
+        "connlost_body": "Hola {name}:\n\nBeds24 dejó de aceptar la conexión de StayLever, así que no podemos leer tus reservas ni aplicar precios. Suele pasar cuando el código de acceso se revoca o vence.\n\nReconéctala en 2 minutos aquí:\n{link}\n\nMientras tanto, tus precios en Booking y Airbnb siguen como estaban.",
+        "connlost_cta": "Reconectar Beds24",
+        "connrem_subject": "Recordatorio: StayLever sigue sin conexión con Beds24",
+        "connrem_body": "Hola {name}:\n\nHace unos días se perdió la conexión con Beds24 y todavía no se ha restablecido. Sin ella no vemos reservas nuevas ni aplicamos precios.\n\nReconéctala aquí:\n{link}",
+        "connrem_cta": "Reconectar Beds24",
         "verify_subject": "Confirma tu correo en StayLever",
         "verify_body": "Hola {name}:\n\nConfirma tu correo para activar tu cuenta de StayLever:\n{link}\n\nEl enlace vence en 24 horas. Si no fuiste tú, ignora este mensaje.",
         "verify_cta": "Confirmar correo",
@@ -23,6 +29,12 @@ _T = {
         "deleted_body": "Hola {name}:\n\nBorramos tu cuenta de StayLever y todos sus datos. Las copias de seguridad se eliminan solas en un máximo de 7 días.\n\nGracias por haber usado StayLever. Si fue un error, escríbenos a privacy@staylever.com.",
     },
     "en": {
+        "connlost_subject": "StayLever lost its connection to Beds24",
+        "connlost_body": "Hi {name},\n\nBeds24 stopped accepting StayLever's connection, so we can't read your bookings or apply prices. This usually happens when the access code is revoked or expires.\n\nReconnect it in 2 minutes here:\n{link}\n\nMeanwhile, your prices on Booking and Airbnb stay as they were.",
+        "connlost_cta": "Reconnect Beds24",
+        "connrem_subject": "Reminder: StayLever is still disconnected from Beds24",
+        "connrem_body": "Hi {name},\n\nA few days ago the connection with Beds24 was lost and it hasn't been restored yet. Without it we can't see new bookings or apply prices.\n\nReconnect it here:\n{link}",
+        "connrem_cta": "Reconnect Beds24",
         "verify_subject": "Confirm your email for StayLever",
         "verify_body": "Hi {name},\n\nConfirm your email to activate your StayLever account:\n{link}\n\nThe link expires in 24 hours. If this wasn't you, ignore this message.",
         "verify_cta": "Confirm email",
@@ -38,6 +50,12 @@ _T = {
         "deleted_body": "Hi {name},\n\nWe deleted your StayLever account and all its data. Backups are erased automatically within 7 days.\n\nThanks for using StayLever. If this was a mistake, write to privacy@staylever.com.",
     },
     "pt": {
+        "connlost_subject": "O StayLever perdeu a conexão com o Beds24",
+        "connlost_body": "Olá {name},\n\nO Beds24 deixou de aceitar a conexão do StayLever, então não conseguimos ler suas reservas nem aplicar preços. Isso costuma acontecer quando o código de acesso é revogado ou expira.\n\nReconecte em 2 minutos aqui:\n{link}\n\nEnquanto isso, seus preços no Booking e no Airbnb continuam como estavam.",
+        "connlost_cta": "Reconectar Beds24",
+        "connrem_subject": "Lembrete: o StayLever continua sem conexão com o Beds24",
+        "connrem_body": "Olá {name},\n\nHá alguns dias a conexão com o Beds24 caiu e ainda não foi restabelecida. Sem ela não vemos novas reservas nem aplicamos preços.\n\nReconecte aqui:\n{link}",
+        "connrem_cta": "Reconectar Beds24",
         "verify_subject": "Confirme seu e-mail no StayLever",
         "verify_body": "Olá {name},\n\nConfirme seu e-mail para ativar sua conta do StayLever:\n{link}\n\nO link expira em 24 horas. Se não foi você, ignore esta mensagem.",
         "verify_cta": "Confirmar e-mail",
@@ -254,3 +272,12 @@ def weekly_digest(to: str, lang: str | None, data: dict, link: str, off_link: st
         f'{escape(t["off"].format(link=""))}<a href="{escape(off_link)}">{escape(off_link)}</a></p>'
     )
     return EmailMessage(to=to, subject=subject, text=text, html=html)
+
+
+def connection_lost(to: str, lang: str | None, link: str, name: str) -> EmailMessage:
+    """Feature 044: Beds24 dejó de aceptar el token. Sin datos de huéspedes."""
+    return _build("connlost", to, lang, link, name)
+
+
+def connection_reminder(to: str, lang: str | None, link: str, name: str) -> EmailMessage:
+    return _build("connrem", to, lang, link, name)

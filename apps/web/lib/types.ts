@@ -727,3 +727,19 @@ export type Profitability = {
     missing_fx: boolean;
   };
 };
+
+// Feature 044: asistente «Conectar Beds24».
+export type ConnectionInfo = {
+  mode: "manual" | "connected";
+  sandbox: boolean;
+  has_token: boolean;
+  selected_rooms: string[] | null;
+  status: "connected" | "invalid" | "unconfigured";
+  invalid_since: string | null;
+  error: string | null;
+  last_verified_at?: string | null;
+};
+
+export type Beds24Room = { id: string; name: string; units: number; selected: boolean };
+export type Beds24Property = { id: string; name: string; currency: string; taken: boolean; rooms: Beds24Room[] };
+export type Beds24Rooms = { properties: Beds24Property[]; all: boolean; ok?: boolean; account?: string | null };
