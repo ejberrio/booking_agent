@@ -143,6 +143,38 @@ async def _upsert_unit(session: AsyncSession, prop: Property, ext_id: str, name:
     return unit
 
 
+async def _drop_ical_duplicates(session: AsyncSession) -> int:
+    """Quita las reservas de iCal que se cruzan con una reserva de Beds24 de la misma unidad.
+    Solo en cuentas conectadas: en modo sin conexión iCal ES la fuente de las reservas."""
+    from app.channels.factory import is_manual
+
+    if is_manual(session):
+        return 0
+    ical = (
+        await session.execute(
+            select(Booking).where(Booking.external_ref.like("ical:%"),
+                                  Booking.status == BookingStatus.confirmed)
+        )
+    ).scalars().all()
+    if not ical:
+        return 0
+    real = (
+        await session.execute(
+            select(Booking).where(Booking.status == BookingStatus.confirmed,
+                                  Booking.external_ref.not_like("ical:%"))
+        )
+    ).scalars().all()
+    dropped = 0
+    for b in ical:
+        if any(r.unit_type_id == b.unit_type_id and r.check_in < b.check_out
+               and b.check_in < r.check_out for r in real):
+            await session.delete(b)
+            dropped += 1
+    if dropped:
+        await session.flush()
+    return dropped
+
+
 # --------- operaciones públicas ---------
 
 
@@ -371,6 +403,9 @@ async def import_remote(
                 ):
                     _event("modified", existing_booking)
 
+    # Feature 044: reservas de iCal (de cuando la cuenta estaba sin conexión) que ahora llegan
+    # también desde Beds24 → manda Beds24 y se quita el duplicado.
+    await _drop_ical_duplicates(session)
     if taken and not imported:
         # Nada importable: todas las elegidas son de otra cuenta (mismo mensaje de siempre).
         raise PropertyOwnedElsewhere("Esta propiedad ya está conectada a otra cuenta de StayLever")

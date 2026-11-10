@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -259,6 +261,34 @@ function SecretsCard() {
               <p className="text-xs text-muted-foreground">
                 {services[s.name] ?? s.service} · {sourceLabel(s, t)}
               </p>
+              {s.name === "beds24_refresh_token" ? (
+                <div className="space-y-2">
+                  {/* Feature 044: el camino normal es el asistente; el token a mano queda en «Avanzado». */}
+                  <Link href="/onboarding" className="inline-block">
+                    <Button>{t.beds24Wizard}</Button>
+                  </Link>
+                  <details className="text-xs">
+                    <summary className="cursor-pointer text-muted-foreground">{t.advanced}</summary>
+                    <div className="mt-2 space-y-2">
+                  <div className="flex gap-2">
+                    <Input
+                      type="password"
+                      autoComplete="off"
+                      placeholder={t.newValuePlaceholder}
+                      value={values[s.name] ?? ""}
+                      onChange={(e) => setValues((v) => ({ ...v, [s.name]: e.target.value }))}
+                    />
+                    <Button
+                      onClick={() => save.mutate(s.name)}
+                      disabled={save.isPending || !(values[s.name] ?? "").trim()}
+                    >
+                      {m.common.save}
+                    </Button>
+                  </div>
+                    </div>
+                  </details>
+                </div>
+              ) : (
               <div className="flex gap-2">
                 <Input
                   type="password"
@@ -274,6 +304,7 @@ function SecretsCard() {
                   {m.common.save}
                 </Button>
               </div>
+              )}
               {help[s.name] && (
                 <p className="text-[11px] text-muted-foreground">{help[s.name]}</p>
               )}

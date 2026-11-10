@@ -85,6 +85,13 @@ Es el principal freno para sumar anfitriones beta (#149) y para la Fase 1.
 - **SC-003** Cuando el token deja de servir, el anfitrión recibe aviso en menos de 24 h (la siguiente corrida diaria o el primer error).
 - **SC-004** Al pasar de «sin conexión» a conectado no se pierde ninguna sugerencia, nota ni registro de precios, y no quedan reservas duplicadas.
 
+## Entregas
+- **Entrega 1** (en producción desde el 10-nov-2026, PR #191): FR-001, FR-002, FR-003 y FR-007.
+- **Entrega 2** (rama `044b-manual-to-connected`):
+  - **FR-004:** `PUT /connection/beds24/link`. Hay que asociar **todos** los apartamentos manuales; se conservan la misma unidad y su historial. La importación quita las reservas de iCal que se cruzan con Beds24, solo en cuentas conectadas.
+  - **FR-005:** guía en el paso 1, con enlaces a la ayuda de Beds24.
+  - **FR-006:** en Ajustes, el token a mano pasa a «Avanzado» y queda un botón al asistente.
+
 ## Decisiones del anfitrión (5-nov-2026)
 1. **Selección por defecto:** todo marcado; el anfitrión desmarca lo que no quiere.
 2. **Avisos de conexión caída:** celular + correo una vez, banner en la app y un recordatorio a los 3 días.

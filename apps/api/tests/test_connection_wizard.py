@@ -194,3 +194,97 @@ async def test_asistente_canje_lista_y_seleccion_sin_fugas(client):
     rooms = (await client.get("/connection/beds24/rooms")).json()
     sel = {rm["id"]: rm["selected"] for p in rooms["properties"] for rm in p["rooms"]}
     assert sel == {"1001": True, "1002": False, "2001": True}
+
+
+# --------- entrega 2: de «sin conexión» a Beds24 ---------
+
+from decimal import Decimal as D  # noqa: E402
+
+from app.channels.base import RemoteBooking  # noqa: E402
+from app.channels.factory import is_manual, set_channel_mode  # noqa: E402
+from app.models.account import Account  # noqa: E402
+from app.models.booking import Booking  # noqa: E402
+from app.models.calendar import CalendarNote  # noqa: E402
+from app.models.enums import BookingStatus, ChannelKind  # noqa: E402
+from app.services import manual_service  # noqa: E402
+
+CI2, CO2 = TODAY + timedelta(days=10), TODAY + timedelta(days=12)
+
+
+async def _manual(session):
+    unit = await manual_service.create_apartment(
+        session, 1, name="Mi apto", city="Sabaneta", weekday_price=D("250000"),
+        listings=[manual_service.ManualListing(ChannelKind.airbnb, ical_url="https://airbnb.com/cal.ics")],
+    )
+    session.add(Booking(unit_type_id=unit.id, channel_kind=ChannelKind.airbnb, check_in=CI2,
+                        check_out=CO2, status=BookingStatus.confirmed, external_ref="ical:airbnb:uid-1"))
+    session.add(Booking(unit_type_id=unit.id, channel_kind=ChannelKind.airbnb,
+                        check_in=TODAY + timedelta(days=30), check_out=TODAY + timedelta(days=32),
+                        status=BookingStatus.confirmed, external_ref="ical:airbnb:uid-2"))
+    session.add(CalendarNote(unit_type_id=unit.id, date_from=CI2, date_to=CI2, text="nota mía"))
+    await session.flush()
+    return unit
+
+
+class Beds24WithBooking(TwoProps):
+    async def get_bookings(self, prop, since=None):
+        if prop != "111":
+            return []
+        return [RemoteBooking("B-900", "1001", CI2, CO2, "confirmed", "airbnb")]
+
+
+async def test_de_sin_conexion_a_beds24_conserva_historial_y_quita_duplicados(session):
+    unit = await _manual(session)
+    assert is_manual(session)
+    props = await TwoProps([]).get_properties()
+    with pytest.raises(svc.SwitchError):
+        await svc.switch_from_manual(session, {unit.id: "9999"}, props)  # habitación ajena
+    with pytest.raises(svc.SwitchError, match="falta: Mi apto"):
+        await svc.switch_from_manual(session, {}, props)  # ningún apartamento queda huérfano
+    out = await svc.switch_from_manual(session, {unit.id: "1001"}, props)
+    assert out == {"linked": 1} and not is_manual(session)
+    assert (await session.get(Account, 1)).channel_mode == "connected"
+    same = await session.get(UnitType, unit.id)
+    assert same.external_ref == "1001"
+    prop = await session.get(Property, same.property_id)
+    assert (prop.provider, prop.external_ref, prop.name) == ("beds24", "111", "Apto Mayorca")
+
+    await svc.set_selection(session, ["1001"])
+    await sync_service.import_remote(session, Beds24WithBooking([]), TODAY, TODAY + timedelta(days=40))
+    bookings = {b.external_ref: b for b in (await session.execute(select(Booking))).scalars()}
+    assert "B-900" in bookings and bookings["B-900"].unit_type_id == unit.id  # misma unidad
+    assert "ical:airbnb:uid-1" not in bookings  # duplicado de Beds24: se quitó
+    assert "ical:airbnb:uid-2" in bookings  # sin equivalente en Beds24: se conserva
+    assert (await session.execute(select(CalendarNote))).scalar_one().text == "nota mía"
+    units = (await session.execute(select(UnitType))).scalars().all()
+    assert [u.id for u in units] == [unit.id]  # no se creó una unidad nueva
+
+
+async def test_en_modo_sin_conexion_ical_no_se_borra(session):
+    unit = await _manual(session)
+    set_channel_mode(session, "manual")
+    assert await sync_service._drop_ical_duplicates(session) == 0
+    assert len((await session.execute(select(Booking).where(Booking.unit_type_id == unit.id))).all()) == 2
+
+
+async def test_asistente_en_modo_sin_conexion_asocia_por_la_api(client, session, monkeypatch):
+    import app.api.routes.connection as routes
+
+    unit = await _manual(session)
+    await session.commit()
+    # Sin usuario la petición entra como la cuenta del anfitrión en modo heredado (siempre
+    # conectada): se simula el modo que tendría un anfitrión con sesión.
+    mode = {"manual": True}
+    monkeypatch.setattr(routes, "is_manual", lambda s: mode["manual"])
+    monkeypatch.setattr(routes.connection_service, "beds24_adapter", lambda s: WizardCM([]))
+    ok = await client.post("/connection/beds24/redeem", json={"code": "INVITE-OK"})
+    assert ok.status_code == 200, ok.text
+    assert [u["id"] for u in ok.json()["manual_units"]] == [unit.id]
+    bad = await client.put("/connection/beds24/link", json={"room_ids": ["1002"], "links": {str(unit.id): "1001"}})
+    assert bad.status_code == 422  # asociar una habitación no elegida
+    r = await client.put("/connection/beds24/link",
+                         json={"room_ids": ["1001", "1002", "2001"], "links": {str(unit.id): "1001"}})
+    assert r.status_code == 200 and r.json()["linked"] == 1
+    mode["manual"] = False
+    again = await client.put("/connection/beds24/link", json={"room_ids": ["1001"], "links": {}})
+    assert again.status_code == 409  # ya está conectada

@@ -18,7 +18,10 @@ import { cn } from "@/lib/utils";
 
 // Asistente «Conectar Beds24» (feature 044, #150): generar código → pegar → elegir → importar.
 const BEDS24_URL = "https://beds24.com/control3.php";
-const GUIDE_URL = "https://wiki.beds24.com/index.php/Category:Channel_Manager";
+const GUIDE = {
+  airbnb: "https://wiki.beds24.com/index.php/Connect_Airbnb_Account",
+  booking: "https://wiki.beds24.com/index.php/Booking.com:_Synchronise_bookings_prices_availability",
+};
 const READ = ["bookings", "bookings-personal", "inventory", "properties", "channels"];
 const WRITE = ["inventory", "channels"];
 
@@ -33,10 +36,14 @@ export default function ConnectPage() {
   const [code, setCode] = useState("");
   const [rooms, setRooms] = useState<Beds24Rooms | null>(null);
   const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [links, setLinks] = useState<Record<number, string>>({});
 
   const fromRooms = (r: Beds24Rooms) => {
     setRooms(r);
-    setPicked(new Set(r.properties.flatMap((p) => p.rooms.filter((x) => x.selected).map((x) => x.id))));
+    const sel = r.properties.flatMap((p) => p.rooms.filter((x) => x.selected).map((x) => x.id));
+    setPicked(new Set(sel));
+    // Modo sin conexión: propone asociar cada apartamento con una habitación, en orden.
+    setLinks(Object.fromEntries((r.manual_units ?? []).map((u, i) => [u.id, sel[i] ?? ""])));
   };
   const redeem = useMutation({
     mutationFn: () => api.redeemConnection(code.trim()),
@@ -62,16 +69,26 @@ export default function ConnectPage() {
     onSettled: () => qc.invalidateQueries(),
   });
   const save = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       if (!rooms) throw new Error(t.step3.none);
       const allIds = rooms.properties.filter((p) => !p.taken).flatMap((p) => p.rooms.map((r) => r.id));
       const ids = allIds.filter((id) => picked.has(id));
       if (ids.length === 0) throw new Error(t.step3.none);
-      return api.saveBeds24Selection(ids.length === allIds.length ? null : ids);
+      const manual = rooms.manual_units ?? [];
+      if (manual.length > 0) {
+        const chosen = manual.map((u) => links[u.id]);
+        if (chosen.some((r) => !r || !picked.has(r)) || new Set(chosen).size !== chosen.length) {
+          throw new Error(t.link.missing);
+        }
+        await api.linkManual(ids, links);
+        return;
+      }
+      await api.saveBeds24Selection(ids.length === allIds.length ? null : ids);
     },
     onSuccess: () => {
       setStep(4);
       importRemote.mutate();
+      qc.invalidateQueries({ queryKey: ["connection"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -80,19 +97,7 @@ export default function ConnectPage() {
   const c = info.data;
   if (!c) return null;
 
-  if (c.mode === "manual") {
-    return (
-      <div className="mx-auto max-w-xl space-y-4">
-        <h1 className="text-xl font-semibold">{t.title}</h1>
-        <Card className="space-y-2">
-          <CardTitle>{t.manual.title}</CardTitle>
-          <CardDescription>{t.manual.body}</CardDescription>
-        </Card>
-      </div>
-    );
-  }
-
-  const connected = c.status === "connected" && c.has_token;
+  const connected = c.mode !== "manual" && c.status === "connected" && c.has_token;
   const current: Step = step ?? (connected ? 4 : 1);
   const toggle = (id: string) =>
     setPicked((old) => {
@@ -153,11 +158,19 @@ export default function ConnectPage() {
             <PermList title={t.step1.write} items={WRITE} copy={t.step1.copy} copied={t.step1.copied} />
           </div>
           <p className="text-xs text-amber-700">{t.step1.expires}</p>
+          <details className="rounded-md border border-border p-3 text-sm">
+            <summary className="cursor-pointer font-medium">{t.guideTitle}</summary>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
+              {t.guideItems.map((g) => <li key={g}>{g}</li>)}
+            </ul>
+            <div className="mt-2 flex flex-wrap gap-3 text-xs">
+              <a href={GUIDE.airbnb} target="_blank" rel="noreferrer" className="text-primary hover:underline">{t.guideLinks.airbnb}</a>
+              <a href={GUIDE.booking} target="_blank" rel="noreferrer" className="text-primary hover:underline">{t.guideLinks.booking}</a>
+            </div>
+          </details>
           <div className="flex flex-wrap items-center gap-3">
             <Button onClick={() => setStep(2)}>{t.step1.next}</Button>
-            <a href={GUIDE_URL} target="_blank" rel="noreferrer" className="text-xs text-muted-foreground hover:underline">
-              {t.guide}
-            </a>
+
           </div>
         </Card>
       )}
@@ -200,6 +213,24 @@ export default function ConnectPage() {
               </li>
             ))}
           </ul>
+          {(rooms.manual_units ?? []).length > 0 && (
+            <div className="space-y-2 rounded-md border border-primary/40 p-3">
+              <p className="text-sm font-medium">{t.link.title}</p>
+              <p className="text-xs text-muted-foreground">{t.link.hint}</p>
+              {(rooms.manual_units ?? []).map((u) => (
+                <label key={u.id} className="flex flex-wrap items-center gap-2 text-sm">
+                  <span className="min-w-32 font-medium">{u.name}</span>
+                  <select className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                    value={links[u.id] ?? ""} onChange={(e) => setLinks((l) => ({ ...l, [u.id]: e.target.value }))}>
+                    <option value="">{t.link.pick}</option>
+                    {rooms.properties.filter((p) => !p.taken).flatMap((p) => p.rooms
+                      .filter((r) => picked.has(r.id))
+                      .map((r) => <option key={r.id} value={r.id}>{p.name} · {r.name}</option>))}
+                  </select>
+                </label>
+              ))}
+            </div>
+          )}
           <Button onClick={() => save.mutate()} disabled={save.isPending || picked.size === 0}>{t.step3.save}</Button>
         </Card>
       )}

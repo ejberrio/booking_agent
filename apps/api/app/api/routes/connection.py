@@ -40,8 +40,9 @@ async def _require_owner(session: AsyncSession, ctx: RequestContext) -> None:
 
 async def _rooms(session: AsyncSession) -> dict:
     """Propiedades y habitaciones de la cuenta de Beds24, con lo elegido y lo que es de otra
-    cuenta (deshabilitado). Una llamada a Beds24."""
-    adapter = get_adapter(session)
+    cuenta (deshabilitado). Una llamada a Beds24. En modo sin conexión trae además los
+    apartamentos manuales para asociarlos (entrega 2)."""
+    adapter = _adapter(session)
     try:
         props = await adapter.get_properties()
     finally:
@@ -57,7 +58,13 @@ async def _rooms(session: AsyncSession) -> dict:
                        "selected": not taken and (selected is None or str(r.external_id) in selected)}
                       for r in p.rooms],
         })
-    return {"properties": out, "all": selected is None}
+    manual = await connection_service.manual_units(session) if is_manual(session) else []
+    return {"properties": out, "all": selected is None, "manual_units": manual}
+
+
+def _adapter(session: AsyncSession):
+    """El de Beds24 aunque la cuenta siga en modo sin conexión (el asistente necesita leerlo)."""
+    return connection_service.beds24_adapter(session) if is_manual(session) else get_adapter(session)
 
 
 @router.get("")
@@ -87,12 +94,6 @@ async def redeem(req: RedeemIn, session: AsyncSession = Depends(get_session),
     from app.channels.errors import AuthError, ChannelError
 
     await _require_owner(session, ctx)
-    if is_manual(session):
-        raise HTTPException(
-            status_code=409,
-            detail="Esta cuenta está en modo sin conexión. Pasar a conectado llega en la próxima "
-                   "entrega del asistente.",
-        )
     code = req.code.strip()
     if not code:
         raise HTTPException(status_code=422, detail="El código no puede estar vacío")
@@ -108,7 +109,7 @@ async def redeem(req: RedeemIn, session: AsyncSession = Depends(get_session),
             raise HTTPException(status_code=503, detail=_UNAVAILABLE) from None
         await secret_service.set_secret(session, "beds24_refresh_token", token)
         await session.commit()
-    adapter = get_adapter(session)
+    adapter = _adapter(session)
     try:
         conn = await sync_service.test_connection(session, adapter)
     finally:
@@ -156,3 +157,43 @@ async def save_selection(req: SelectionIn, session: AsyncSession = Depends(get_s
     await connection_service.set_selection(session, req.room_ids)
     await session.commit()
     return {"selected_rooms": req.room_ids}
+
+
+class LinkIn(BaseModel):
+    room_ids: list[str] = Field(min_length=1, max_length=500)
+    links: dict[int, str] = Field(default_factory=dict, max_length=50)  # unidad manual → habitación
+
+
+@router.put("/beds24/link")
+async def link_manual(req: LinkIn, session: AsyncSession = Depends(get_session),
+                      ctx: RequestContext = Depends(require_ctx)):
+    """Entrega 2: de «sin conexión» a Beds24. Guarda la selección, asocia cada apartamento
+    manual con su habitación y pasa la cuenta a conectada. Luego el asistente importa con
+    `/sync/import`, que además quita las reservas duplicadas de iCal."""
+    from app.channels.errors import AuthError, ChannelError
+
+    await _require_owner(session, ctx)
+    if not is_manual(session):
+        raise HTTPException(status_code=409, detail="La cuenta ya está conectada a Beds24.")
+    if any(r not in req.room_ids for r in req.links.values()):
+        raise HTTPException(status_code=422, detail="Solo puedes asociar habitaciones que elegiste.")
+    adapter = connection_service.beds24_adapter(session)
+    try:
+        props = await adapter.get_properties()
+    except AuthError:
+        raise HTTPException(status_code=422, detail="Beds24 rechazó el acceso: reconecta con un código nuevo.") from None
+    except ChannelError:
+        raise HTTPException(status_code=503, detail=_UNAVAILABLE) from None
+    finally:
+        await adapter.aclose()
+    try:
+        out = await connection_service.switch_from_manual(session, req.links, props)
+    except connection_service.SwitchError as exc:
+        await session.rollback()
+        raise HTTPException(status_code=422, detail=str(exc)) from None
+    all_ids = {str(r.external_id) for p in props for r in p.rooms}
+    await connection_service.set_selection(
+        session, None if set(req.room_ids) >= all_ids else req.room_ids
+    )
+    await session.commit()
+    return {**out, "mode": "connected"}
