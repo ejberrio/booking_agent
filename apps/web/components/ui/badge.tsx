@@ -1,13 +1,14 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-type Variant = "default" | "muted" | "success" | "warning";
+type Variant = "default" | "muted" | "success" | "warning" | "danger";
 
 const styles: Record<Variant, string> = {
   default: "bg-primary text-primary-foreground",
   muted: "bg-muted text-muted-foreground",
   success: "bg-green-500/15 text-green-600",
   warning: "bg-amber-500/15 text-amber-600",
+  danger: "bg-red-500/15 text-red-600",
 };
 
 export function Badge({

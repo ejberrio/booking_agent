@@ -60,6 +60,14 @@ SECRET_NAMES: dict[str, dict[str, str]] = {
         "service": "Reservas en tiempo real (avisos de Beds24)",
         "test": "webhook",
     },
+    # Feature 046: token de la API para PMS de la TRA (MinCIT), uno por RNT. Lo pide el
+    # anfitrión en pms.mincit.gov.co/token (captcha) y lo pega en Ajustes.
+    "mincit_tra_token": {
+        "scope": "account",
+        "label": "Token de la TRA (MinCIT)",
+        "service": "Envío de la Tarjeta de Registro de Alojamiento",
+        "test": "none",
+    },
     # Feature 025: cuenta de servicio de Firebase (JSON) para avisos al celular.
     "fcm_service_account": {
         "scope": "platform",

@@ -7,7 +7,7 @@ usuarios deben aceptarla de nuevo antes de seguir usando la app.
 
 from __future__ import annotations
 
-LEGAL_VERSION = "2026-11-11"
+LEGAL_VERSION = "2026-11-12"
 
 #: Días que se conserva el nombre del huésped después de la fecha de salida.
 GUEST_NAME_RETENTION_DAYS = 365

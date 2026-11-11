@@ -57,6 +57,10 @@ import type {
   ConnectionInfo,
   Inbox,
   Thread,
+  RegistrationDetail,
+  RegistrationOverview,
+  RegistrationSettings,
+  GuestData,
   Profitability,
 } from "@/lib/types";
 
@@ -76,6 +80,9 @@ export interface PromotionInput {
 // El navegador nunca habla con la API directamente; el proxy reenvía a la API privada.
 // `lib/sse.ts` también usa esta constante (chat SSE → /api/proxy/chat/stream).
 export const API_URL = "/api/proxy";
+
+/** Error de la API; `fields` marca campos inválidos por persona (feature 046). */
+export type ApiError = Error & { fields?: Record<string, string[]> };
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
@@ -101,12 +108,14 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   if (!res.ok) {
     // El backend responde errores honestos en `detail` (p. ej. estado real de una
     // sugerencia ya resuelta): se propaga para mostrarlo tal cual.
-    const detail = await res
-      .json()
-      .then((b) => (typeof b?.detail === "string" ? b.detail : null))
-      .catch(() => null);
+    const body = await res.json().catch(() => null);
+    const d = body?.detail;
+    // Feature 046: algunos errores traen {message, fields} (campos a marcar en el formulario).
+    const detail = typeof d === "string" ? d : typeof d?.message === "string" ? d.message : null;
     // Traducido al idioma activo en UN solo punto (feature 021); sin traducción → español.
-    throw new Error(trServer(detail ?? `API ${res.status} en ${path}`));
+    const err = new Error(trServer(detail ?? `API ${res.status} en ${path}`)) as ApiError;
+    if (d && typeof d === "object") err.fields = d.fields;
+    throw err;
   }
   return (await res.json()) as T;
 }
@@ -420,6 +429,18 @@ export const api = {
   getWebhookStatus: () => req<WebhookStatus>(`/hooks/beds24/status`),
   generateWebhookKey: () =>
     req<{ header_line: string; hint: string }>(`/hooks/beds24/key`, { method: "POST" }),
+
+  // Feature 046: registro de huéspedes (TRA / SIRE)
+  registrations: () => req<RegistrationOverview>(`/registration`),
+  registrationSettings: () => req<RegistrationSettings>(`/registration/settings`),
+  saveRegistrationSettings: (body: Partial<Omit<RegistrationSettings, "missing">> & { authorize?: boolean }) =>
+    req<RegistrationSettings>(`/registration/settings`, { method: "PUT", body: JSON.stringify(body) }),
+  registration: (bookingId: number) => req<RegistrationDetail>(`/registration/${bookingId}`),
+  registrationLink: (bookingId: number) =>
+    req<{ token: string; path: string }>(`/registration/${bookingId}/link`, { method: "POST" }),
+  saveRegistration: (bookingId: number, data: GuestData, cost_cop: string | null) =>
+    req<RegistrationDetail>(`/registration/${bookingId}`, { method: "PUT", body: JSON.stringify({ data, cost_cop }) }),
+  sendTra: (bookingId: number) => req<RegistrationDetail>(`/registration/${bookingId}/tra`, { method: "POST" }),
 
   // Feature 045: mensajes de huéspedes
   inbox: () => req<Inbox>(`/messages`),

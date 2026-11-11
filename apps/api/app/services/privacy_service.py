@@ -54,6 +54,10 @@ async def purge_guest_names(session: AsyncSession, account_id: int, today: date)
         .values(guest_name=None)
         .execution_options(synchronize_session=False)
     )
+    # Feature 046: los datos del registro de huéspedes (TRA/SIRE) siguen el mismo plazo.
+    from app.services import registration_service
+
+    await registration_service.purge(session, account_id, retention_cutoff(today))
     await session.commit()
     return result.rowcount or 0
 
@@ -77,6 +81,15 @@ def _row(obj: Any) -> dict:
     return {c.key: _value(getattr(obj, c.key)) for c in inspect(obj).mapper.column_attrs}
 
 
+def _export_row(obj: Any) -> dict:
+    row = _row(obj)
+    if "data_encrypted" in row:  # feature 046: el dueño recibe sus datos legibles
+        from app.services import registration_service
+
+        row["data"] = registration_service.decrypt(obj.account_id, row.pop("data_encrypted"))
+    return row
+
+
 def _account_models() -> list[type]:
     models = [
         m.class_
@@ -91,7 +104,7 @@ async def export_account(session: AsyncSession, user: AppUser, account: Account)
     tables: dict[str, list[dict]] = {}
     for model in _account_models():
         rows = (await session.execute(select(model).order_by(model.id))).scalars().all()
-        tables[model.__tablename__] = [_row(r) for r in rows]
+        tables[model.__tablename__] = [_export_row(r) for r in rows]
     acceptances = (
         await session.execute(
             select(TermsAcceptance)

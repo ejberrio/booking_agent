@@ -3,7 +3,7 @@
 Documento interno. StayLever es **Responsable** de los datos de los anfitriones (sus usuarios)
 y **Encargado** de los datos de los huéspedes de cada anfitrión. Revisar con un abogado antes
 de cobrar (Fase 1). Versión de los documentos públicos: `LEGAL_VERSION` en
-`apps/api/app/core/legal.py` (hoy `2026-11-11`).
+`apps/api/app/core/legal.py` (hoy `2026-11-12`).
 
 | Dato | Titular | Dónde | Para qué | Quién lo ve | Cuánto tiempo |
 |---|---|---|---|---|---|
@@ -15,6 +15,8 @@ de cobrar (Fase 1). Versión de los documentos públicos: `LEGAL_VERSION` en
 | Intentos de acceso | — | `auth_attempt` (hash del correo, IP) | Límite de fuerza bruta | Nadie | Ventana de 15 min (filas antiguas sin uso) |
 | Nombre del huésped | Huésped (Responsable: anfitrión) | `booking.guest_name` | Mostrar quién reserva | Solo la cuenta dueña; nunca el administrador, logs, avisos ni la IA | **1 año tras la salida** (limpieza diaria del cron) |
 | Mensajes de huéspedes (feature 045) | Huésped (Responsable: anfitrión) | **No se guardan**: se leen y envían en vivo vía Beds24; caché en memoria de 60 s | Leer y responder desde StayLever | Solo la cuenta dueña; nunca el administrador ni logs; avisos sin texto ni nombre | Ninguna en StayLever (Beds24 conserva su historial) |
+| Registro de huéspedes: TRA y SIRE (feature 046) | Huésped y acompañantes (Responsable: anfitrión) | `guest_registration.data_encrypted` (**cifrado** con Fernet, clave derivada por cuenta): tipo y número de documento, nombres, apellidos, nacionalidad, fecha de nacimiento, ciudades de residencia, procedencia y destino, motivo del viaje. En claro solo estados, fechas, código del MinCIT y fecha del consentimiento | Enviar la TRA al MinCIT (cuando el anfitrión confirma) y generar el archivo de SIRE | Solo la cuenta dueña; nunca el administrador, logs, avisos ni la IA. El MinCIT recibe la TRA | **1 año tras la salida** (misma limpieza diaria que el nombre); se borra con la cuenta |
+| Token de la TRA | Anfitrión | `secret_entry` (`mincit_tra_token`, cifrado) | Autenticarse ante la API del MinCIT | Nadie (solo el servicio) | Mientras exista la cuenta |
 | Propiedades, calendario, tarifas, reservas (sin datos personales), sugerencias, promociones, notas | Anfitrión | Tablas `AccountOwned` | Sugerir y publicar precios | Solo la cuenta | Mientras exista la cuenta |
 | Conversaciones con el asistente | Anfitrión | `conversation`, `message`, `agent_action` | Asistente | Solo la cuenta | Mientras exista la cuenta |
 | Credenciales del channel manager | Anfitrión | `secret_entry` (cifradas, Fernet) | Conectar Beds24 | Nadie (solo el servicio) | Mientras exista la cuenta |
@@ -40,6 +42,7 @@ de cobrar (Fase 1). Versión de los documentos públicos: `LEGAL_VERSION` en
 | Resend | Brasil (sa-east-1) / EE. UU. | Correo y nombre del usuario para correos de acceso |
 | Google Firebase | EE. UU. | Token del teléfono y texto del aviso (sin nombres de huéspedes) |
 | Google (Entrar con Google) | EE. UU. | Inicio de sesión del usuario que lo elige |
+| MinCIT (API para PMS de la TRA) | Colombia | Datos de la TRA del huésped y acompañantes, solo cuando el anfitrión pulsa «Enviar TRA» |
 | Beds24 | Alemania / UE | Es el channel manager del anfitrión: origen de reservas y destino de precios |
 | Cloudflare | EE. UU. | DNS y reenvío de hello@/privacy@/support@ a la bandeja del administrador |
 

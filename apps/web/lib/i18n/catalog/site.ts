@@ -41,7 +41,7 @@ const es = {
   },
   privacy: {
     title: "Política de privacidad",
-    updated: "Última actualización: 11 de noviembre de 2026",
+    updated: "Última actualización: 12 de noviembre de 2026",
     sections: [
       {
         title: "Quiénes somos",
@@ -72,10 +72,16 @@ const es = {
         body: [
           "Sobre los datos de tus huéspedes, tú eres el Responsable del tratamiento y StayLever " +
             "es el Encargado: los tratamos solo por tu cuenta y para prestarte el servicio. De " +
-            "cada huésped guardamos únicamente el nombre que envía tu channel manager (nunca " +
-            "teléfono, correo ni documento), lo ves solo tú dentro de tu cuenta y nadie más: " +
-            "ni otras cuentas ni los administradores de StayLever. Nunca va a la IA ni a los " +
-            "avisos del celular.",
+            "cada huésped guardamos el nombre que envía tu channel manager y, si usas el registro " +
+            "de huéspedes, los datos que el huésped (o tú) llena para la TRA y SIRE. Solo tú los " +
+            "ves dentro de tu cuenta y nadie más: ni otras cuentas ni los administradores de " +
+            "StayLever. Nunca van a la IA ni a los avisos del celular.",
+          "Registro de huéspedes (TRA y SIRE): para cumplir la Ley 2068 de 2020 y las normas de " +
+            "Migración Colombia, el huésped puede llenar en un enlace su tipo y número de " +
+            "documento, nombres, nacionalidad, fecha de nacimiento, ciudades de residencia, " +
+            "procedencia y destino, motivo del viaje y los de sus acompañantes. Los guardamos " +
+            "cifrados, los enviamos al Ministerio de Comercio (TRA) solo cuando tú lo confirmas y " +
+            "generamos el archivo de SIRE que tú cargas en Migración Colombia.",
           "Los mensajes de tus huéspedes se leen y envían a través de tu channel manager cuando " +
             "abres la bandeja de StayLever; no los guardamos. Solo si pides una «respuesta " +
             "sugerida», enviamos el hilo a la IA sin nombres, correos, teléfonos, documentos ni " +
@@ -101,7 +107,9 @@ const es = {
             "recibe datos de calendario y precios, nunca nombres de huéspedes; y, solo si pides " +
             "una respuesta sugerida, el texto anonimizado de la conversación); Tavily (búsqueda " +
             "de eventos públicos de tu ciudad); Resend (correos); Google Firebase (avisos al " +
-            "celular); Google (si eliges entrar con Google) y Beds24, tu channel manager.",
+            "celular); Google (si eliges entrar con Google) y Beds24, tu channel manager. Los " +
+            "datos de registro de huéspedes van al Ministerio de Comercio, Industria y Turismo " +
+            "(TRA) cuando tú lo confirmas.",
           "Al usar StayLever aceptas que tus datos se traten en servidores fuera de Colombia con " +
             "estos proveedores.",
         ],
@@ -109,8 +117,9 @@ const es = {
       {
         title: "Cuánto tiempo los guardamos",
         body: [
-          "Los datos de tu cuenta, mientras esté activa. El nombre de cada huésped se borra " +
-            "automáticamente 1 año después de la fecha de salida; la reserva se conserva sin él " +
+          "Los datos de tu cuenta, mientras esté activa. El nombre de cada huésped y sus datos de " +
+            "registro (TRA y SIRE) se borran automáticamente 1 año después de la fecha de salida; " +
+            "la reserva se conserva sin ellos " +
             "(fechas, precio y canal) para las estadísticas de precios.",
           "Si borras tu cuenta desde Ajustes, eliminamos de inmediato todos sus datos; las copias " +
             "de seguridad de la base de datos desaparecen solas en un máximo de 7 días.",
@@ -194,7 +203,7 @@ const en: Shape = {
   },
   privacy: {
     title: "Privacy policy",
-    updated: "Last updated: November 11, 2026",
+    updated: "Last updated: November 12, 2026",
     sections: [
       {
         title: "Who we are",
@@ -225,9 +234,16 @@ const en: Shape = {
         body: [
           "For your guests' data, you are the Controller and StayLever is the Processor: we " +
             "process it only on your behalf and to provide the service. For each guest we keep " +
-            "only the name your channel manager sends (never phone, email or ID), only you see " +
-            "it inside your account and no one else: not other accounts nor StayLever's " +
-            "administrators. It never goes to the AI or to phone alerts.",
+            "the name your channel manager sends and, if you use guest registration, the details " +
+            "the guest (or you) fills in for the TRA and SIRE. Only you see them inside your " +
+            "account and no one else: not other accounts nor StayLever's administrators. They " +
+            "never go to the AI or to phone alerts.",
+          "Guest registration (TRA and SIRE): to comply with Colombia's Law 2068 of 2020 and " +
+            "Migración Colombia's rules, guests can fill in through a link their ID type and " +
+            "number, names, nationality, date of birth, cities of residence, origin and " +
+            "destination, purpose of the trip, and those of their companions. We store them " +
+            "encrypted, send them to the Ministry of Commerce (TRA) only when you confirm, and " +
+            "generate the SIRE file that you upload to Migración Colombia.",
           "Your guests' messages are read and sent through your channel manager when you open " +
             "the StayLever inbox; we don't store them. Only if you ask for a “suggested reply” " +
             "do we send the thread to the AI without names, emails, phone numbers, documents or " +
@@ -253,7 +269,8 @@ const en: Shape = {
             "calendar and price data, never guest names; and, only if you ask for a suggested " +
             "reply, the anonymized text of the conversation); Tavily (search for public events in " +
             "your city); Resend (email); Google Firebase (phone alerts); Google (if you choose to " +
-            "sign in with Google) and Beds24, your channel manager.",
+            "sign in with Google) and Beds24, your channel manager. Guest registration details " +
+            "go to Colombia's Ministry of Commerce, Industry and Tourism (TRA) when you confirm.",
           "By using StayLever you agree that your data is processed on servers outside Colombia " +
             "by these providers.",
         ],
@@ -261,8 +278,9 @@ const en: Shape = {
       {
         title: "How long we keep it",
         body: [
-          "Your account data, while the account is active. Each guest's name is erased " +
-            "automatically 1 year after the check-out date; the booking stays without it (dates, " +
+          "Your account data, while the account is active. Each guest's name and registration " +
+            "details (TRA and SIRE) are erased automatically 1 year after the check-out date; the " +
+            "booking stays without them (dates, " +
             "price and channel) for price statistics.",
           "If you delete your account in Settings, we erase all its data right away; database " +
             "backups disappear automatically within 7 days.",
@@ -344,7 +362,7 @@ const pt: Shape = {
   },
   privacy: {
     title: "Política de privacidade",
-    updated: "Última atualização: 11 de novembro de 2026",
+    updated: "Última atualização: 12 de novembro de 2026",
     sections: [
       {
         title: "Quem somos",
@@ -375,10 +393,17 @@ const pt: Shape = {
         body: [
           "Sobre os dados dos seus hóspedes, você é o Responsável pelo tratamento e o StayLever " +
             "é o Encarregado (operador): tratamos esses dados apenas em seu nome e para prestar " +
-            "o serviço. De cada hóspede guardamos somente o nome que o seu channel manager envia " +
-            "(nunca telefone, e-mail ou documento), só você o vê dentro da sua conta e mais " +
-            "ninguém: nem outras contas nem os administradores do StayLever. Ele nunca vai para " +
-            "a IA nem para os avisos do celular.",
+            "o serviço. De cada hóspede guardamos o nome que o seu channel manager envia e, se " +
+            "você usar o registro de hóspedes, os dados que o hóspede (ou você) preenche para a " +
+            "TRA e o SIRE. Só você os vê dentro da sua conta e mais ninguém: nem outras contas " +
+            "nem os administradores do StayLever. Eles nunca vão para a IA nem para os avisos do " +
+            "celular.",
+          "Registro de hóspedes (TRA e SIRE): para cumprir a Lei 2068 de 2020 da Colômbia e as " +
+            "normas da Migración Colombia, o hóspede pode preencher em um link o tipo e o número " +
+            "do documento, nomes, nacionalidade, data de nascimento, cidades de residência, " +
+            "procedência e destino, motivo da viagem e os dos seus acompanhantes. Guardamos " +
+            "esses dados criptografados, enviamos ao Ministério do Comércio (TRA) somente quando " +
+            "você confirma e geramos o arquivo do SIRE que você carrega na Migración Colombia.",
           "As mensagens dos seus hóspedes são lidas e enviadas pelo seu channel manager quando " +
             "você abre a caixa de entrada do StayLever; não as guardamos. Só se você pedir uma " +
             "«resposta sugerida» enviamos a conversa à IA sem nomes, e-mails, telefones, " +
@@ -404,7 +429,9 @@ const pt: Shape = {
             "recebe dados de calendário e preços, nunca nomes de hóspedes; e, só se você pedir " +
             "uma resposta sugerida, o texto anonimizado da conversa); Tavily (busca de " +
             "eventos públicos da sua cidade); Resend (e-mails); Google Firebase (avisos ao " +
-            "celular); Google (se você escolher entrar com o Google) e Beds24, o seu channel manager.",
+            "celular); Google (se você escolher entrar com o Google) e Beds24, o seu channel manager. " +
+            "Os dados de registro de hóspedes vão ao Ministério do Comércio, Indústria e Turismo " +
+            "da Colômbia (TRA) quando você confirma.",
           "Ao usar o StayLever você aceita que seus dados sejam tratados em servidores fora da " +
             "Colômbia por esses fornecedores.",
         ],
@@ -412,8 +439,9 @@ const pt: Shape = {
       {
         title: "Por quanto tempo os guardamos",
         body: [
-          "Os dados da sua conta, enquanto ela estiver ativa. O nome de cada hóspede é apagado " +
-            "automaticamente 1 ano após a data de saída; a reserva continua sem ele (datas, preço " +
+          "Os dados da sua conta, enquanto ela estiver ativa. O nome de cada hóspede e os dados " +
+            "de registro (TRA e SIRE) são apagados automaticamente 1 ano após a data de saída; a " +
+            "reserva continua sem eles (datas, preço " +
             "e canal) para as estatísticas de preços.",
           "Se você excluir sua conta em Configurações, apagamos todos os seus dados na hora; as " +
             "cópias de segurança do banco de dados desaparecem sozinhas em até 7 dias.",

@@ -24,7 +24,9 @@ function visitorIp(req: NextRequest): string {
 async function handle(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
   const { path } = await ctx.params;
   const name = (path ?? []).join("/");
-  if (ALLOWED[name] !== req.method) {
+  // Feature 046: formulario de registro del huésped (/checkin/{token}), GET y POST.
+  const checkin = /^checkin\/[A-Za-z0-9_-]{20,64}$/.test(name);
+  if (!checkin && ALLOWED[name] !== req.method) {
     return Response.json({ detail: "No encontrado" }, { status: 404 });
   }
   const headers: Record<string, string> = { "x-client-ip": visitorIp(req) };
@@ -32,7 +34,7 @@ async function handle(req: NextRequest, ctx: { params: Promise<{ path: string[] 
   if (req.method === "POST") {
     headers["content-type"] = "application/json";
     body = await req.text();
-    if (body.length > 4000) return Response.json({ detail: "Demasiado grande" }, { status: 413 });
+    if (body.length > (checkin ? 16000 : 4000)) return Response.json({ detail: "Demasiado grande" }, { status: 413 });
   }
   try {
     const r = await fetch(`${API}/public/${name}${req.nextUrl.search}`, {

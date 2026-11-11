@@ -1,11 +1,12 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft, IdCard, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { checkinUrl } from "@/components/registration/guest-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
@@ -127,6 +128,12 @@ function ThreadView({ booking, onBack }: { booking: string; onBack: () => void }
     },
     onError: (e: Error) => toast.error(e.message),
   });
+  // Feature 046: enlace de registro del huésped (TRA/SIRE) en el borrador, para editar y enviar.
+  const regLink = useMutation({
+    mutationFn: () => api.registrationLink(thread.data!.booking_id),
+    onSuccess: (r) => setDraft((old) => [old.trim(), m.registration.link.message(checkinUrl(r.token))].filter(Boolean).join("\n\n")),
+    onError: (e: Error) => toast.error(e.message),
+  });
   const suggest = useMutation({
     mutationFn: () => api.suggestReply(booking),
     onSuccess: (r) => setDraft(r.text),
@@ -174,6 +181,10 @@ function ThreadView({ booking, onBack }: { booking: string; onBack: () => void }
             <Button className="bg-muted text-foreground" onClick={() => suggest.mutate()} disabled={suggest.isPending}>
               <Sparkles className="mr-1 h-4 w-4" />
               {suggest.isPending ? t.suggesting : t.suggest}
+            </Button>
+            <Button className="bg-muted text-foreground" onClick={() => regLink.mutate()} disabled={regLink.isPending}>
+              <IdCard className="mr-1 h-4 w-4" />
+              {m.registration.link.insert}
             </Button>
             <span className="ml-auto text-[11px] text-muted-foreground">{draft.length}/{MAX}</span>
           </div>

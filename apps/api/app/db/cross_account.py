@@ -43,3 +43,12 @@ async def release_push_token(session: AsyncSession, token: str) -> None:
     await session.execute(
         delete(t).where(and_(t.c.token == token, t.c.account_id != session.info[ACCOUNT_KEY]))
     )
+
+
+async def registration_account(session: AsyncSession, token: str) -> int | None:
+    """Feature 046: cuenta dueña de un enlace público de registro de huéspedes. Solo el id."""
+    from app.models.registration import GuestRegistration
+
+    t = GuestRegistration.__table__
+    row = (await session.execute(select(t.c.account_id).where(t.c.token == token))).first()
+    return row[0] if row else None
