@@ -150,3 +150,92 @@ async def _alert(session: AsyncSession, kind: str, now: datetime, *, push_sender
             await sender.send(build(user.email, user.language, link, user.name or ""))
     except Exception as exc:  # noqa: BLE001
         log.warning("conexión: correo falló (%s)", type(exc).__name__)
+
+
+# --------- de «sin conexión» a Beds24 (feature 044, entrega 2) ---------
+
+
+class SwitchError(ValueError):
+    """Asociación inválida (mensaje legible para el anfitrión)."""
+
+
+def beds24_adapter(session: AsyncSession):
+    """Adaptador de Beds24 de la cuenta aunque esté en modo sin conexión (para el asistente).
+    En el ambiente de pruebas, el simulado."""
+    from app.channels.beds24_v2 import Beds24V2Adapter
+    from app.channels.factory import REFRESH_TOKEN
+    from app.channels.simulated import SimulatedChannelAdapter
+    from app.services.secret_service import get_secret
+
+    if settings.sandbox:
+        return SimulatedChannelAdapter(session)
+    return Beds24V2Adapter(refresh_token=get_secret(REFRESH_TOKEN, current_account_id(session)),
+                           base_url=settings.beds24_v2_base_url)
+
+
+async def manual_units(session: AsyncSession) -> list[dict]:
+    from app.models.property import Property, UnitType
+    from app.services.manual_service import PROVIDER
+
+    rows = (
+        await session.execute(
+            select(UnitType, Property).join(Property, Property.id == UnitType.property_id)
+            .where(Property.provider == PROVIDER).order_by(UnitType.id)
+        )
+    ).all()
+    return [{"id": u.id, "name": u.name, "city": p.city} for u, p in rows]
+
+
+async def switch_from_manual(session: AsyncSession, links: dict[int, str], remote_props: list) -> dict:
+    """Asocia cada apartamento manual con su habitación de Beds24 y pasa la cuenta a conectada.
+
+    Se conserva la MISMA unidad (id), así que su historial sigue intacto: precios aplicados,
+    sugerencias, notas, rentabilidad y finanzas. Los enlaces iCal quedan guardados pero sin
+    uso (la corrida diaria solo lee iCal en modo sin conexión). Las reservas duplicadas de
+    iCal se quitan en la siguiente importación (`sync_service._drop_ical_duplicates`).
+    """
+    from app.channels.factory import set_channel_mode
+    from app.db.cross_account import property_taken_elsewhere
+    from app.models.account import Account
+    from app.models.property import Property, UnitType
+    from app.services.manual_service import PROVIDER
+
+    room_prop = {str(r.external_id): p for p in remote_props for r in p.rooms}
+    if len(set(links.values())) != len(links):
+        raise SwitchError("Cada habitación de Beds24 solo puede asociarse con un apartamento.")
+    targets: dict[str, Property] = {}
+    linked = 0
+    for unit_id, room_id in links.items():
+        unit = await session.get(UnitType, int(unit_id))
+        if unit is None:
+            raise SwitchError("Ese apartamento no existe en tu cuenta.")
+        prop = await session.get(Property, unit.property_id)
+        if prop is None or prop.provider != PROVIDER:
+            raise SwitchError(f"«{unit.name}» no es un apartamento sin conexión.")
+        rp = room_prop.get(str(room_id))
+        if rp is None:
+            raise SwitchError("Esa habitación no está en tu cuenta de Beds24.")
+        ext = str(rp.external_id)
+        if await property_taken_elsewhere(session, "beds24", ext):
+            raise SwitchError(f"«{rp.name}» ya está conectada a otra cuenta de StayLever.")
+        target = targets.get(ext) or (
+            await session.execute(select(Property).where(Property.provider == "beds24",
+                                                         Property.external_ref == ext))
+        ).scalar_one_or_none()
+        if target is None:  # el apartamento manual se convierte en la propiedad de Beds24
+            prop.provider, prop.external_ref, prop.name = "beds24", ext, rp.name[:200]
+            prop.currency = rp.currency or prop.currency
+            target = prop
+        targets[ext] = target
+        unit.property_id = target.id
+        unit.external_ref = str(room_id)
+        linked += 1
+    pending = [u for u in await manual_units(session) if u["id"] not in {int(k) for k in links}]
+    if pending:
+        raise SwitchError("Asocia cada apartamento sin conexión con su habitación de Beds24 "
+                          f"(falta: {', '.join(u['name'] for u in pending)}).")
+    acc = await session.get(Account, current_account_id(session))
+    acc.channel_mode = "connected"
+    set_channel_mode(session, "connected")
+    await session.flush()
+    return {"linked": linked}

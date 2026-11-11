@@ -742,4 +742,7 @@ export type ConnectionInfo = {
 
 export type Beds24Room = { id: string; name: string; units: number; selected: boolean };
 export type Beds24Property = { id: string; name: string; currency: string; taken: boolean; rooms: Beds24Room[] };
-export type Beds24Rooms = { properties: Beds24Property[]; all: boolean; ok?: boolean; account?: string | null };
+export type ManualUnit = { id: number; name: string; city: string };
+export type Beds24Rooms = {
+  properties: Beds24Property[]; all: boolean; ok?: boolean; account?: string | null; manual_units?: ManualUnit[];
+};

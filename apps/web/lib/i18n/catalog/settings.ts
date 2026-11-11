@@ -160,6 +160,8 @@ const es = {
     notConfigured: "sin configurar",
     configured: (hint: string) => `configurado ${hint}`,
     newValuePlaceholder: "Pegar valor nuevo…",
+    beds24Wizard: "Conectar o reconectar con el asistente",
+    advanced: "Avanzado: pegar un token a mano",
     invitePlaceholder: "…o pegar código de invitación de Beds24",
     redeem: "Canjear",
     inviteHelp:
@@ -347,6 +349,8 @@ const en: Shape = {
     notConfigured: "not configured",
     configured: (hint: string) => `configured ${hint}`,
     newValuePlaceholder: "Paste new value…",
+    beds24Wizard: "Connect or reconnect with the wizard",
+    advanced: "Advanced: paste a token manually",
     invitePlaceholder: "…or paste a Beds24 invite code",
     redeem: "Redeem",
     inviteHelp:
@@ -532,6 +536,8 @@ const pt: Shape = {
     notConfigured: "não configurado",
     configured: (hint: string) => `configurado ${hint}`,
     newValuePlaceholder: "Colar novo valor…",
+    beds24Wizard: "Conectar ou reconectar com o assistente",
+    advanced: "Avançado: colar um token manualmente",
     invitePlaceholder: "…ou colar código de convite do Beds24",
     redeem: "Resgatar",
     inviteHelp:

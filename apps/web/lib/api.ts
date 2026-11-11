@@ -424,6 +424,10 @@ export const api = {
   redeemConnection: (code: string) =>
     req<Beds24Rooms>(`/connection/beds24/redeem`, { method: "POST", body: JSON.stringify({ code }) }),
   beds24Rooms: () => req<Beds24Rooms>(`/connection/beds24/rooms`),
+  linkManual: (room_ids: string[], links: Record<number, string>) =>
+    req<{ linked: number; mode: string }>(`/connection/beds24/link`, {
+      method: "PUT", body: JSON.stringify({ room_ids, links }),
+    }),
   saveBeds24Selection: (room_ids: string[] | null) =>
     req<{ selected_rooms: string[] | null }>(`/connection/beds24/selection`, {
       method: "PUT", body: JSON.stringify({ room_ids }),

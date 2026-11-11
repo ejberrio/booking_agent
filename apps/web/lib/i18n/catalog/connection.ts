@@ -47,16 +47,26 @@ const es = {
     reconnect: "Reconectar con un código nuevo",
     reimport: "Importar de nuevo",
   },
-  manual: {
-    title: "Tu cuenta está en modo sin conexión",
-    body: "Pasar de «sin conexión» a Beds24 conservando tu historial llega en la próxima entrega. Mientras tanto, sigue usando StayLever sin conexión.",
+  link: {
+    title: "Asocia tus apartamentos",
+    hint: "Hoy usas StayLever sin conexión. Elige a qué habitación de Beds24 corresponde cada apartamento: conservas su historial (precios, sugerencias, notas y rentabilidad) y las reservas que llegaron por iCal se concilian con las de Beds24.",
+    pick: "Elige la habitación…",
+    missing: "Asocia cada apartamento con una habitación elegida.",
   },
+  guideTitle: "Guía: conectar Airbnb y Booking a Beds24",
+  guideItems: [
+    "Airbnb: en Beds24, Channel Manager → Airbnb → conectar con la cuenta del DUEÑO del anuncio (un co-anfitrión no puede). Asigna cada anuncio a su habitación e importa las reservas.",
+    "Airbnb solo admite un software de precios por cuenta: desconecta otro channel manager antes. Apaga los Precios Inteligentes (Smart Pricing) de Airbnb para que manden los de StayLever.",
+    "Booking.com: en la Extranet, Cuenta → Proveedor de conectividad → busca «Beds24» y acepta. Luego en Beds24, Channel Manager → Booking.com, escribe tu Hotel ID y asigna habitaciones y planes de tarifa.",
+    "Booking.com solo permite un proveedor de conectividad por propiedad, y al conectarlo desaparece el iCal de la Extranet.",
+    "Después revisa en cada plataforma que precios y disponibilidad coincidan con Beds24.",
+  ],
+  guideLinks: { airbnb: "Ayuda de Beds24 para Airbnb", booking: "Ayuda de Beds24 para Booking.com" },
   sandbox: "Ambiente de pruebas: el canal es simulado. Escribe cualquier código para seguir el asistente.",
   banner: {
     lost: "Se perdió la conexión con Beds24: no vemos reservas nuevas ni aplicamos precios.",
     reconnect: "Reconectar",
   },
-  guide: "¿Aún no conectas Airbnb y Booking a Beds24? Ver la guía de Beds24",
   statuses: {
     connected: "conectado",
     invalid: "conexión caída",
@@ -113,16 +123,26 @@ const en: Shape = {
     reconnect: "Reconnect with a new code",
     reimport: "Import again",
   },
-  manual: {
-    title: "Your account is in offline mode",
-    body: "Moving from offline to Beds24 while keeping your history arrives in the next release. Meanwhile, keep using StayLever offline.",
+  link: {
+    title: "Link your apartments",
+    hint: "You use StayLever offline today. Choose which Beds24 room each apartment is: you keep its history (prices, suggestions, notes and profitability) and the bookings that came by iCal are reconciled with Beds24's.",
+    pick: "Choose the room…",
+    missing: "Link each apartment to a chosen room.",
   },
+  guideTitle: "Guide: connect Airbnb and Booking to Beds24",
+  guideItems: [
+    "Airbnb: in Beds24, Channel Manager → Airbnb → connect with the listing OWNER's account (a co-host can't). Map each listing to its room and import bookings.",
+    "Airbnb allows only one pricing software per account: disconnect any other channel manager first. Turn off Airbnb Smart Pricing so StayLever's prices apply.",
+    "Booking.com: in the Extranet, Account → Connectivity provider → search “Beds24” and accept. Then in Beds24, Channel Manager → Booking.com, enter your Hotel ID and map rooms and rate plans.",
+    "Booking.com allows one connectivity provider per property, and once connected the Extranet iCal disappears.",
+    "Afterwards, check on each platform that prices and availability match Beds24.",
+  ],
+  guideLinks: { airbnb: "Beds24 help for Airbnb", booking: "Beds24 help for Booking.com" },
   sandbox: "Test environment: the channel is simulated. Type any code to go through the wizard.",
   banner: {
     lost: "The connection with Beds24 was lost: we can't see new bookings or apply prices.",
     reconnect: "Reconnect",
   },
-  guide: "Haven't connected Airbnb and Booking to Beds24 yet? See the Beds24 guide",
   statuses: {
     connected: "connected",
     invalid: "connection lost",
@@ -177,16 +197,26 @@ const pt: Shape = {
     reconnect: "Reconectar com um código novo",
     reimport: "Importar de novo",
   },
-  manual: {
-    title: "Sua conta está no modo sem conexão",
-    body: "Passar de «sem conexão» para o Beds24 mantendo seu histórico chega na próxima entrega. Enquanto isso, continue usando o StayLever sem conexão.",
+  link: {
+    title: "Associe seus apartamentos",
+    hint: "Hoje você usa o StayLever sem conexão. Escolha a qual quarto do Beds24 corresponde cada apartamento: você mantém o histórico (preços, sugestões, notas e rentabilidade) e as reservas que chegaram por iCal são conciliadas com as do Beds24.",
+    pick: "Escolha o quarto…",
+    missing: "Associe cada apartamento a um quarto escolhido.",
   },
+  guideTitle: "Guia: conectar o Airbnb e o Booking ao Beds24",
+  guideItems: [
+    "Airbnb: no Beds24, Channel Manager → Airbnb → conecte com a conta do DONO do anúncio (um coanfitrião não pode). Associe cada anúncio ao seu quarto e importe as reservas.",
+    "O Airbnb aceita só um software de preços por conta: desconecte outro channel manager antes. Desligue os Preços Inteligentes (Smart Pricing) do Airbnb para valerem os do StayLever.",
+    "Booking.com: na Extranet, Conta → Provedor de conectividade → procure «Beds24» e aceite. Depois no Beds24, Channel Manager → Booking.com, informe seu Hotel ID e associe quartos e planos de tarifa.",
+    "O Booking.com permite um provedor de conectividade por propriedade, e ao conectar o iCal da Extranet desaparece.",
+    "Depois confira em cada plataforma se preços e disponibilidade batem com o Beds24.",
+  ],
+  guideLinks: { airbnb: "Ajuda do Beds24 para o Airbnb", booking: "Ajuda do Beds24 para o Booking.com" },
   sandbox: "Ambiente de testes: o canal é simulado. Digite qualquer código para seguir o assistente.",
   banner: {
     lost: "A conexão com o Beds24 caiu: não vemos novas reservas nem aplicamos preços.",
     reconnect: "Reconectar",
   },
-  guide: "Ainda não conectou o Airbnb e o Booking ao Beds24? Veja o guia do Beds24",
   statuses: {
     connected: "conectado",
     invalid: "conexão caída",
