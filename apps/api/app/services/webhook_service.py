@@ -43,6 +43,8 @@ class BookingHint:
     property_id: str | None = None
     arrival: date | None = None
     departure: date | None = None
+    # Feature 045: ids de mensajes NUEVOS del huésped que trae el aviso (sin el texto).
+    guest_message_ids: tuple[str, ...] = ()
 
 
 def resolve_key(
@@ -78,11 +80,17 @@ def parse_hint(raw: bytes) -> BookingHint:
     if not isinstance(booking, dict):
         return BookingHint()
     bid, pid = booking.get("id"), booking.get("propertyId")
+    msgs = data.get("messages") if isinstance(data.get("messages"), list) else []
+    guest_ids = tuple(
+        str(m.get("id")) for m in msgs
+        if isinstance(m, dict) and m.get("source") == "guest" and not m.get("read") and m.get("id")
+    )
     return BookingHint(
         booking_id=str(bid) if bid is not None else None,
         property_id=str(pid) if pid is not None else None,
         arrival=_as_date(booking.get("arrival")),
         departure=_as_date(booking.get("departure")),
+        guest_message_ids=guest_ids,
     )
 
 
@@ -173,6 +181,11 @@ async def handle(
                 )
             # Avisos al celular (feature 025): tolerante a fallos, nunca rompe el webhook.
             await push_service.notify_booking_events(session, events)
+            # Feature 045: aviso de mensaje nuevo del huésped (sin el texto ni el nombre).
+            if hint.guest_message_ids:
+                from app.services import messages_service
+
+                await messages_service.notify_new(session, hint.booking_id, hint.guest_message_ids)
             return await _record(
                 session, WebhookResult.accepted, booking_ref=hint.booking_id, sync_run_id=run.id
             )

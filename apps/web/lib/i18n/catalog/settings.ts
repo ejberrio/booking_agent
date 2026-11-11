@@ -165,7 +165,7 @@ const es = {
     invitePlaceholder: "…o pegar código de invitación de Beds24",
     redeem: "Canjear",
     inviteHelp:
-      'Beds24 → Settings → Marketplace → API → "Generate invite code". Permisos: READ en bookings, bookings-personal, inventory, properties y channels; WRITE solo en inventory y channels. Pega el código (vence en minutos) y pulsa Canjear. No es la "API Key" de Account Access: esa es la API antigua.',
+      'Beds24 → Settings → Marketplace → API → "Generate invite code". Permisos: READ en bookings, bookings-personal, inventory, properties y channels; WRITE en bookings-personal (para responder mensajes), inventory y channels. Pega el código (vence en minutos) y pulsa Canjear. No es la "API Key" de Account Access: esa es la API antigua.',
     test: "Probar",
     remove: "Quitar",
     saved: "Secreto guardado — la rotación ya aplica",
@@ -354,7 +354,7 @@ const en: Shape = {
     invitePlaceholder: "…or paste a Beds24 invite code",
     redeem: "Redeem",
     inviteHelp:
-      'Beds24 → Settings → Marketplace → API → "Generate invite code". Permissions: READ on bookings, bookings-personal, inventory, properties and channels; WRITE only on inventory and channels. Paste the code (it expires in minutes) and click Redeem. This is not the Account Access "API Key": that one is for the old API.',
+      'Beds24 → Settings → Marketplace → API → "Generate invite code". Permissions: READ on bookings, bookings-personal, inventory, properties and channels; WRITE on bookings-personal (to reply to messages), inventory and channels. Paste the code (it expires in minutes) and click Redeem. This is not the Account Access "API Key": that one is for the old API.',
     test: "Test",
     remove: "Remove",
     saved: "Secret saved — rotation is already in effect",
@@ -541,7 +541,7 @@ const pt: Shape = {
     invitePlaceholder: "…ou colar código de convite do Beds24",
     redeem: "Resgatar",
     inviteHelp:
-      'Beds24 → Settings → Marketplace → API → "Generate invite code". Permissões: READ em bookings, bookings-personal, inventory, properties e channels; WRITE só em inventory e channels. Cole o código (expira em minutos) e clique em Resgatar. Não é a "API Key" de Account Access: essa é da API antiga.',
+      'Beds24 → Settings → Marketplace → API → "Generate invite code". Permissões: READ em bookings, bookings-personal, inventory, properties e channels; WRITE em bookings-personal (para responder mensagens), inventory e channels. Cole o código (expira em minutos) e clique em Resgatar. Não é a "API Key" de Account Access: essa é da API antiga.',
     test: "Testar",
     remove: "Remover",
     saved: "Segredo salvo — a rotação já está valendo",

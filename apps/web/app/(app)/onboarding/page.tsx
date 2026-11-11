@@ -23,7 +23,7 @@ const GUIDE = {
   booking: "https://wiki.beds24.com/index.php/Booking.com:_Synchronise_bookings_prices_availability",
 };
 const READ = ["bookings", "bookings-personal", "inventory", "properties", "channels"];
-const WRITE = ["inventory", "channels"];
+const WRITE = ["bookings-personal", "inventory", "channels"];  // bookings-personal: responder mensajes (045)
 
 type Step = 1 | 2 | 3 | 4;
 

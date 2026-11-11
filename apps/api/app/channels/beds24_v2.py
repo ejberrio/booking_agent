@@ -204,7 +204,43 @@ class Beds24V2Adapter:
 
         raise last_exc or ChannelError("operación fallida")
 
-    # --- Puerto ChannelManager ---
+    # --- Mensajes de huéspedes (feature 045) ---
+
+    async def get_messages(self, *, booking_ids: list[str] | None = None, max_age: int = 90,
+                           unread_only: bool = False, max_pages: int = 5) -> list[dict]:
+        """Mensajes de los últimos `max_age` días (nunca se guardan en StayLever)."""
+        params: dict[str, Any] = {"maxAge": max(1, min(int(max_age), 999))}
+        if booking_ids:
+            params["bookingId"] = [int(b) for b in booking_ids]
+        if unread_only:
+            params["filter"] = "unread"
+        out: list[dict] = []
+        for page in range(1, max_pages + 1):
+            if page > 1:
+                params["page"] = page
+            data = await self._request("GET", "bookings/messages", params=params)
+            out.extend(data.get("data") or [])
+            if not (data.get("pages") or {}).get("nextPageExists"):
+                break
+        return out
+
+    async def send_message(self, booking_id: str, text: str) -> None:
+        """Un solo intento: reintentar un POST podría enviarle el mensaje dos veces al huésped."""
+        retries, self.max_retries = self.max_retries, 1
+        try:
+            data = await self._request("POST", "bookings/messages",
+                                       json_body=[{"bookingId": int(booking_id), "message": text}])
+        finally:
+            self.max_retries = retries
+        item = data[0] if isinstance(data, list) and data else {}
+        if isinstance(item, dict) and item.get("success") is False:
+            errs = item.get("errors") or [{}]
+            raise ChannelError(str(errs[0].get("message") or "Beds24 no aceptó el mensaje")[:200])
+
+    async def mark_messages_read(self, booking_id: str) -> None:
+        await self._request("PATCH", "bookings/messages", params={"bookingId": [int(booking_id)]},
+                            json_body={"read": True})
+
 
     async def get_properties(self) -> list[RemoteProperty]:
         data = await self._request("GET", "properties", params={"includeAllRooms": "true"})

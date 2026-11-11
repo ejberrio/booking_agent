@@ -14,6 +14,7 @@ de cobrar (Fase 1). Versión de los documentos públicos: `LEGAL_VERSION` en
 | Aceptación de Términos y Privacidad | Anfitrión | `terms_acceptance` (versión, fecha) | Prueba del consentimiento | El usuario (en su copia) | Mientras exista la cuenta |
 | Intentos de acceso | — | `auth_attempt` (hash del correo, IP) | Límite de fuerza bruta | Nadie | Ventana de 15 min (filas antiguas sin uso) |
 | Nombre del huésped | Huésped (Responsable: anfitrión) | `booking.guest_name` | Mostrar quién reserva | Solo la cuenta dueña; nunca el administrador, logs, avisos ni la IA | **1 año tras la salida** (limpieza diaria del cron) |
+| Mensajes de huéspedes (feature 045) | Huésped (Responsable: anfitrión) | **No se guardan**: se leen y envían en vivo vía Beds24; caché en memoria de 60 s | Leer y responder desde StayLever | Solo la cuenta dueña; nunca el administrador ni logs; avisos sin texto ni nombre | Ninguna en StayLever (Beds24 conserva su historial) |
 | Propiedades, calendario, tarifas, reservas (sin datos personales), sugerencias, promociones, notas | Anfitrión | Tablas `AccountOwned` | Sugerir y publicar precios | Solo la cuenta | Mientras exista la cuenta |
 | Conversaciones con el asistente | Anfitrión | `conversation`, `message`, `agent_action` | Asistente | Solo la cuenta | Mientras exista la cuenta |
 | Credenciales del channel manager | Anfitrión | `secret_entry` (cifradas, Fernet) | Conectar Beds24 | Nadie (solo el servicio) | Mientras exista la cuenta |
@@ -34,7 +35,7 @@ de cobrar (Fase 1). Versión de los documentos públicos: `LEGAL_VERSION` en
 |---|---|---|
 | Railway | EE. UU. | Aloja la web y la API (todo el tráfico) |
 | Neon | EE. UU. (us-east-1) | Base de datos |
-| OpenAI | EE. UU. | Calendario, precios y mensajes del asistente; **nunca nombres de huéspedes** |
+| OpenAI | EE. UU. | Calendario, precios y mensajes del asistente; **nunca nombres de huéspedes**. Solo si el anfitrión pide una respuesta sugerida: el hilo con el huésped **anonimizado** (sin nombre, correo, teléfono, documentos ni enlaces); no se guardan prompt ni respuesta |
 | Tavily | EE. UU. | Búsquedas de eventos públicos por ciudad |
 | Resend | Brasil (sa-east-1) / EE. UU. | Correo y nombre del usuario para correos de acceso |
 | Google Firebase | EE. UU. | Token del teléfono y texto del aviso (sin nombres de huéspedes) |
