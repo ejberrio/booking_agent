@@ -746,3 +746,14 @@ export type ManualUnit = { id: number; name: string; city: string };
 export type Beds24Rooms = {
   properties: Beds24Property[]; all: boolean; ok?: boolean; account?: string | null; manual_units?: ManualUnit[];
 };
+
+// Feature 045: mensajes de huéspedes.
+export type Conversation = {
+  booking: string; unit: string | null; channel: string; check_in: string; check_out: string;
+  guest_name: string | null; unread: number; last_time: string | null; last_source: string | null; last_text: string;
+};
+export type Inbox = { available: boolean; conversations: Conversation[]; unread: number };
+export type GuestMessage = { id: number | null; source: "guest" | "host" | "system" | "internalNote"; time: string | null; text: string };
+export type Thread = Omit<Conversation, "unread" | "last_time" | "last_source" | "last_text"> & {
+  can_reply: boolean; messages: GuestMessage[];
+};

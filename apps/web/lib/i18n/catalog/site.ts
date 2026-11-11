@@ -41,7 +41,7 @@ const es = {
   },
   privacy: {
     title: "Política de privacidad",
-    updated: "Última actualización: 14 de octubre de 2026",
+    updated: "Última actualización: 11 de noviembre de 2026",
     sections: [
       {
         title: "Quiénes somos",
@@ -76,6 +76,10 @@ const es = {
             "teléfono, correo ni documento), lo ves solo tú dentro de tu cuenta y nadie más: " +
             "ni otras cuentas ni los administradores de StayLever. Nunca va a la IA ni a los " +
             "avisos del celular.",
+          "Los mensajes de tus huéspedes se leen y envían a través de tu channel manager cuando " +
+            "abres la bandeja de StayLever; no los guardamos. Solo si pides una «respuesta " +
+            "sugerida», enviamos el hilo a la IA sin nombres, correos, teléfonos, documentos ni " +
+            "enlaces, y tú editas el texto antes de enviarlo: nada se envía de forma automática.",
         ],
       },
       {
@@ -94,7 +98,8 @@ const es = {
         body: [
           "Con proveedores que nos ayudan a operar, solo en lo necesario: Railway (servidores) y " +
             "Neon (base de datos), en Estados Unidos; OpenAI (el asistente y las sugerencias: " +
-            "recibe datos de calendario y precios, nunca nombres de huéspedes); Tavily (búsqueda " +
+            "recibe datos de calendario y precios, nunca nombres de huéspedes; y, solo si pides " +
+            "una respuesta sugerida, el texto anonimizado de la conversación); Tavily (búsqueda " +
             "de eventos públicos de tu ciudad); Resend (correos); Google Firebase (avisos al " +
             "celular); Google (si eliges entrar con Google) y Beds24, tu channel manager.",
           "Al usar StayLever aceptas que tus datos se traten en servidores fuera de Colombia con " +
@@ -189,7 +194,7 @@ const en: Shape = {
   },
   privacy: {
     title: "Privacy policy",
-    updated: "Last updated: October 14, 2026",
+    updated: "Last updated: November 11, 2026",
     sections: [
       {
         title: "Who we are",
@@ -223,6 +228,10 @@ const en: Shape = {
             "only the name your channel manager sends (never phone, email or ID), only you see " +
             "it inside your account and no one else: not other accounts nor StayLever's " +
             "administrators. It never goes to the AI or to phone alerts.",
+          "Your guests' messages are read and sent through your channel manager when you open " +
+            "the StayLever inbox; we don't store them. Only if you ask for a “suggested reply” " +
+            "do we send the thread to the AI without names, emails, phone numbers, documents or " +
+            "links, and you edit the text before sending: nothing is sent automatically.",
         ],
       },
       {
@@ -241,7 +250,8 @@ const en: Shape = {
         body: [
           "With providers that help us operate, only as needed: Railway (servers) and Neon " +
             "(database), in the United States; OpenAI (the assistant and suggestions: it receives " +
-            "calendar and price data, never guest names); Tavily (search for public events in " +
+            "calendar and price data, never guest names; and, only if you ask for a suggested " +
+            "reply, the anonymized text of the conversation); Tavily (search for public events in " +
             "your city); Resend (email); Google Firebase (phone alerts); Google (if you choose to " +
             "sign in with Google) and Beds24, your channel manager.",
           "By using StayLever you agree that your data is processed on servers outside Colombia " +
@@ -334,7 +344,7 @@ const pt: Shape = {
   },
   privacy: {
     title: "Política de privacidade",
-    updated: "Última atualização: 14 de outubro de 2026",
+    updated: "Última atualização: 11 de novembro de 2026",
     sections: [
       {
         title: "Quem somos",
@@ -369,6 +379,10 @@ const pt: Shape = {
             "(nunca telefone, e-mail ou documento), só você o vê dentro da sua conta e mais " +
             "ninguém: nem outras contas nem os administradores do StayLever. Ele nunca vai para " +
             "a IA nem para os avisos do celular.",
+          "As mensagens dos seus hóspedes são lidas e enviadas pelo seu channel manager quando " +
+            "você abre a caixa de entrada do StayLever; não as guardamos. Só se você pedir uma " +
+            "«resposta sugerida» enviamos a conversa à IA sem nomes, e-mails, telefones, " +
+            "documentos nem links, e você edita o texto antes de enviar: nada é enviado sozinho.",
         ],
       },
       {
@@ -387,7 +401,8 @@ const pt: Shape = {
         body: [
           "Com fornecedores que nos ajudam a operar, só no necessário: Railway (servidores) e " +
             "Neon (banco de dados), nos Estados Unidos; OpenAI (o assistente e as sugestões: " +
-            "recebe dados de calendário e preços, nunca nomes de hóspedes); Tavily (busca de " +
+            "recebe dados de calendário e preços, nunca nomes de hóspedes; e, só se você pedir " +
+            "uma resposta sugerida, o texto anonimizado da conversa); Tavily (busca de " +
             "eventos públicos da sua cidade); Resend (e-mails); Google Firebase (avisos ao " +
             "celular); Google (se você escolher entrar com o Google) e Beds24, o seu channel manager.",
           "Ao usar o StayLever você aceita que seus dados sejam tratados em servidores fora da " +

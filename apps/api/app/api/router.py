@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends
 from app.api.routes import (
     account,
     manual,
+    messages,
     public,
     report,
     admin,
@@ -53,3 +54,4 @@ api_router.include_router(report.router, prefix="/report", tags=["report"], depe
 api_router.include_router(events.router, prefix="/events", tags=["events"], dependencies=_ctx)  # 035
 api_router.include_router(profitability.router, prefix="/profitability", tags=["profitability"], dependencies=_ctx)  # 042
 api_router.include_router(connection.router, prefix="/connection", tags=["connection"], dependencies=_ctx)  # 044
+api_router.include_router(messages.router, prefix="/messages", tags=["messages"], dependencies=_ctx)  # 045

@@ -38,6 +38,10 @@ _fixed_ids = count(900_000_000)
 OK = WriteResult(True, True, "simulado: no se envió a ningún canal")
 
 
+# Mensajes simulados (feature 045): en memoria por cuenta, solo para el ambiente de pruebas.
+_SIM_MESSAGES: dict[int, list[dict]] = {}
+
+
 class SimulatedChannelAdapter:
     """Implementa `ChannelManager` sobre la base de la cuenta de la sesión."""
 
@@ -48,6 +52,47 @@ class SimulatedChannelAdapter:
 
     async def aclose(self) -> None:
         return None
+
+    # --- Mensajes simulados (feature 045) ---
+
+    async def _sim_messages(self) -> list[dict]:
+        from datetime import UTC, datetime
+
+        from app.db.tenancy import current_account_id
+        from app.models.booking import Booking
+
+        acc = current_account_id(self.session) or 0
+        if acc not in _SIM_MESSAGES:
+            rows = (await self.session.execute(
+                select(Booking).where(Booking.external_ref.is_not(None)).order_by(Booking.check_in.desc())
+            )).scalars().all()[:3]
+            now = datetime.now(UTC).isoformat()
+            _SIM_MESSAGES[acc] = [
+                {"id": 900000 + i, "bookingId": b.external_ref, "source": "guest", "read": False,
+                 "time": now, "message": "Hola, ¿a qué hora podemos hacer el check-in? Llegamos en la tarde."}
+                for i, b in enumerate(rows)
+            ]
+        return _SIM_MESSAGES[acc]
+
+    async def get_messages(self, *, booking_ids=None, max_age=90, unread_only=False, max_pages=5):
+        msgs = await self._sim_messages()
+        if booking_ids:
+            msgs = [m for m in msgs if str(m["bookingId"]) in {str(b) for b in booking_ids}]
+        if unread_only:
+            msgs = [m for m in msgs if not m.get("read")]
+        return [dict(m) for m in msgs]
+
+    async def send_message(self, booking_id: str, text: str) -> None:
+        from datetime import UTC, datetime
+
+        msgs = await self._sim_messages()
+        msgs.append({"id": 900000 + len(msgs) + 100, "bookingId": str(booking_id), "source": "host",
+                     "read": True, "time": datetime.now(UTC).isoformat(), "message": text})
+
+    async def mark_messages_read(self, booking_id: str) -> None:
+        for m in await self._sim_messages():
+            if str(m["bookingId"]) == str(booking_id):
+                m["read"] = True
 
     async def _unit(self, room_external_id: str) -> UnitType | None:
         return (

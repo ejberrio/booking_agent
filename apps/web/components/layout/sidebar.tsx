@@ -6,6 +6,7 @@ import {
   CalendarDays,
   LayoutDashboard,
   Lightbulb,
+  Inbox,
   MessageSquare,
   Plug,
   Settings,
@@ -25,6 +26,7 @@ import { useI18n } from "@/lib/i18n";
 const NAV = [
   { href: "/", key: "dashboard", icon: LayoutDashboard },
   { href: "/calendar", key: "calendar", icon: CalendarDays },
+  { href: "/messages", key: "messages", icon: Inbox },
   { href: "/chat", key: "chat", icon: MessageSquare },
   { href: "/suggestions", key: "suggestions", icon: Lightbulb },
   { href: "/offers", key: "offers", icon: BadgePercent },
@@ -43,6 +45,12 @@ export function Sidebar() {
   const isAdmin = Boolean(me.data?.user.is_platform_admin);
   // Feature 029: "Sin conexión" bajo el nombre de la cuenta.
   const manual = useQuery({ queryKey: ["manual"], queryFn: api.manualOverview, staleTime: 5 * 60_000 });
+  // Feature 045: contador de mensajes de huéspedes sin leer (solo con Beds24 conectado).
+  const inbox = useQuery({
+    queryKey: ["messages"], queryFn: api.inbox, enabled: manual.data?.channel_mode === "connected",
+    staleTime: 60_000, refetchInterval: 120_000, retry: false,
+  });
+  const unread = inbox.data?.unread ?? 0;
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -95,6 +103,12 @@ export function Sidebar() {
               >
                 <Icon size={16} />
                 {m.shell.nav[key]}
+                {key === "messages" && unread > 0 && (
+                  <span className={cn("ml-auto rounded-full px-1.5 text-[11px] font-semibold",
+                    active ? "bg-primary-foreground text-primary" : "bg-primary text-primary-foreground")}>
+                    {unread > 99 ? "99+" : unread}
+                  </span>
+                )}
               </Link>
             );
           })}

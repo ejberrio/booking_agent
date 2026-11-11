@@ -55,6 +55,8 @@ import type {
   MyReport,
   Beds24Rooms,
   ConnectionInfo,
+  Inbox,
+  Thread,
   Profitability,
 } from "@/lib/types";
 
@@ -418,6 +420,14 @@ export const api = {
   getWebhookStatus: () => req<WebhookStatus>(`/hooks/beds24/status`),
   generateWebhookKey: () =>
     req<{ header_line: string; hint: string }>(`/hooks/beds24/key`, { method: "POST" }),
+
+  // Feature 045: mensajes de huéspedes
+  inbox: () => req<Inbox>(`/messages`),
+  thread: (booking: string) => req<Thread>(`/messages/${encodeURIComponent(booking)}`),
+  sendMessage: (booking: string, text: string) =>
+    req<Thread>(`/messages/${encodeURIComponent(booking)}`, { method: "POST", body: JSON.stringify({ text }) }),
+  suggestReply: (booking: string) =>
+    req<{ text: string }>(`/messages/${encodeURIComponent(booking)}/suggest`, { method: "POST" }),
 
   // Feature 044: asistente «Conectar Beds24»
   connection: () => req<ConnectionInfo>(`/connection`),
