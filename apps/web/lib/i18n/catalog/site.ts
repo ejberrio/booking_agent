@@ -41,7 +41,7 @@ const es = {
   },
   privacy: {
     title: "Política de privacidad",
-    updated: "Última actualización: 14 de octubre de 2026",
+    updated: "Última actualización: 11 de noviembre de 2026",
     sections: [
       {
         title: "Quiénes somos",
@@ -194,7 +194,7 @@ const en: Shape = {
   },
   privacy: {
     title: "Privacy policy",
-    updated: "Last updated: October 14, 2026",
+    updated: "Last updated: November 11, 2026",
     sections: [
       {
         title: "Who we are",
@@ -344,7 +344,7 @@ const pt: Shape = {
   },
   privacy: {
     title: "Política de privacidade",
-    updated: "Última atualização: 14 de outubro de 2026",
+    updated: "Última atualização: 11 de novembro de 2026",
     sections: [
       {
         title: "Quem somos",

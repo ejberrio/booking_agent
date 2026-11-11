@@ -5,7 +5,7 @@ const SUPPORT = "support@staylever.com";
 
 const es = {
   title: "Términos de uso",
-  updated: "Versión del 14 de octubre de 2026",
+  updated: "Versión del 11 de noviembre de 2026",
   sections: [
     {
       title: "1. Objeto",
@@ -96,7 +96,7 @@ type Shape = typeof es;
 
 const en: Shape = {
   title: "Terms of use",
-  updated: "Version of October 14, 2026",
+  updated: "Version of November 11, 2026",
   sections: [
     {
       title: "1. Purpose",
@@ -185,7 +185,7 @@ const en: Shape = {
 
 const pt: Shape = {
   title: "Termos de uso",
-  updated: "Versão de 14 de outubro de 2026",
+  updated: "Versão de 11 de novembro de 2026",
   sections: [
     {
       title: "1. Objeto",

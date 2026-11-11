@@ -3,7 +3,7 @@
 Documento interno. StayLever es **Responsable** de los datos de los anfitriones (sus usuarios)
 y **Encargado** de los datos de los huéspedes de cada anfitrión. Revisar con un abogado antes
 de cobrar (Fase 1). Versión de los documentos públicos: `LEGAL_VERSION` en
-`apps/api/app/core/legal.py` (hoy `2026-10-14`).
+`apps/api/app/core/legal.py` (hoy `2026-11-11`).
 
 | Dato | Titular | Dónde | Para qué | Quién lo ve | Cuánto tiempo |
 |---|---|---|---|---|---|
