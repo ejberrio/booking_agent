@@ -120,3 +120,95 @@ async def unsubscribe(req: UnsubscribeRequest, session: AsyncSession = Depends(g
     if not ok:
         return JSONResponse(status_code=400, content={"code": "invalid_link", "detail": "Enlace no válido"})
     return {"ok": True}
+
+
+# --------- registro de huéspedes (feature 046): formulario del enlace /checkin/{token} ---------
+
+_CLOSED = {"code": "not_found", "detail": "Este enlace no existe o ya venció."}
+CHECKIN_DAILY_LIMIT = 30  # envíos por visitante y día (evita abuso del enlace)
+
+
+async def _registration(session: AsyncSession, token: str):
+    """(registro, reserva) del enlace, o None. Fija la cuenta en la sesión."""
+    from app.db.cross_account import registration_account
+    from app.db.tenancy import set_tenant
+    from app.models.booking import Booking
+    from app.services import registration_service as reg_svc
+
+    if not (20 <= len(token) <= 64):
+        return None
+    account_id = await registration_account(session, token)
+    if account_id is None:
+        return None
+    set_tenant(session, account_id)
+    from sqlalchemy import select
+
+    from app.models.registration import GuestRegistration
+
+    reg = (await session.execute(select(GuestRegistration).where(GuestRegistration.token == token))).scalar_one_or_none()
+    if reg is None:
+        return None
+    b = await session.get(Booking, reg.booking_id)
+    from app.services.usage_service import local_today
+
+    if b is None or not reg_svc.link_open(b, reg, local_today()):
+        return None
+    return reg, b
+
+
+@router.get("/checkin/{token}")
+async def checkin_info(token: str, session: AsyncSession = Depends(get_session)):
+    """Solo lo necesario para el formulario: alojamiento, ciudad y fechas (sin nombre)."""
+    from app.models.property import Property, UnitType
+    from app.services import registration_service as reg_svc
+
+    found = await _registration(session, token)
+    if found is None:
+        return JSONResponse(status_code=404, content=_CLOSED)
+    reg, b = found
+    unit = await session.get(UnitType, b.unit_type_id)
+    prop = await session.get(Property, unit.property_id) if unit else None
+    return {
+        "unit": unit.name if unit else None, "city": prop.city if prop else None,
+        "check_in": b.check_in.isoformat(), "check_out": b.check_out.isoformat(),
+        "submitted": reg.submitted_at is not None,
+        "max_companions": reg_svc.MAX_COMPANIONS,
+        "motives": list(reg_svc.MOTIVES),
+    }
+
+
+class CheckinRequest(BaseModel):
+    data: dict
+    consent: bool = False
+
+
+@router.post("/checkin/{token}")
+async def checkin_submit(token: str, req: CheckinRequest, request: Request,
+                         session: AsyncSession = Depends(get_session)):
+    """El huésped envía (o corrige) sus datos. Nunca devuelve los datos guardados."""
+    from app.services import registration_service as reg_svc
+    from app.services.usage_service import local_today
+
+    try:
+        await public_service._take(session, public_service.visitor_id(_ip(request)), "checkin",
+                                   CHECKIN_DAILY_LIMIT)
+    except PublicError as exc:
+        return _error(exc)
+    found = await _registration(session, token)
+    if found is None:
+        await session.commit()  # el intento cuenta para el límite
+        return JSONResponse(status_code=404, content=_CLOSED)
+    if not req.consent:
+        return JSONResponse(status_code=422, content={"code": "consent", "detail": "Debes aceptar el aviso de privacidad."})
+    reg, _ = found
+    try:
+        v = await reg_svc.save(session, reg, req.data, by="guest", today=local_today())
+    except reg_svc.RegistrationError as exc:
+        return JSONResponse(status_code=409, content={"code": "locked", "detail": str(exc)})
+    if v.errors:
+        await session.commit()
+        return JSONResponse(status_code=422, content={"code": "invalid", "detail": "Revisa los campos marcados.",
+                                                      "fields": v.errors})
+    await session.commit()
+    await reg_svc.notify_submitted(session, reg, found[1])
+    return {"ok": True}

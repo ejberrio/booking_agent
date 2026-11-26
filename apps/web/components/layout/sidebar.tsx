@@ -4,6 +4,7 @@ import { Logo } from "@/components/brand/logo";
 import {
   BadgePercent,
   CalendarDays,
+  IdCard,
   LayoutDashboard,
   Lightbulb,
   Inbox,
@@ -27,6 +28,7 @@ const NAV = [
   { href: "/", key: "dashboard", icon: LayoutDashboard },
   { href: "/calendar", key: "calendar", icon: CalendarDays },
   { href: "/messages", key: "messages", icon: Inbox },
+  { href: "/registration", key: "registration", icon: IdCard },
   { href: "/chat", key: "chat", icon: MessageSquare },
   { href: "/suggestions", key: "suggestions", icon: Lightbulb },
   { href: "/offers", key: "offers", icon: BadgePercent },

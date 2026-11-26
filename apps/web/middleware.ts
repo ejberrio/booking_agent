@@ -14,6 +14,7 @@ const PUBLIC = [
   "/privacy",
   "/terms",
   "/unsubscribe",
+  "/checkin/",
   "/api/auth/",
   "/api/hooks/",
   "/api/public/",

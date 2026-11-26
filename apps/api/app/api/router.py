@@ -4,6 +4,7 @@ from app.api.routes import (
     account,
     manual,
     messages,
+    registration,
     public,
     report,
     admin,
@@ -55,3 +56,4 @@ api_router.include_router(events.router, prefix="/events", tags=["events"], depe
 api_router.include_router(profitability.router, prefix="/profitability", tags=["profitability"], dependencies=_ctx)  # 042
 api_router.include_router(connection.router, prefix="/connection", tags=["connection"], dependencies=_ctx)  # 044
 api_router.include_router(messages.router, prefix="/messages", tags=["messages"], dependencies=_ctx)  # 045
+api_router.include_router(registration.router, prefix="/registration", tags=["registration"], dependencies=_ctx)  # 046

@@ -755,5 +755,36 @@ export type Conversation = {
 export type Inbox = { available: boolean; conversations: Conversation[]; unread: number };
 export type GuestMessage = { id: number | null; source: "guest" | "host" | "system" | "internalNote"; time: string | null; text: string };
 export type Thread = Omit<Conversation, "unread" | "last_time" | "last_source" | "last_text"> & {
-  can_reply: boolean; messages: GuestMessage[];
+  booking_id: number; can_reply: boolean; messages: GuestMessage[];
+};
+
+// Feature 046: registro de huéspedes (TRA / SIRE).
+export type GuestPerson = {
+  doc_type: string; doc_number: string; first_names: string; last_names: string;
+  nationality: string; birth_date: string | null;
+};
+export type GuestData = {
+  main: GuestPerson; companions: GuestPerson[]; motive: string; residence_city: string;
+  origin_city: string; destination_city: string | null; foreign?: boolean;
+};
+export type RegistrationStatus = "pending" | "submitted" | "tra_sent" | "tra_partial" | "tra_error";
+export type RegistrationSettings = {
+  rnt: string | null; establishment_name: string | null; accommodation: Record<string, string>;
+  sire_code: string | null; sire_city: string | null; authorized_at: string | null;
+  has_token: boolean; sandbox: boolean; missing: string[]; accommodations: string[];
+};
+export type RegistrationRow = {
+  booking_id: number; ref: string | null; unit: string | null; channel: string; check_in: string; check_out: string;
+  guest_name: string | null; status: RegistrationStatus | null; token: string | null; filled_by: string | null;
+  guests: number | null; foreign: boolean; tra_sent_at: string | null; tra_error: string | null;
+};
+export type RegistrationOverview = { bookings: RegistrationRow[]; settings: RegistrationSettings };
+export type RegistrationDetail = Omit<RegistrationRow, "guests" | "foreign"> & {
+  accommodation: string; data: GuestData | null; cost_cop: string | null; cost_proposed: string | null;
+  tra_code: number | null; tra_companions: { i: number; code?: number; error?: string }[] | null;
+  editable: boolean;
+};
+export type CheckinInfo = {
+  unit: string | null; city: string | null; check_in: string; check_out: string; submitted: boolean;
+  max_companions: number; motives: string[];
 };

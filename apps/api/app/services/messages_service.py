@@ -116,7 +116,8 @@ async def thread(session: AsyncSession, adapter, ref: str) -> dict:
         forget(current_account_id(session))
     unit = await session.get(UnitType, b.unit_type_id)
     return {
-        "booking": ref, "unit": unit.name if unit else None, "channel": b.channel_kind.value,
+        "booking": ref, "booking_id": b.id, "unit": unit.name if unit else None,
+        "channel": b.channel_kind.value,
         "check_in": b.check_in.isoformat(), "check_out": b.check_out.isoformat(),
         "guest_name": b.guest_name, "can_reply": b.channel_kind in (ChannelKind.airbnb, ChannelKind.booking),
         "messages": [

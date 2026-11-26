@@ -11,6 +11,7 @@ import extension from "@/lib/i18n/catalog/extension";
 import legal from "@/lib/i18n/catalog/legal";
 import messages from "@/lib/i18n/catalog/messages";
 import offers from "@/lib/i18n/catalog/offers";
+import registration from "@/lib/i18n/catalog/registration";
 import offline from "@/lib/i18n/catalog/offline";
 import profitability from "@/lib/i18n/catalog/profitability";
 import pub from "@/lib/i18n/catalog/public";
@@ -40,6 +41,7 @@ const AREAS = {
   events,
   chat,
   messages,
+  registration,
   suggestions,
   rationale,
   offers,

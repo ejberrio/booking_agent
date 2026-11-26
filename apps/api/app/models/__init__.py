@@ -27,6 +27,7 @@ from app.models.market import (
     PriceSuggestion,
 )
 from app.models.pricing import NativeDeal, PricingRule, Promotion
+from app.models.registration import GuestRegistration, RegistrationSettings
 from app.models.usage import AIUsage
 from app.models.public import CityScan, PublicMetric, PublicQuota, PublicReport, WaitlistEntry
 from app.models.preference import AppPreference
@@ -37,6 +38,8 @@ from app.models.sync import ChannelManagerConnection, SyncIssue, SyncRun
 from app.models.webhook import WebhookEvent
 
 __all__ = [
+    "GuestRegistration",
+    "RegistrationSettings",
     "MarketBand",
     "MarketOccupancy",
     "FxRate",

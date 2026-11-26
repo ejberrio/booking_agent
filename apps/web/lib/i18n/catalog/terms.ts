@@ -5,7 +5,7 @@ const SUPPORT = "support@staylever.com";
 
 const es = {
   title: "Términos de uso",
-  updated: "Versión del 11 de noviembre de 2026",
+  updated: "Versión del 12 de noviembre de 2026",
   sections: [
     {
       title: "1. Objeto",
@@ -30,8 +30,9 @@ const es = {
         "Respecto de los datos personales de tus huéspedes, tú eres el Responsable del " +
           "tratamiento y StayLever actúa como Encargado, conforme a la Ley 1581 de 2012 y sus " +
           "decretos reglamentarios. StayLever: (a) trata esos datos solo para prestarte el " +
-          "servicio y siguiendo tus instrucciones; (b) guarda únicamente el nombre del huésped " +
-          "y lo borra 1 año después de la salida; (c) no los vende, no los usa para publicidad " +
+          "servicio y siguiendo tus instrucciones; (b) guarda el nombre del huésped " +
+          "y, si usas el registro de huéspedes, sus datos para la TRA y SIRE (cifrados), y los " +
+          "borra 1 año después de la salida; envía la TRA al MinCIT solo cuando tú la confirmas; (c) no los vende, no los usa para publicidad " +
           "ni los comparte salvo con los proveedores necesarios para operar, indicados en la " +
           "Política de privacidad; (d) los protege con medidas de seguridad razonables y los " +
           "mantiene aislados de otras cuentas; (e) te avisará sin demora de cualquier incidente " +
@@ -96,7 +97,7 @@ type Shape = typeof es;
 
 const en: Shape = {
   title: "Terms of use",
-  updated: "Version of November 11, 2026",
+  updated: "Version of November 12, 2026",
   sections: [
     {
       title: "1. Purpose",
@@ -122,7 +123,9 @@ const en: Shape = {
         "Regarding your guests' personal data, you are the Controller and StayLever acts as " +
           "Processor, under Colombia's Law 1581 of 2012 and its regulations. StayLever: (a) " +
           "processes that data only to provide the service and following your instructions; " +
-          "(b) keeps only the guest's name and erases it 1 year after check-out; (c) does not " +
+          "(b) keeps the guest's name and, if you use guest registration, their TRA and SIRE " +
+          "details (encrypted), and erases them 1 year after check-out; it sends the TRA to " +
+          "MinCIT only when you confirm; (c) does not " +
           "sell it, use it for advertising or share it except with the providers needed to " +
           "operate, listed in the Privacy policy; (d) protects it with reasonable security " +
           "measures and keeps it isolated from other accounts; (e) will notify you without " +
@@ -185,7 +188,7 @@ const en: Shape = {
 
 const pt: Shape = {
   title: "Termos de uso",
-  updated: "Versão de 11 de novembro de 2026",
+  updated: "Versão de 12 de novembro de 2026",
   sections: [
     {
       title: "1. Objeto",
@@ -210,8 +213,9 @@ const pt: Shape = {
         "Em relação aos dados pessoais dos seus hóspedes, você é o Responsável pelo tratamento " +
           "e o StayLever atua como Encarregado (operador), conforme a Lei 1581 de 2012 da " +
           "Colômbia e seus regulamentos. O StayLever: (a) trata esses dados apenas para prestar " +
-          "o serviço e seguindo suas instruções; (b) guarda somente o nome do hóspede e o apaga " +
-          "1 ano após a saída; (c) não os vende, não os usa para publicidade nem os compartilha, " +
+          "o serviço e seguindo suas instruções; (b) guarda o nome do hóspede e, se você usar o " +
+          "registro de hóspedes, os dados para a TRA e o SIRE (criptografados), e os apaga 1 ano " +
+          "após a saída; envia a TRA ao MinCIT somente quando você confirma; (c) não os vende, não os usa para publicidade nem os compartilha, " +
           "exceto com os fornecedores necessários para operar, indicados na Política de " +
           "privacidade; (d) os protege com medidas de segurança razoáveis e os mantém isolados " +
           "de outras contas; (e) avisará você sem demora sobre qualquer incidente de segurança " +
