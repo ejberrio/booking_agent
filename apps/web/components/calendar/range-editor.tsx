@@ -174,7 +174,7 @@ export function RangeEditor({ unitTypeId, selection, onApplied }: Props) {
                   className="flex items-center justify-between rounded-md border border-border px-2 py-1"
                 >
                   <span>{it.date}</span>
-                  <span className={it.valid ? "" : "text-red-500"}>
+                  <span className={it.valid ? "" : "text-danger"}>
                     {formatCOP(it.old_price)} → {formatCOP(it.new_price)}
                     {it.valid ? "" : m.calendar.invalid}
                   </span>

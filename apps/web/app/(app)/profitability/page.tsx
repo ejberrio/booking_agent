@@ -74,7 +74,7 @@ function ProfitabilityContent() {
   return (
     <div className="mx-auto max-w-5xl space-y-4">
       <div>
-        <h1 className="text-xl font-semibold">{t.title}</h1>
+        <h1 className="text-2xl font-semibold">{t.title}</h1>
         <p className="text-sm text-muted-foreground">{t.intro}</p>
       </div>
 
@@ -146,7 +146,7 @@ function ProfitabilityContent() {
                   <td className="px-1 py-1 text-right">{money(r.cleaning + r.fixed)}</td>
                   <td className="px-1 py-1 text-right font-medium">{money(r.net)}</td>
                   <td className={cn("py-1 pl-1 text-right",
-                    r.vs_rent != null && (r.vs_rent >= 0 ? "text-green-600" : "text-red-600"))}>
+                    r.vs_rent != null && (r.vs_rent >= 0 ? "text-success" : "text-danger"))}>
                     {money(r.vs_rent)}
                   </td>
                 </tr>

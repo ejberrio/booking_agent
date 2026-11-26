@@ -4,11 +4,11 @@ import { cn } from "@/lib/utils";
 type Variant = "default" | "muted" | "success" | "warning" | "danger";
 
 const styles: Record<Variant, string> = {
-  default: "bg-primary text-primary-foreground",
+  default: "bg-primary-subtle text-primary",
   muted: "bg-muted text-muted-foreground",
-  success: "bg-green-500/15 text-green-600",
-  warning: "bg-amber-500/15 text-amber-600",
-  danger: "bg-red-500/15 text-red-600",
+  success: "bg-success-subtle text-success",
+  warning: "bg-accent-subtle text-accent",
+  danger: "bg-danger-subtle text-danger",
 };
 
 export function Badge({
@@ -19,7 +19,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium",
+        "inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold",
         styles[variant],
         className,
       )}

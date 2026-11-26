@@ -51,7 +51,7 @@ export function AuthShell({
 /** Mensaje de error/éxito bajo un formulario. */
 export function FormNote({ kind, children }: { kind: "error" | "ok"; children: React.ReactNode }) {
   return (
-    <p className={kind === "error" ? "text-xs text-red-500" : "text-xs text-emerald-600"}>
+    <p className={kind === "error" ? "text-xs text-danger" : "text-xs text-success"}>
       {children}
     </p>
   );

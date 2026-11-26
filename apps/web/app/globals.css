@@ -6,26 +6,44 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #0a0a0a;
+  /* Rediseño #195 (Figma "StayLever — Rediseño visual"): cálido de hotelería.
+     Arena + café oscuro, azul del logo como principal y terracota como acento. */
+  --background: #fbf8f3;
+  --foreground: #241f1a;
   --card: #ffffff;
-  --primary: #2563eb;
+  --primary: #1d4ed8;
   --primary-foreground: #ffffff;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --border: #e4e4e7;
+  --primary-subtle: #dbeafe;
+  --muted: #f5efe6;
+  --muted-foreground: #7a6a58;
+  --border: #eae0d2;
+  --accent: #c2603a;
+  --accent-subtle: #fbe6da;
+  --success: #276749;
+  --success-subtle: #ddf2e6;
+  --danger: #b42318;
+  --danger-subtle: #fde2e0;
+  --card-shadow: 0 2px 8px rgb(92 69 46 / 0.08), 0 8px 24px -4px rgb(92 69 46 / 0.06);
   color-scheme: light;
 }
 
 .dark {
-  --background: #0a0a0a;
-  --foreground: #fafafa;
-  --card: #121214;
+  --background: #1a1613;
+  --foreground: #fbf8f3;
+  --card: #241f1a;
   --primary: #3b82f6;
   --primary-foreground: #ffffff;
-  --muted: #1c1c1f;
-  --muted-foreground: #a1a1aa;
-  --border: #27272a;
+  --primary-subtle: #172554;
+  --muted: #2e2721;
+  --muted-foreground: #d9cbb8;
+  --border: #3a322a;
+  --accent: #e89a72;
+  --accent-subtle: #3a2519;
+  --success: #5fc38e;
+  --success-subtle: #13301f;
+  --danger: #f08a82;
+  --danger-subtle: #3b1512;
+  --card-shadow: 0 2px 8px rgb(0 0 0 / 0.25);
   color-scheme: dark;
 }
 
@@ -35,13 +53,32 @@
   --color-card: var(--card);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-subtle: var(--primary-subtle);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-subtle: var(--accent-subtle);
+  --color-success: var(--success);
+  --color-success-subtle: var(--success-subtle);
+  --color-danger: var(--danger);
+  --color-danger-subtle: var(--danger-subtle);
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-heading), Georgia, serif;
+  --shadow-card: var(--card-shadow);
+}
+
+@layer base {
+  /* Títulos de página y sección en Fraunces (serif cálida); el resto en Nunito Sans. */
+  h1,
+  h2 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans);
 }

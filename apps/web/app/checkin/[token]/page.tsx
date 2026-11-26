@@ -61,7 +61,7 @@ export default function CheckinPage() {
         <LanguageSwitcher />
       </header>
       <main className="mx-auto w-full max-w-2xl flex-1 space-y-4 px-4 pb-12">
-        <h1 className="text-xl font-semibold">{t.title}</h1>
+        <h1 className="text-2xl font-semibold">{t.title}</h1>
         {info === null && <Skeleton className="h-64" />}
         {info === "closed" && <Card><p className="text-sm">{t.closed}</p></Card>}
         {info && info !== "closed" && state === "done" && <Card><p className="text-sm">{t.done}</p></Card>}
@@ -72,7 +72,7 @@ export default function CheckinPage() {
                 dateWithYear(info.check_out, lang))}
             </p>
             <p className="text-sm text-muted-foreground">{t.intro}</p>
-            {info.submitted && <p className="rounded-md bg-emerald-500/10 p-2 text-sm text-emerald-700 dark:text-emerald-400">{t.already}</p>}
+            {info.submitted && <p className="rounded-md bg-success-subtle p-2 text-sm text-success">{t.already}</p>}
             <GuestForm value={data} onChange={setData} errors={errors} />
             <label className="flex items-start gap-2 text-sm">
               <input type="checkbox" className="mt-1" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
@@ -81,7 +81,7 @@ export default function CheckinPage() {
                 <Link href="/privacy" target="_blank" className="text-primary underline">{t.privacy}</Link>
               </span>
             </label>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-danger">{error}</p>}
             <Button onClick={submit} disabled={!consent || state === "sending"} className="w-full sm:w-auto">
               {state === "sending" ? t.submitting : t.submit}
             </Button>

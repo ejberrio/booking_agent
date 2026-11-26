@@ -45,14 +45,14 @@ function RegistrationContent() {
   const open = (id: number | null) => router.replace(id ? `/registration?booking=${id}` : "/registration");
 
   if (q.isLoading) return <Skeleton className="h-96" />;
-  if (q.isError) return <p className="text-sm text-red-600">{(q.error as Error).message}</p>;
+  if (q.isError) return <p className="text-sm text-danger">{(q.error as Error).message}</p>;
   const data = q.data;
   if (!data) return null;
 
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold">{t.title}</h1>
+        <h1 className="text-2xl font-semibold">{t.title}</h1>
         <p className="text-sm text-muted-foreground">{t.intro}</p>
       </div>
       <SetupCard s={data.settings} />
@@ -116,9 +116,9 @@ function SetupCard({ s }: { s: RegistrationSettings }) {
         <CardTitle>{t.title}</CardTitle>
         <span className="text-xs text-muted-foreground">{open ? "▲" : "▼"}</span>
       </button>
-      {s.sandbox && <p className="rounded-md bg-amber-500/10 p-2 text-xs text-amber-700">{t.sandbox}</p>}
+      {s.sandbox && <p className="rounded-md bg-accent-subtle p-2 text-xs text-accent">{t.sandbox}</p>}
       {s.missing.length > 0 && (
-        <p className="text-xs text-amber-700">{t.missing} {s.missing.map((k) => t.missingItems[k] ?? k).join(", ")}.</p>
+        <p className="text-xs text-accent">{t.missing} {s.missing.map((k) => t.missingItems[k] ?? k).join(", ")}.</p>
       )}
       {open && (
         <div className="space-y-3">
@@ -216,7 +216,7 @@ function Detail({ bookingId, onBack }: { bookingId: number; onBack: () => void }
   }
 
   if (q.isLoading) return <Skeleton className="h-96" />;
-  if (q.isError) return <p className="text-sm text-red-600">{(q.error as Error).message}</p>;
+  if (q.isError) return <p className="text-sm text-danger">{(q.error as Error).message}</p>;
   const d = q.data;
   if (!d) return null;
   const hasData = Boolean(d.data);
@@ -273,7 +273,7 @@ function Detail({ bookingId, onBack }: { bookingId: number; onBack: () => void }
           <p className="text-xs text-muted-foreground">{t.detail.locked}</p>
         </div>
       )}
-      {d.tra_error && <p className="rounded-md bg-red-500/10 p-2 text-sm text-red-700 dark:text-red-400">{d.tra_error}</p>}
+      {d.tra_error && <p className="rounded-md bg-danger-subtle p-2 text-sm text-danger">{d.tra_error}</p>}
 
       {!hasData && !editing && d.editable && (
         <div className="space-y-2">

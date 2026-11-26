@@ -55,7 +55,7 @@ export function GuestForm({ value, onChange, errors, disabled }: {
         <div className="flex items-center justify-between">
           <legend className="text-sm font-medium">{i < 0 ? t.form.main : t.form.companion(i + 1)}</legend>
           {i >= 0 && !disabled && (
-            <button type="button" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-red-600"
+            <button type="button" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-danger"
               onClick={() => onChange({ ...value, companions: value.companions.filter((_, j) => j !== i) })}>
               <Trash2 className="h-3 w-3" /> {t.form.remove}
             </button>
@@ -138,7 +138,7 @@ function Field({ label, bad, t, help, children }: {
   label: string; bad?: boolean; t: string; help?: string; children: React.ReactNode;
 }) {
   return (
-    <label className={cn("block space-y-1 text-xs", bad && "text-red-600")}>
+    <label className={cn("block space-y-1 text-xs", bad && "text-danger")}>
       <span className="font-medium">{label}</span>
       <div className={cn(bad && "rounded-md ring-1 ring-red-500")}>{children}</div>
       {bad ? <span>{t}</span> : help ? <span className="text-muted-foreground">{help}</span> : null}

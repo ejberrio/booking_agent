@@ -106,7 +106,7 @@ export function DayInfoPanel({ unitTypeId, selection, bookings, notes }: Props) 
               {editingId === n.id ? (
                 <>
                   <textarea
-                    className="w-full rounded-md border border-border bg-background p-2 text-xs"
+                    className="w-full rounded-xl border border-border bg-card p-2 text-xs"
                     rows={2}
                     maxLength={500}
                     value={editText}
@@ -155,7 +155,7 @@ export function DayInfoPanel({ unitTypeId, selection, bookings, notes }: Props) 
         </div>
       )}
       <textarea
-        className="w-full rounded-md border border-border bg-background p-2 text-xs"
+        className="w-full rounded-xl border border-border bg-card p-2 text-xs"
         rows={2}
         maxLength={500}
         placeholder={m.calendar.notePlaceholder(rangeLabel)}

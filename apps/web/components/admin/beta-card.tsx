@@ -80,7 +80,7 @@ export function BetaCard() {
           <span className="font-medium">{t.quota}</span>
           <Input inputMode="numeric" value={quota} onChange={(e) => setQuota(e.target.value.replace(/\D/g, ""))} />
           <span className="block text-xs text-muted-foreground">{t.used(d.used, d.quota)}</span>
-          {d.full && <span className="block text-xs text-amber-600">{t.full}</span>}
+          {d.full && <span className="block text-xs text-accent">{t.full}</span>}
         </label>
         <label className="space-y-1 text-sm">
           <span className="font-medium">{t.budget}</span>

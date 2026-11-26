@@ -26,9 +26,9 @@ type Override = { price?: number | null; included: boolean };
 const STALE_ES = "la vista previa quedó desactualizada; vuelve a previsualizar";
 
 const STATUS_CLASS = {
-  applied: "text-emerald-600",
+  applied: "text-success",
   skipped: "text-muted-foreground",
-  failed: "text-red-500",
+  failed: "text-danger",
 } as const;
 
 function label(month: string): string {
@@ -139,7 +139,7 @@ export function ExtendPricesDialog({ open, unitTypeId, defaultUntil, maxUntil, o
           {preview.isLoading ? (
             <Skeleton className="mt-3 h-48 w-full" />
           ) : preview.isError ? (
-            <p className="mt-3 text-sm text-red-500">{(preview.error as Error).message}</p>
+            <p className="mt-3 text-sm text-danger">{(preview.error as Error).message}</p>
           ) : data && data.months.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">{t.nothing}</p>
           ) : data ? (
@@ -205,15 +205,15 @@ export function ExtendPricesDialog({ open, unitTypeId, defaultUntil, maxUntil, o
                               {mo.weekend_price !== null && mo.weekend_price !== mo.weekday_price && (
                                 <span>{t.weekendShort(formatCOP(mo.weekend_price))}</span>
                               )}
-                              {mo.to_open > 0 && <span className="text-emerald-600">{t.toOpen(mo.to_open)}</span>}
+                              {mo.to_open > 0 && <span className="text-success">{t.toOpen(mo.to_open)}</span>}
                               {mo.kept_closed > 0 && (
                                 <span className="text-muted-foreground">{t.keptClosed(mo.kept_closed)}</span>
                               )}
                               {mo.clipped_min > 0 && (
-                                <span className="text-amber-600">{t.clippedMin(mo.clipped_min)}</span>
+                                <span className="text-accent">{t.clippedMin(mo.clipped_min)}</span>
                               )}
                               {mo.clipped_max > 0 && (
-                                <span className="text-amber-600">{t.clippedMax(mo.clipped_max)}</span>
+                                <span className="text-accent">{t.clippedMax(mo.clipped_max)}</span>
                               )}
                             </span>
                           </td>
@@ -225,7 +225,7 @@ export function ExtendPricesDialog({ open, unitTypeId, defaultUntil, maxUntil, o
               </div>
               <div className="mt-2 space-y-1 text-xs text-muted-foreground">
                 {data.closed_priced > 0 && data.first_closed_priced && (
-                  <p className="text-amber-600">
+                  <p className="text-accent">
                     {t.closedPricedNote(data.closed_priced, dateWithYear(data.first_closed_priced))}
                   </p>
                 )}
@@ -235,10 +235,10 @@ export function ExtendPricesDialog({ open, unitTypeId, defaultUntil, maxUntil, o
             </>
           ) : null}
 
-          {dirty && <p className="mt-2 text-xs text-amber-600">{t.editedHint}</p>}
-          {staleNote && <p className="mt-2 text-xs text-amber-600">{t.stale}</p>}
+          {dirty && <p className="mt-2 text-xs text-accent">{t.editedHint}</p>}
+          {staleNote && <p className="mt-2 text-xs text-accent">{t.stale}</p>}
           {apply.isError && apply.error.message !== trServer(STALE_ES) && (
-            <p className="mt-2 text-xs text-red-500">{apply.error.message}</p>
+            <p className="mt-2 text-xs text-danger">{apply.error.message}</p>
           )}
 
           {data && data.total_nights > 0 && !dirty && (
@@ -289,8 +289,8 @@ function ResultView({ result }: { result: ExtensionResult }) {
     <>
       <p className="mt-1 text-sm">{t.resultSummary(result.applied_nights, result.opened_nights)}</p>
       {result.not_opened_nights > 0 && (
-        <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
-          <p className="font-medium text-amber-700 dark:text-amber-400">⚠ {t.notOpenedTitle}</p>
+        <div className="mt-3 rounded-md border border-accent/40 bg-accent-subtle p-3 text-sm">
+          <p className="font-medium text-accent">⚠ {t.notOpenedTitle}</p>
           <p className="mt-1 text-muted-foreground">{t.notOpenedText(result.not_opened_nights)}</p>
         </div>
       )}
@@ -302,16 +302,16 @@ function ResultView({ result }: { result: ExtensionResult }) {
             {r.status === "applied" && (
               <span className="text-muted-foreground">{t.resultSummary(r.nights, r.opened)}</span>
             )}
-            {r.not_opened > 0 && <span className="text-amber-600">{t.monthNotOpened(r.not_opened)}</span>}
+            {r.not_opened > 0 && <span className="text-accent">{t.monthNotOpened(r.not_opened)}</span>}
             {r.detail && r.not_opened === 0 && (
-              <span className={r.status === "applied" ? "text-amber-600" : "text-red-500"}>
+              <span className={r.status === "applied" ? "text-accent" : "text-danger"}>
                 {trServer(r.detail)}
               </span>
             )}
           </li>
         ))}
       </ul>
-      {result.failed_months > 0 && <p className="mt-2 text-xs text-amber-600">{t.failedNote}</p>}
+      {result.failed_months > 0 && <p className="mt-2 text-xs text-accent">{t.failedNote}</p>}
     </>
   );
 }

@@ -39,14 +39,14 @@ function MessagesContent() {
   const open = (ref: string | null) => router.replace(ref ? `/messages?booking=${encodeURIComponent(ref)}` : "/messages");
 
   if (inbox.isLoading) return <Skeleton className="h-96" />;
-  if (inbox.isError) return <p className="text-sm text-red-600">{(inbox.error as Error).message}</p>;
+  if (inbox.isError) return <p className="text-sm text-danger">{(inbox.error as Error).message}</p>;
   const data = inbox.data;
   if (!data) return null;
 
   if (!data.available) {
     return (
       <div className="mx-auto max-w-2xl space-y-3">
-        <h1 className="text-xl font-semibold">{t.title}</h1>
+        <h1 className="text-2xl font-semibold">{t.title}</h1>
         <Card className="space-y-3">
           <CardDescription>{t.unavailable}</CardDescription>
           <Link href="/onboarding"><Button>{t.connect}</Button></Link>
@@ -59,7 +59,7 @@ function MessagesContent() {
     <div className="space-y-4">
       <div>
         <div className="flex items-center gap-2">
-          <h1 className="text-xl font-semibold">{t.title}</h1>
+          <h1 className="text-2xl font-semibold">{t.title}</h1>
           {data.unread > 0 && <Badge>{t.unread(data.unread)}</Badge>}
         </div>
         <p className="text-sm text-muted-foreground">{t.intro}</p>
@@ -141,7 +141,7 @@ function ThreadView({ booking, onBack }: { booking: string; onBack: () => void }
   });
 
   if (thread.isLoading) return <Skeleton className="h-96" />;
-  if (thread.isError) return <p className="text-sm text-red-600">{(thread.error as Error).message}</p>;
+  if (thread.isError) return <p className="text-sm text-danger">{(thread.error as Error).message}</p>;
   const d = thread.data;
   if (!d) return null;
 
@@ -167,7 +167,7 @@ function ThreadView({ booking, onBack }: { booking: string; onBack: () => void }
       {d.can_reply ? (
         <div className="space-y-2 border-t border-border pt-3">
           <textarea
-            className="w-full rounded-md border border-border bg-background p-2 text-sm"
+            className="w-full rounded-xl border border-border bg-card p-2 text-sm"
             rows={4}
             maxLength={MAX}
             placeholder={t.placeholder}

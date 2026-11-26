@@ -132,7 +132,7 @@ export function OfflineBanner() {
   const q = useQuery({ queryKey: ["manual"], queryFn: api.manualOverview });
   if (q.data?.channel_mode !== "manual") return null;
   return (
-    <div className="space-y-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+    <div className="space-y-2 rounded-lg border border-accent/40 bg-accent-subtle p-3 text-sm">
       <p>{m.offline.banner}</p>
       {q.data.apartments.map((a) => <ManualLinks key={a.property_id} apartment={a} />)}
     </div>

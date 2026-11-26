@@ -132,7 +132,7 @@ export function AccountCard() {
         <Input type="password" autoComplete="new-password" placeholder={m.auth.confirmPassword}
           value={confirm} onChange={(e) => setConfirm(e.target.value)} minLength={10} />
         {confirm && confirm !== next && (
-          <p className="text-xs text-red-500">{m.auth.mismatch}</p>
+          <p className="text-xs text-danger">{m.auth.mismatch}</p>
         )}
         <Button onClick={() => pwd.mutate()}
           disabled={next.length < 10 || confirm !== next || pwd.isPending}>

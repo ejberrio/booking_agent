@@ -93,7 +93,7 @@ export function DataCard() {
         {exporting ? t.exporting : t.export}
       </Button>
       <div className="space-y-2 border-t pt-3">
-        <p className="text-sm font-medium text-red-600 dark:text-red-400">{t.deleteTitle}</p>
+        <p className="text-sm font-medium text-danger">{t.deleteTitle}</p>
         {isMain ? (
           <p className="text-xs text-muted-foreground">{t.protected}</p>
         ) : (
@@ -113,7 +113,7 @@ export function DataCard() {
             ) : (
               <Button className="bg-muted text-foreground" onClick={sendCode}>{t.sendCode}</Button>
             )}
-            <Button className="bg-red-600 text-white hover:bg-red-700" onClick={remove}
+            <Button className="bg-danger text-white hover:opacity-90" onClick={remove}
               disabled={!ready || deleting}>
               {deleting ? t.deleting : t.delete}
             </Button>

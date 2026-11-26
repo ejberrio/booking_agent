@@ -42,8 +42,8 @@ export function formatDates(ev: { start_date: string; end_date: string }, lang: 
 }
 
 const REL_STYLE = {
-  high: "bg-red-500/15 text-red-600 dark:text-red-400",
-  medium: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
+  high: "bg-danger-subtle text-danger",
+  medium: "bg-accent-subtle text-accent",
   low: "bg-sky-500/15 text-sky-700 dark:text-sky-400",
 };
 
@@ -63,7 +63,7 @@ export function EventRow({ ev }: { ev: ReportEvent }) {
         <p className="text-xs text-muted-foreground">{t.suggested}</p>
         <p className="text-lg font-semibold">
           {formatCOP(ev.suggested_price, lang)}
-          {ev.pct > 0 && <span className="ml-1 text-xs font-medium text-emerald-600">+{ev.pct}%</span>}
+          {ev.pct > 0 && <span className="ml-1 text-xs font-medium text-success">+{ev.pct}%</span>}
         </p>
         <p className="text-xs text-muted-foreground">{t.from(formatCOP(ev.base_price, lang))}</p>
       </div>
@@ -167,7 +167,7 @@ export function FreeReport() {
         <label className="block space-y-1 text-sm">
           <span>{t.unitKind}</span>
           <select value={kind} onChange={(e) => setKind(e.target.value)}
-            className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm">
+            className="h-9 w-full rounded-xl border border-border bg-card px-2 text-sm">
             <option value="">—</option>
             {Object.entries(t.unitKinds).map(([k, label]) => (
               <option key={k} value={k}>{label}</option>
