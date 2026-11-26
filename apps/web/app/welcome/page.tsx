@@ -30,7 +30,7 @@ function SuggestionMock() {
       <Card className="space-y-2 text-left shadow-sm">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>{t.night}</span>
-          <span className="rounded bg-red-500/15 px-1.5 py-0.5 text-red-600 dark:text-red-400">+30%</span>
+          <span className="rounded bg-danger-subtle px-1.5 py-0.5 text-danger">+30%</span>
         </div>
         <p className="text-sm font-medium">{t.event}</p>
         <p className="text-2xl font-semibold">

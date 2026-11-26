@@ -22,8 +22,8 @@ export function HorizonBanner({ status, onExtend }: { status?: HorizonStatus; on
     last = new Date(Date.UTC(y, mo - 1, d - 1)).toISOString().slice(0, 10);
   }
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
-      <AlertTriangle size={18} className="shrink-0 text-amber-600" />
+    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-accent/40 bg-accent-subtle p-3 text-sm">
+      <AlertTriangle size={18} className="shrink-0 text-accent" />
       <div className="min-w-0 flex-1 space-y-1">
         {closed && (
           <div>

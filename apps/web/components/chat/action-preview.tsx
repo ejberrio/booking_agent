@@ -61,9 +61,9 @@ export function ActionPreview({ action }: { action: PendingAction }) {
         </p>
       )}
       {(p.warnings ?? []).map((w) => (
-        <p key={w} className="text-amber-600 dark:text-amber-400">⚠️ {w}</p>
+        <p key={w} className="text-accent">⚠️ {w}</p>
       ))}
-      {action.reinforced && <p className="text-amber-600 dark:text-amber-400">{t.bigChange}</p>}
+      {action.reinforced && <p className="text-accent">{t.bigChange}</p>}
     </div>
   );
 }

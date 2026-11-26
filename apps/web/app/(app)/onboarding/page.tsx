@@ -110,10 +110,10 @@ export default function ConnectPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <div>
-        <h1 className="text-xl font-semibold">{t.title}</h1>
+        <h1 className="text-2xl font-semibold">{t.title}</h1>
         <p className="text-sm text-muted-foreground">{t.intro}</p>
       </div>
-      {c.sandbox && <p className="rounded-md bg-amber-500/10 p-2 text-xs text-amber-700">{t.sandbox}</p>}
+      {c.sandbox && <p className="rounded-md bg-accent-subtle p-2 text-xs text-accent">{t.sandbox}</p>}
 
       <ol className="flex flex-wrap gap-2 text-xs">
         {t.steps.map((label, i) => (
@@ -157,7 +157,7 @@ export default function ConnectPage() {
             <PermList title={t.step1.read} items={READ} copy={t.step1.copy} copied={t.step1.copied} />
             <PermList title={t.step1.write} items={WRITE} copy={t.step1.copy} copied={t.step1.copied} />
           </div>
-          <p className="text-xs text-amber-700">{t.step1.expires}</p>
+          <p className="text-xs text-accent">{t.step1.expires}</p>
           <details className="rounded-md border border-border p-3 text-sm">
             <summary className="cursor-pointer font-medium">{t.guideTitle}</summary>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
@@ -199,7 +199,7 @@ export default function ConnectPage() {
                 <p className="text-sm font-medium">
                   {p.name} <span className="text-xs font-normal text-muted-foreground">· {p.currency}</span>
                 </p>
-                {p.taken && <p className="text-xs text-amber-700">{t.step3.taken}</p>}
+                {p.taken && <p className="text-xs text-accent">{t.step3.taken}</p>}
                 <div className="mt-2 space-y-1">
                   {p.rooms.map((r) => (
                     <label key={r.id} className="flex items-center gap-2 text-sm">
@@ -240,7 +240,7 @@ export default function ConnectPage() {
           <CardTitle>{t.step4.title}</CardTitle>
           {importRemote.isPending && <p className="text-sm text-muted-foreground">{t.step4.running}</p>}
           {importRemote.data && <p className="text-sm">{t.step4.done(importRemote.data.created)}</p>}
-          {importRemote.isError && <p className="text-sm text-red-600">{t.step4.failed}</p>}
+          {importRemote.isError && <p className="text-sm text-danger">{t.step4.failed}</p>}
           {!importRemote.isPending && (
             <Link href="/" className="inline-block"><Button>{t.step4.go}</Button></Link>
           )}

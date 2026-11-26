@@ -187,7 +187,7 @@ function CalendarPageContent() {
   return (
     <div className="mx-auto max-w-4xl space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">{m.calendar.title}</h1>
+        <h1 className="text-2xl font-semibold">{m.calendar.title}</h1>
         <div className="flex items-center gap-2">
           <Button
             className="bg-muted text-foreground"
@@ -231,7 +231,7 @@ function CalendarPageContent() {
 
       {isError ? (
         <Card>
-          <p className="text-sm text-red-500">{m.calendar.loadError}</p>
+          <p className="text-sm text-danger">{m.calendar.loadError}</p>
           <Button className="mt-2" onClick={() => refetch()}>
             {m.common.retry}
           </Button>

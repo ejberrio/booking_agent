@@ -71,7 +71,7 @@ export function Sidebar() {
       </button>
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-20 flex w-56 flex-col border-r border-border bg-card p-3 transition-transform md:translate-x-0",
+          "fixed inset-y-0 left-0 z-20 flex w-56 flex-col border-r border-border bg-card px-3 py-4 transition-transform md:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
@@ -83,9 +83,9 @@ export function Sidebar() {
             onClick={() => setOpen(false)}
             aria-label={m.shell.home}
             title={m.shell.home}
-            className="flex items-center gap-2 rounded-md text-sm font-semibold hover:opacity-80"
+            className="flex items-center gap-2 rounded-md font-display text-lg font-semibold hover:opacity-80"
           >
-            <Logo size={24} />
+            <Logo size={28} />
             StayLever
           </Link>
           <ThemeToggle />
@@ -99,15 +99,15 @@ export function Sidebar() {
                 href={href}
                 onClick={() => setOpen(false)}
                 className={cn(
-                  "flex items-center gap-2 rounded-md px-3 py-2 text-sm",
-                  active ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                  "flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition",
+                  active ? "bg-primary-subtle font-semibold text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
-                <Icon size={16} />
+                <Icon size={18} strokeWidth={1.75} />
                 {m.shell.nav[key]}
                 {key === "messages" && unread > 0 && (
                   <span className={cn("ml-auto rounded-full px-1.5 text-[11px] font-semibold",
-                    active ? "bg-primary-foreground text-primary" : "bg-primary text-primary-foreground")}>
+                    "bg-primary text-primary-foreground")}>
                     {unread > 99 ? "99+" : unread}
                   </span>
                 )}
@@ -119,11 +119,11 @@ export function Sidebar() {
               href="/admin"
               onClick={() => setOpen(false)}
               className={cn(
-                "flex items-center gap-2 rounded-md px-3 py-2 text-sm",
-                pathname.startsWith("/admin") ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                "flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition",
+                pathname.startsWith("/admin") ? "bg-primary-subtle font-semibold text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
-              <ShieldCheck size={16} />
+              <ShieldCheck size={18} strokeWidth={1.75} />
               {m.admin.nav}
             </Link>
           )}
@@ -136,7 +136,7 @@ export function Sidebar() {
           >
             <span className="block truncate text-sm font-medium">{me.data.account.name}</span>
             {manual.data?.channel_mode === "manual" && (
-              <span className="block text-[11px] text-amber-600 dark:text-amber-400">{m.offline.badge}</span>
+              <span className="block text-[11px] text-accent">{m.offline.badge}</span>
             )}
             <span className="block truncate text-xs text-muted-foreground">{me.data.user.email}</span>
           </Link>

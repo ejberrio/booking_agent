@@ -15,9 +15,9 @@ export function ConnectionBanner() {
     return null;
   }
   return (
-    <div role="alert" className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
+    <div role="alert" className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-accent/40 bg-accent-subtle px-3 py-2 text-sm">
       <span className="flex-1">{m.connection.banner.lost}</span>
-      <Link href="/onboarding" className="rounded-md bg-amber-600 px-3 py-1 text-xs font-medium text-white">
+      <Link href="/onboarding" className="rounded-md bg-accent px-3 py-1 text-xs font-medium text-white">
         {m.connection.banner.reconnect}
       </Link>
     </div>

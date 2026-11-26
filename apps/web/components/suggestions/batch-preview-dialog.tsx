@@ -23,9 +23,9 @@ const STATUS_LABEL = { applied: "statusApplied", skipped: "statusSkipped", faile
 /** Error de la API cuando la vista previa quedó obsoleta (llega ya traducido por req()). */
 const STALE_ES = "La vista previa cambió (precios, reservas o sugerencias); revísala de nuevo.";
 const STATUS_CLASS = {
-  applied: "text-emerald-600",
+  applied: "text-success",
   skipped: "text-muted-foreground",
-  failed: "text-red-500",
+  failed: "text-danger",
 } as const;
 
 /** Vista previa ÚNICA del lote + confirmación explícita (Principio III, feature 019). */
@@ -63,7 +63,7 @@ export function BatchPreviewDialog({ ids, titleOf, onClose, onApplied }: Props) 
       {preview.isLoading ? (
         <Skeleton className="mt-3 h-40 w-full" />
       ) : preview.isError ? (
-        <p className="mt-3 text-sm text-red-500">{(preview.error as Error).message}</p>
+        <p className="mt-3 text-sm text-danger">{(preview.error as Error).message}</p>
       ) : result ? (
         <ResultView result={result} titleOf={titleOf} />
       ) : preview.data ? (
@@ -80,7 +80,7 @@ export function BatchPreviewDialog({ ids, titleOf, onClose, onApplied }: Props) 
               {preview.data.min_price ? (
                 <p>{t.minPriceNote(formatCOP(preview.data.min_price))}</p>
               ) : (
-                <p className="text-amber-600">
+                <p className="text-accent">
                   {t.noMinPrice}{" "}
                   <Link href="/settings" className="underline">
                     {t.setMinPrice}
@@ -97,7 +97,7 @@ export function BatchPreviewDialog({ ids, titleOf, onClose, onApplied }: Props) 
                 </p>
               )}
               {preview.data.overlaps.length > 0 && (
-                <p className="text-amber-600">{t.overlapsWarn(preview.data.overlaps.join(", "))}</p>
+                <p className="text-accent">{t.overlapsWarn(preview.data.overlaps.join(", "))}</p>
               )}
             </div>
           )}
@@ -140,13 +140,13 @@ export function BatchPreviewDialog({ ids, titleOf, onClose, onApplied }: Props) 
                                   .join(" · ")}
                               </span>
                             )}
-                            {i.clipped && <span className="text-[10px] text-amber-600">{t.clipped}</span>}
+                            {i.clipped && <span className="text-[10px] text-accent">{t.clipped}</span>}
                           </span>
                         ) : i.valid ? (
                           <span className="inline-flex items-center gap-1">
                             {formatCOP(i.old_price)} →{" "}
                             <strong>{formatCOP(i.new_price)}</strong>
-                            {up && <ArrowUp size={12} className="text-emerald-600" />}
+                            {up && <ArrowUp size={12} className="text-success" />}
                             {down && <ArrowDown size={12} className="text-orange-500" />}
                             <span className="text-[10px] text-muted-foreground">({t.modeBase})</span>
                           </span>
@@ -161,7 +161,7 @@ export function BatchPreviewDialog({ ids, titleOf, onClose, onApplied }: Props) 
             </table>
           </div>
           {apply.isError && (
-            <p className="mt-3 text-sm text-red-500">{apply.error.message}</p>
+            <p className="mt-3 text-sm text-danger">{apply.error.message}</p>
           )}
         </>
       ) : null}
@@ -203,10 +203,10 @@ function ResultView({ result, titleOf }: { result: BatchResult; titleOf: (id: nu
   return (
     <>
       <p className="mt-1 text-sm">
-        <span className="text-emerald-600">{t.resultApplied(result.applied_count)}</span>
+        <span className="text-success">{t.resultApplied(result.applied_count)}</span>
         {result.skipped_count > 0 && <> · {t.resultSkipped(result.skipped_count)}</>}
         {result.failed_count > 0 && (
-          <span className="text-red-500"> · {t.resultFailed(result.failed_count)}</span>
+          <span className="text-danger"> · {t.resultFailed(result.failed_count)}</span>
         )}
         {result.promotions.length > 0 && <> · {t.promotionsCreated(result.promotions.length)}</>}
       </p>

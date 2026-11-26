@@ -7,7 +7,7 @@ export default function ChatPage() {
   const { m } = useI18n();
   return (
     <div className="mx-auto max-w-3xl space-y-4">
-      <h1 className="text-xl font-semibold">{m.chat.title}</h1>
+      <h1 className="text-2xl font-semibold">{m.chat.title}</h1>
       <ChatPanel />
     </div>
   );

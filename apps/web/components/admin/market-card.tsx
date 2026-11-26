@@ -192,7 +192,7 @@ function OccupancySection({ city, bedrooms, bLabel }: { city: string; bedrooms: 
       <div>
         <p className="text-sm font-medium">{t.title}</p>
         <p className="text-xs text-muted-foreground">{t.description}</p>
-        {zone?.default && <p className="mt-1 text-xs text-amber-600">{t.defaultHint}</p>}
+        {zone?.default && <p className="mt-1 text-xs text-accent">{t.defaultHint}</p>}
       </div>
       <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
         {vals.map((v, i) => (

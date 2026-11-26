@@ -113,7 +113,7 @@ function OffersPageContent() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
-      <h1 className="text-xl font-semibold">{t.title}</h1>
+      <h1 className="text-2xl font-semibold">{t.title}</h1>
 
       {/* Crear promoción de precio */}
       <Card>
@@ -207,7 +207,7 @@ function OffersPageContent() {
               <strong className="text-foreground">{scopeLabel(preview.channels_scope)}</strong>
             </p>
             {preview.warnings.map((w) => (
-              <p key={w} className="mt-1 text-amber-600">
+              <p key={w} className="mt-1 text-accent">
                 ⚠️ {trServer(w)}
               </p>
             ))}
@@ -269,9 +269,9 @@ function OffersPageContent() {
                     {scopeLabel(p.channels_scope)}
                   </div>
                   {p.status === "sync_error" ? (
-                    <div className="text-amber-600">{t.notPublished}</div>
+                    <div className="text-accent">{t.notPublished}</div>
                   ) : null}
-                  {p.no_free_nights ? <div className="text-amber-600">{t.noFreeNights}</div> : null}
+                  {p.no_free_nights ? <div className="text-accent">{t.noFreeNights}</div> : null}
                 </div>
                 <Button
                   className="bg-transparent px-2 text-muted-foreground hover:bg-muted"
@@ -300,7 +300,7 @@ function OffersPageContent() {
       {/* Guía: qué se gestiona dónde (3 vías) */}
       <Card>
         <CardTitle className="flex items-center gap-2">
-          <BadgePercent size={16} className="text-amber-500" /> {t.guideTitle}
+          <BadgePercent size={16} className="text-accent" /> {t.guideTitle}
         </CardTitle>
         <CardDescription>
           {t.guideIntro} <strong>{t.guide1Title}</strong> {t.guide1Body}{" "}
@@ -496,7 +496,7 @@ function NativeDealsCard() {
           <Label htmlFor="dch">{t.channel}</Label>
           <select
             id="dch"
-            className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-xl border border-border bg-card px-3 py-2 text-sm"
             value={form.channel}
             onChange={(e) => setForm({ ...form, channel: e.target.value as "booking" | "airbnb" })}
           >

@@ -26,7 +26,7 @@ export default function AdminPage() {
   }
   return (
     <div className="mx-auto max-w-2xl space-y-4">
-      <h1 className="text-xl font-semibold">{m.admin.title}</h1>
+      <h1 className="text-2xl font-semibold">{m.admin.title}</h1>
       <InvitesCard />
       <AccountsCard />
       <UsageAdminCard />
@@ -87,7 +87,7 @@ function InvitesCard() {
         <Button onClick={() => create.mutate()} disabled={create.isPending}>{t.create}</Button>
       </div>
       {fresh && (
-        <div className="space-y-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3">
+        <div className="space-y-2 rounded-lg border border-success/40 bg-success-subtle p-3">
           <p className="font-mono text-lg tracking-wider">{fresh}</p>
           <div className="flex flex-wrap gap-2">
             <Button className="bg-muted text-foreground" onClick={() => copy(fresh, t.copied)}>
@@ -240,7 +240,7 @@ function UsageAdminCard() {
           <span className="font-medium">{t.total(usage.data.total_cost_usd.toFixed(2))}</span>
         )}
       </div>
-      {unpriced > 0 && <p className="text-xs text-amber-600">{t.unpriced(unpriced)}</p>}
+      {unpriced > 0 && <p className="text-xs text-accent">{t.unpriced(unpriced)}</p>}
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs">
           <thead className="text-muted-foreground">

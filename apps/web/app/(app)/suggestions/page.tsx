@@ -98,7 +98,7 @@ export default function SuggestionsPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-4 pb-20">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">{t.title}</h1>
+        <h1 className="text-2xl font-semibold">{t.title}</h1>
         <ReportEvent />
       </div>
       <p className="text-sm text-muted-foreground">{t.intro}</p>
@@ -106,7 +106,7 @@ export default function SuggestionsPage() {
 
       {isError ? (
         <Card>
-          <p className="text-sm text-red-500">{t.loadError}</p>
+          <p className="text-sm text-danger">{t.loadError}</p>
         </Card>
       ) : isLoading ? (
         <div className="space-y-2">

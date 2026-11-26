@@ -154,7 +154,7 @@ export function SuggestionBlock({ block, selected, onToggle, onApplyOne, onRejec
                       </p>
                     )}
                     {s.occupied_count > 0 && (
-                      <p className="text-[11px] text-amber-600">
+                      <p className="text-[11px] text-accent">
                         {t.occupiedNote(s.sellable_count, s.total_nights, s.occupied_count)}
                       </p>
                     )}

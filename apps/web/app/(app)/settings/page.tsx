@@ -140,7 +140,7 @@ function ChannelOffsetsCard() {
                         <strong>{cop(preview.example.effective)}</strong>
                       </p>
                       {preview.warnings.map((w) => (
-                        <p key={w} className="mt-1 text-amber-600">
+                        <p key={w} className="mt-1 text-accent">
                           ⚠️ {offsetWarning(w, t)}
                         </p>
                       ))}
@@ -347,7 +347,7 @@ function SecretsCard() {
                 )}
                 {testResults[s.name] && (
                   <span
-                    className={`text-xs ${testResults[s.name].ok ? "text-emerald-500" : "text-red-500"}`}
+                    className={`text-xs ${testResults[s.name].ok ? "text-success" : "text-danger"}`}
                   >
                     {testResults[s.name].ok ? "✓" : "✗"} {trServer(testResults[s.name].detail)}
                   </span>
@@ -614,7 +614,7 @@ function WebhooksCard() {
           )}
 
           {line ? (
-            <div className="space-y-1.5 rounded-md border border-amber-500/40 p-2">
+            <div className="space-y-1.5 rounded-md border border-accent/40 p-2">
               <p className="text-xs font-medium">{t.copyNow}</p>
               <CopyRow value={line} secret />
             </div>
@@ -646,7 +646,7 @@ function WebhooksCard() {
           </ol>
         </>
       ) : (
-        <p className="text-sm text-red-500">{t.loadError}</p>
+        <p className="text-sm text-danger">{t.loadError}</p>
       )}
     </Card>
   );
@@ -744,7 +744,7 @@ function PushCard() {
       </div>
       <CardDescription>{t.description}</CardDescription>
       {status.data && !status.data.configured && (
-        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs">{t.notConfigured}</p>
+        <p className="rounded-md border border-accent/40 bg-accent-subtle p-2 text-xs">{t.notConfigured}</p>
       )}
       {devices.isLoading ? (
         <Skeleton className="h-12 w-full" />
@@ -763,7 +763,7 @@ function PushCard() {
                 </span>
                 <button
                   type="button"
-                  className="text-muted-foreground hover:text-red-500"
+                  className="text-muted-foreground hover:text-danger"
                   onClick={() => window.confirm(t.confirmRemove) && remove.mutate(d.id)}
                 >
                   {t.remove}
@@ -771,7 +771,7 @@ function PushCard() {
               </div>
               <p className="mt-0.5 text-muted-foreground">
                 {t.lastSeen(dateTime(d.last_seen_at))}
-                {!d.enabled && <span className="text-amber-600"> · {t.disabled}</span>}
+                {!d.enabled && <span className="text-accent"> · {t.disabled}</span>}
               </p>
               <div className="mt-1.5 flex flex-wrap gap-4">
                 <label className="flex items-center gap-1.5">
@@ -791,7 +791,7 @@ function PushCard() {
                   {t.suggestions}
                 </label>
               </div>
-              {d.last_error && d.enabled && <p className="mt-1 text-red-500">{trServer(d.last_error)}</p>}
+              {d.last_error && d.enabled && <p className="mt-1 text-danger">{trServer(d.last_error)}</p>}
             </li>
           ))}
         </ul>
@@ -811,7 +811,7 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-xl space-y-4">
-      <h1 className="text-xl font-semibold">{t.title}</h1>
+      <h1 className="text-2xl font-semibold">{t.title}</h1>
 
       <AccountCard />
 
