@@ -48,6 +48,7 @@ const es = {
     create: "Crear enlace",
     copy: "Copiar enlace",
     copied: "Enlace copiado",
+    copyFailed: "No se pudo copiar automáticamente: selecciona el enlace y cópialo.",
     insert: "Insertar enlace de registro",
     message: (url: string) =>
       `¡Hola! Para tu llegada necesitamos registrar a los huéspedes ante el Ministerio de Comercio (Tarjeta de Registro de Alojamiento). Por favor llena tus datos y los de tus acompañantes aquí: ${url}`,
@@ -176,6 +177,7 @@ const en: Shape = {
     create: "Create link",
     copy: "Copy link",
     copied: "Link copied",
+    copyFailed: "Couldn't copy automatically: select the link and copy it.",
     insert: "Insert registration link",
     message: (url: string) =>
       `Hi! Before your arrival we need to register all guests with Colombia's Ministry of Commerce (Lodging Registration Card). Please fill in your details and those of your companions here: ${url}`,
@@ -302,6 +304,7 @@ const pt: Shape = {
     create: "Criar link",
     copy: "Copiar link",
     copied: "Link copiado",
+    copyFailed: "Não foi possível copiar automaticamente: selecione o link e copie.",
     insert: "Inserir link de registro",
     message: (url: string) =>
       `Olá! Para sua chegada precisamos registrar os hóspedes no Ministério do Comércio da Colômbia (Ficha de Registro de Hospedagem). Por favor preencha seus dados e os dos seus acompanhantes aqui: ${url}`,

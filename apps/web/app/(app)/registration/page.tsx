@@ -207,7 +207,11 @@ function Detail({ bookingId, onBack }: { bookingId: number; onBack: () => void }
       await navigator.clipboard.writeText(url);
       toast.success(t.link.copied);
     } catch {
-      window.prompt(t.link.copy, url);
+      // Sin permiso de portapapeles (p. ej. navegadores integrados): se deja seleccionado para copiarlo a mano.
+      const el = document.getElementById("checkin-link") as HTMLInputElement | null;
+      el?.focus();
+      el?.select();
+      toast.message(t.link.copyFailed);
     }
   }
 
@@ -250,6 +254,16 @@ function Detail({ bookingId, onBack }: { bookingId: number; onBack: () => void }
             <Button className="bg-muted text-foreground" onClick={() => setEditing(true)}>{t.detail.edit}</Button>
           )}
         </div>
+      )}
+      {d.editable && d.token && (
+        <Input
+          id="checkin-link"
+          readOnly
+          value={checkinUrl(d.token)}
+          onFocus={(e) => e.currentTarget.select()}
+          className="font-mono text-xs"
+          aria-label={t.link.copy}
+        />
       )}
 
       {d.tra_sent_at && (
